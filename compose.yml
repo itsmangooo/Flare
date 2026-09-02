@@ -5,21 +5,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     command: ["--migrate"]
+
     restart: "no"
-    # Coolify must not wait for a one-shot service to remain healthy after it exits successfully.
+
+    # Coolify must not wait for a one-shot service
+    # to remain healthy after it exits successfully.
     exclude_from_hc: true
+
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Postgres: "${ConnectionStrings__Postgres:?}"
       FLARE_JWT_SIGNING_KEY: "${FLARE_JWT_SIGNING_KEY:?}"
-    read_only: true
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
 
   api:
     build:
