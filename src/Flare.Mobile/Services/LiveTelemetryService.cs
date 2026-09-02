@@ -37,13 +37,13 @@ public sealed class LiveTelemetryService(ApiClient api, SessionStore sessionStor
         }
     }
 
-    public async Task StopAsync()
+    public async Task StopAsync(CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync();
+        await _gate.WaitAsync(cancellationToken);
         try
         {
             StopFreshnessMonitor();
-            if (_connection is not null) await _connection.StopAsync();
+            if (_connection is not null) await _connection.StopAsync(cancellationToken);
             SetFreshness(DataFreshness.Stale);
         }
         finally
@@ -52,10 +52,10 @@ public sealed class LiveTelemetryService(ApiClient api, SessionStore sessionStor
         }
     }
 
-    public async Task ResetAsync()
+    public async Task ResetAsync(CancellationToken cancellationToken = default)
     {
-        await StopAsync();
-        await _gate.WaitAsync();
+        await StopAsync(cancellationToken);
+        await _gate.WaitAsync(cancellationToken);
         try
         {
             if (_connection is not null) await _connection.DisposeAsync();

@@ -1,4 +1,5 @@
 using Flare.Mobile.Pages;
+using Flare.Mobile.Platforms.Android;
 using Flare.Mobile.Services;
 using Microsoft.Extensions.Logging;
 
@@ -10,11 +11,11 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
         builder.UseMauiApp<App>();
-#if DEBUG
         builder.Logging.AddDebug();
-#endif
+        builder.Logging.AddProvider(new AndroidLogProvider());
         builder.Services.AddSingleton(new HttpClient { Timeout = TimeSpan.FromSeconds(15) });
         builder.Services.AddSingleton<SessionStore>();
+        builder.Services.AddSingleton<IServerUrlStore>(services => services.GetRequiredService<SessionStore>());
         builder.Services.AddSingleton<ApiClient>();
         builder.Services.AddSingleton<AuthService>();
         builder.Services.AddSingleton<ConnectionService>();

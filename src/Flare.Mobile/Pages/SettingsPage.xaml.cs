@@ -1,5 +1,6 @@
 using Flare.Contracts;
 using Flare.Mobile.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Flare.Mobile.Pages;
 
@@ -9,6 +10,7 @@ public partial class SettingsPage : BindablePage
     private readonly AuthService _auth;
     private readonly SessionStore _session;
     private readonly AppNavigator _navigator;
+    private readonly ILogger<SettingsPage> _logger;
     private string _connectivity = "Checking…";
     private string _apiVersion = "—";
     private string _serverVersion = "—";
@@ -19,9 +21,11 @@ public partial class SettingsPage : BindablePage
     public string ServerVersion { get => _serverVersion; private set => Set(ref _serverVersion, value); }
     public string MobileVersion { get; }
 
-    public SettingsPage(ApiClient api, AuthService auth, SessionStore session, AppNavigator navigator)
+    public SettingsPage(ApiClient api, AuthService auth, SessionStore session, AppNavigator navigator,
+        ILogger<SettingsPage> logger)
     {
         InitializeComponent(); _api = api; _auth = auth; _session = session; _navigator = navigator;
+        _logger = logger;
         MobileVersion = AppInfo.Current.VersionString;
         ThemePicker.SelectedIndex = Preferences.Default.Get("flare.theme", "Dark") == "System" ? 1 : 0;
         BindingContext = this;
@@ -44,9 +48,22 @@ public partial class SettingsPage : BindablePage
     {
         if (!await DisplayAlertAsync("Log out?", "The secure session tokens will be removed from this device.", "Logout", "Cancel")) return;
         try { await _auth.LogoutAsync(CancellationToken.None); } catch (FlareApiException) { _session.ClearAuthentication(); }
-        _navigator.ShowLogin();
+        try { await _navigator.ShowLoginAsync(); }
+        catch (Exception exception)
+        {
+            MobileLog.LogoutNavigationFailed(_logger, exception);
+            ErrorMessage = "Signed out, but the sign-in screen could not be opened.";
+        }
     }
-    private void ChangeServerClicked(object? sender, EventArgs eventArgs) => _navigator.ChangeServer();
+    private async void ChangeServerClicked(object? sender, EventArgs eventArgs)
+    {
+        try { await _navigator.ChangeServerAsync(); }
+        catch (Exception exception)
+        {
+            MobileLog.ChangeServerFailed(_logger, exception);
+            ErrorMessage = "The server could not be changed. Try again.";
+        }
+    }
     private void ThemeChanged(object? sender, EventArgs eventArgs)
     {
         if (ThemePicker.SelectedIndex < 0) return;

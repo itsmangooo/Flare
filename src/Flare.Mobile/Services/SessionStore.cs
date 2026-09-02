@@ -2,7 +2,7 @@ using Flare.Contracts;
 
 namespace Flare.Mobile.Services;
 
-public sealed class SessionStore
+public sealed class SessionStore : IServerUrlStore
 {
     private const string ServerUrlKey = "flare.server_url";
     private const string AccessTokenKey = "flare.access_token";
