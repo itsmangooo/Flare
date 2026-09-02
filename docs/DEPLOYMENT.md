@@ -85,13 +85,32 @@ The supplied Compose deployment mounts `/var/run/docker.sock` and adds the confi
 
 Prefer a restricted Docker API proxy when available. To use one, set `DOCKER_HOST` to its private URL and remove both the raw socket bind mount and `group_add` from your Compose override. See [Security](SECURITY.md) before using either approach.
 
-## Android signing
+## Android release signing
 
-Release builds support these MSBuild/environment properties without committing a keystore:
+Android accepts an APK as an update only when its application ID is unchanged, it is signed by the same key as the installed APK, and its `versionCode` is higher. Flare keeps the application ID `io.github.itsmangooo.flare`. Release builds fail if the persistent release key is not configured; they never fall back to debug signing.
 
-- `FLARE_ANDROID_KEYSTORE`
-- `FLARE_ANDROID_STORE_PASSWORD`
-- `FLARE_ANDROID_KEY_ALIAS`
-- `FLARE_ANDROID_KEY_PASSWORD`
+Create the release key once and keep it outside the repository. This command prompts for the passwords instead of placing them in shell history:
 
-For a future signed GitHub release, store `FLARE_ANDROID_KEYSTORE_BASE64` plus the three password/alias values as GitHub Actions secrets, decode the keystore into the runner's temporary directory, pass its path as `FLARE_ANDROID_KEYSTORE`, and delete it after the build. CI uses the Android development certificate today and requires no production secret; that package is installable for verification but must not be distributed as a production release.
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.flare" | Out-Null
+keytool -genkeypair -keystore "$env:USERPROFILE\.flare\flare-release.keystore" -alias flare-release -keyalg RSA -keysize 4096 -validity 10000 -storetype JKS
+```
+
+Back up the keystore and its passwords in secure, separate locations. Losing the key permanently prevents upgrades of installations signed by it. Never commit or upload the unencrypted keystore as a release asset; `*.keystore` and `*.jks` are ignored by Git.
+
+Set the four required environment variables for the build process:
+
+```powershell
+$env:FLARE_ANDROID_KEYSTORE = "$env:USERPROFILE\.flare\flare-release.keystore"
+$env:FLARE_ANDROID_KEY_ALIAS = "flare-release"
+$env:FLARE_ANDROID_KEYSTORE_PASSWORD = "<from-secure-password-store>"
+$env:FLARE_ANDROID_KEY_PASSWORD = "<from-secure-password-store>"
+
+dotnet build src\Flare.Mobile\Flare.Mobile.csproj -c Release -r android-arm64
+```
+
+The signed artifact is written as `src/Flare.Mobile/bin/Release/net10.0-android/android-arm64/Flare-v1.0.3-android-arm64.apk`. Its name comes from `ApplicationDisplayVersion`; the Android manifest receives the same semantic `versionName` and the integer `ApplicationVersion` as `versionCode`.
+
+Before every release, increase `ApplicationDisplayVersion` using semantic versioning and increase `ApplicationVersion` to an integer greater than every previously published build. Always use the same release keystore and alias. Debug builds and CI use debug signing and must not be distributed.
+
+Install an update with `adb install -r <apk-path>` or open the APK normally on the device. APKs published before the stable release key was introduced cannot be upgraded in place because their signing certificate differs; uninstall one of those builds once, then install the first stable-key release. Later stable-key releases upgrade normally.

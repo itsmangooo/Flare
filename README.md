@@ -31,10 +31,10 @@ dotnet tool restore
 dotnet restore Flare.sln
 dotnet build src/Flare.Api/Flare.Api.csproj -c Release
 dotnet test tests/Flare.Api.Tests/Flare.Api.Tests.csproj -c Release
-dotnet build src/Flare.Mobile/Flare.Mobile.csproj -c Release -r android-arm64
+dotnet build src/Flare.Mobile/Flare.Mobile.csproj -c Debug -r android-arm64
 ```
 
-The installable APK is produced under `src/Flare.Mobile/bin/Release/net10.0-android/android-arm64/`. Local builds use the Android development certificate unless the documented production-signing properties are supplied.
+Debug builds use Android debug signing. Distributable Release builds require the persistent release keystore and four signing values documented in [Production deployment](docs/DEPLOYMENT.md#android-release-signing); a Release build fails if any value is missing.
 
 ## Production deployment
 

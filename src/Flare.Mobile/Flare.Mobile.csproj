@@ -17,8 +17,8 @@
 		<ApplicationId>io.github.itsmangooo.flare</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0.2</ApplicationDisplayVersion>
-		<ApplicationVersion>3</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0.3</ApplicationDisplayVersion>
+		<ApplicationVersion>4</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<SupportedOSPlatformVersion>26.0</SupportedOSPlatformVersion>
@@ -27,13 +27,38 @@
 		<RuntimeIdentifier>android-arm64</RuntimeIdentifier>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(FLARE_ANDROID_KEYSTORE)' != ''">
+	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<AndroidKeyStore>true</AndroidKeyStore>
 		<AndroidSigningKeyStore>$(FLARE_ANDROID_KEYSTORE)</AndroidSigningKeyStore>
-		<AndroidSigningStorePass>$(FLARE_ANDROID_STORE_PASSWORD)</AndroidSigningStorePass>
+		<AndroidSigningStorePass>$(FLARE_ANDROID_KEYSTORE_PASSWORD)</AndroidSigningStorePass>
 		<AndroidSigningKeyAlias>$(FLARE_ANDROID_KEY_ALIAS)</AndroidSigningKeyAlias>
 		<AndroidSigningKeyPass>$(FLARE_ANDROID_KEY_PASSWORD)</AndroidSigningKeyPass>
+		<FlareAndroidApkFileName>Flare-v$(ApplicationDisplayVersion)-$(RuntimeIdentifier).apk</FlareAndroidApkFileName>
 	</PropertyGroup>
+
+	<Target Name="ValidateFlareAndroidReleaseSigning"
+			BeforeTargets="_ResolveSdks;PrepareForBuild"
+			Condition="'$(Configuration)' == 'Release' and '$(DesignTimeBuild)' != 'true'">
+		<Error Condition="'$(FLARE_ANDROID_KEYSTORE)' == '' or '$(FLARE_ANDROID_KEY_ALIAS)' == '' or '$(FLARE_ANDROID_KEYSTORE_PASSWORD)' == '' or '$(FLARE_ANDROID_KEY_PASSWORD)' == ''"
+			   Text="Flare Android Release signing requires all of FLARE_ANDROID_KEYSTORE, FLARE_ANDROID_KEY_ALIAS, FLARE_ANDROID_KEYSTORE_PASSWORD, and FLARE_ANDROID_KEY_PASSWORD. One or more values are missing." />
+		<Error Condition="'$(FLARE_ANDROID_KEYSTORE)' != '' and !Exists('$(FLARE_ANDROID_KEYSTORE)')"
+			   Text="Flare Android Release keystore was not found at '$(FLARE_ANDROID_KEYSTORE)'." />
+	</Target>
+
+	<Target Name="CreateVersionedFlareAndroidApk"
+			AfterTargets="_Sign"
+			Condition="'$(Configuration)' == 'Release' and '$(AndroidPackageFormat)' == 'apk'">
+		<PropertyGroup>
+			<_FlareVersionedApk>$(OutDir)$(FlareAndroidApkFileName)</_FlareVersionedApk>
+		</PropertyGroup>
+		<Error Condition="!Exists('$(ApkFileSigned)')"
+			   Text="The signed Flare APK was not found at '$(ApkFileSigned)'." />
+		<Copy SourceFiles="$(ApkFileSigned)" DestinationFiles="$(_FlareVersionedApk)" />
+		<ItemGroup>
+			<FileWrites Include="$(_FlareVersionedApk)" />
+		</ItemGroup>
+		<Message Importance="high" Text="Versioned Flare APK: $(_FlareVersionedApk)" />
+	</Target>
 
 	<ItemGroup>
 		<!-- App Icon -->
