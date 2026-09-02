@@ -1,36 +1,61 @@
 # Production deployment
 
-## Coolify service
+## Coolify Docker Compose service
 
-Create a PostgreSQL resource and an application from this repository. The root `Dockerfile` publishes only `Flare.Api` into a .NET 10 chiseled runtime image, runs as the built-in non-root user, listens on port 8080, and handles SIGTERM through ASP.NET Core's normal graceful shutdown.
+Create a PostgreSQL resource and a Docker Compose application from this repository. Use `/` as the base directory and `/compose.yml` as the Docker Compose location. If PostgreSQL is a separate Coolify resource, enable **Connect to Predefined Network** and use its full internal service hostname in the connection string.
 
-Set the health check to `/health/live` and expose the service only through Coolify's HTTPS proxy. `/health/ready` additionally verifies PostgreSQL connectivity.
+Assign an HTTPS domain to the `api` service and route it to container port `8080`. Do not add a host `ports` mapping: `compose.yml` exposes the port only to Coolify's proxy network. The address entered in the Android app is the public URL, for example `https://flare.example.com`, with no `/api` suffix. `/health/live` is the container health check and `/health/ready` additionally verifies PostgreSQL connectivity.
+
+The root `Dockerfile` publishes only `Flare.Api` into a .NET 10 chiseled runtime image, runs as the built-in non-root user, listens on port 8080, and handles SIGTERM through ASP.NET Core's normal graceful shutdown.
 
 Configure these production variables:
 
 | Variable | Required | Purpose |
 |---|---:|---|
-| `ASPNETCORE_ENVIRONMENT=Production` | yes | Production exception and HTTPS behavior |
 | `ConnectionStrings__Postgres` | yes | Coolify PostgreSQL connection string |
-| `FLARE_BOOTSTRAP_TOKEN` | first boot | High-entropy one-time first-admin token |
 | `FLARE_JWT_SIGNING_KEY` | yes | At least 32 random bytes; retain across restarts |
-| `COOLIFY_BASE_URL` | for Coolify | Trusted self-hosted HTTPS base URL |
-| `COOLIFY_API_TOKEN` | for Coolify | Coolify token with only `read` and `deploy` permissions |
-| `DOCKER_HOST` | for containers | Docker endpoint, normally `unix:///var/run/docker.sock` or a restricted proxy URL |
+| `COOLIFY_BASE_URL` | yes | Trusted self-hosted HTTPS base URL, without `/api/v1` |
+| `COOLIFY_API_TOKEN` | yes | Coolify token with only the required `read` and `deploy` permissions |
+| `DOCKER_SOCKET_GID` | yes | Numeric group ID owning `/var/run/docker.sock` on the deployment server |
+| `FLARE_BOOTSTRAP_TOKEN` | first boot | High-entropy one-time first-admin token; clear it after bootstrap |
+| `DOCKER_HOST` | no | Defaults to `unix:///var/run/docker.sock` |
 | `FLARE_HOST_NAME` | no | Display name, default `homelab` |
-| `HOST_PROC_PATH` | for host metrics | Default `/host/proc` |
-| `HOST_ROOTFS_PATH` | for disk metric | Default `/host/rootfs`; absent means disk is unavailable |
 | `FLARE_ACCESS_TOKEN_MINUTES` | no | 5–60, default 15 |
 | `FLARE_REFRESH_TOKEN_DAYS` | no | 1–90, default 30 |
 | `FLARE_JWT_ISSUER` / `FLARE_JWT_AUDIENCE` | no | Token validation names |
-| `FLARE_TRUST_ALL_FORWARDERS` | conditional | Set `true` only when port 8080 is isolated inside Coolify's trusted proxy network |
+
+`compose.yml` fixes `ASPNETCORE_ENVIRONMENT=Production`, `ASPNETCORE_URLS=http://+:8080`, the mounted host telemetry paths, and `FLARE_TRUST_ALL_FORWARDERS=true`. The latter is safe here because the Compose definition does not publish port 8080 directly; traffic reaches it through Coolify's proxy network.
+
+Find the Docker socket group ID on the Coolify server with:
+
+```bash
+stat -c '%g' /var/run/docker.sock
+```
+
+Enter the result as `DOCKER_SOCKET_GID`. Configure all secrets as runtime-only Coolify variables. If a value contains `$`, enable Coolify's **Literal** option so Compose does not interpolate it. The Android app needs none of these secrets; it only stores the public HTTPS URL and authentication tokens.
+
+The required values in Coolify's Developer view have this shape (replace every placeholder):
+
+```dotenv
+ConnectionStrings__Postgres=Host=<postgres-service-name>;Port=5432;Database=<database>;Username=<username>;Password=<password>;SSL Mode=Prefer
+FLARE_JWT_SIGNING_KEY=<at-least-32-random-bytes>
+COOLIFY_BASE_URL=https://<your-coolify-domain>
+COOLIFY_API_TOKEN=<least-privilege-read-and-deploy-token>
+DOCKER_SOCKET_GID=<numeric-gid>
+FLARE_BOOTSTRAP_TOKEN=<one-time-random-token>
+FLARE_HOST_NAME=<display-name>
+```
+
+Only `FLARE_BOOTSTRAP_TOKEN` should be cleared after the first administrator has been created. Retain the signing key and database credentials across every restart and deployment; changing the signing key immediately invalidates all access tokens.
 
 Never place secrets in the repository. `.env.example` contains placeholders only.
 The chiseled image disables PostgreSQL GSS session encryption because Kerberos libraries are intentionally absent; configure `SSL Mode` in `ConnectionStrings__Postgres` when database transport encryption is required.
 
 ## Database migrations
 
-Flare never calls `EnsureCreated`, drops, or recreates the production database. Migrations are compiled into the app. Back up PostgreSQL, then run the exact image as a one-off/pre-deployment command:
+Flare never calls `EnsureCreated`, drops, or recreates the production database. Migrations are compiled into the app. In the Compose deployment, the one-shot `migrate` service applies pending migrations and must exit successfully before `api` starts. Coolify is instructed to exclude that completed one-shot container from ongoing health checks.
+
+Back up PostgreSQL before deploying a release containing schema changes. For a standalone Dockerfile deployment, run the exact image as a one-off/pre-deployment command:
 
 ```text
 dotnet Flare.Api.dll --migrate
@@ -56,7 +81,9 @@ The second mount exposes host filenames to the container even though it is read-
 
 ## Docker access
 
-Prefer a restricted Docker API proxy and set `DOCKER_HOST` to it. If the raw socket is unavoidable, mount `/var/run/docker.sock` and arrange a supplemental group matching the socket GID for Flare's non-root UID. A read-only socket mount does **not** make Docker API access read-only. See [Security](SECURITY.md).
+The supplied Compose deployment mounts `/var/run/docker.sock` and adds the configured socket GID as a supplemental group for Flare's non-root UID. A read-only socket mount would **not** make Docker API access read-only, because authorization happens through API calls; the mount is intentionally read/write for allowlisted start/stop/restart operations.
+
+Prefer a restricted Docker API proxy when available. To use one, set `DOCKER_HOST` to its private URL and remove both the raw socket bind mount and `group_add` from your Compose override. See [Security](SECURITY.md) before using either approach.
 
 ## Android signing
 

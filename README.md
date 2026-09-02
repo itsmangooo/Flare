@@ -38,7 +38,7 @@ The installable APK is produced under `src/Flare.Mobile/bin/Release/net10.0-andr
 
 ## Production deployment
 
-See [Production deployment](docs/DEPLOYMENT.md) for Coolify configuration, migrations, mounts, health checks, and Android signing. See [Security](docs/SECURITY.md) before granting Docker access.
+The root [`compose.yml`](compose.yml) is the production entry point for a Coolify Docker Compose deployment. It builds only `Flare.Api`, applies pending migrations through a one-shot service, and starts the API only after migration succeeds. See [Production deployment](docs/DEPLOYMENT.md) for the required Coolify variables, PostgreSQL networking, public HTTPS domain, mounts, and Android signing. See [Security](docs/SECURITY.md) before granting Docker access.
 
 The first administrator is created once with `POST /api/v1/auth/bootstrap`. There are no default credentials and no public registration. After any user exists, bootstrap permanently returns a conflict regardless of the token supplied.
 

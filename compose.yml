@@ -1,0 +1,78 @@
+name: flare
+
+services:
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["--migrate"]
+    restart: "no"
+    # Coolify must not wait for a one-shot service to remain healthy after it exits successfully.
+    exclude_from_hc: true
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Postgres: "${ConnectionStrings__Postgres:?}"
+      FLARE_JWT_SIGNING_KEY: "${FLARE_JWT_SIGNING_KEY:?}"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: "${ConnectionStrings__Postgres:?}"
+      FLARE_JWT_SIGNING_KEY: "${FLARE_JWT_SIGNING_KEY:?}"
+      FLARE_BOOTSTRAP_TOKEN: "${FLARE_BOOTSTRAP_TOKEN:-}"
+      FLARE_JWT_ISSUER: "${FLARE_JWT_ISSUER:-Flare.Api}"
+      FLARE_JWT_AUDIENCE: "${FLARE_JWT_AUDIENCE:-Flare.Mobile}"
+      FLARE_ACCESS_TOKEN_MINUTES: "${FLARE_ACCESS_TOKEN_MINUTES:-15}"
+      FLARE_REFRESH_TOKEN_DAYS: "${FLARE_REFRESH_TOKEN_DAYS:-30}"
+      FLARE_HOST_NAME: "${FLARE_HOST_NAME:-homelab}"
+      FLARE_TRUST_ALL_FORWARDERS: "true"
+      COOLIFY_BASE_URL: "${COOLIFY_BASE_URL:?}"
+      COOLIFY_API_TOKEN: "${COOLIFY_API_TOKEN:?}"
+      DOCKER_HOST: "${DOCKER_HOST:-unix:///var/run/docker.sock}"
+      HOST_PROC_PATH: /host/proc
+      HOST_ROOTFS_PATH: /host/rootfs
+    group_add:
+      - "${DOCKER_SOCKET_GID:?}"
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: bind
+        source: /proc
+        target: /host/proc
+        read_only: true
+      - type: bind
+        source: /
+        target: /host/rootfs
+        read_only: true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "dotnet", "Flare.Api.dll", "--healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3

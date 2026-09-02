@@ -5,6 +5,9 @@
 .git
 .github
 .jdk
+.env
+.env.*
+compose*.yml
 src/Flare.Mobile
 tests
 *.md

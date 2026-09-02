@@ -41,5 +41,13 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Validate Coolify Compose
+        env:
+          ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=flare;Username=flare;Password=ci-only;SSL Mode=Disable
+          FLARE_JWT_SIGNING_KEY: ci-only-signing-key-at-least-32-bytes
+          COOLIFY_BASE_URL: https://coolify.example.test
+          COOLIFY_API_TOKEN: ci-only-token
+          DOCKER_SOCKET_GID: "999"
+        run: sed 's/exclude_from_hc:/x-coolify-exclude-from-hc:/' compose.yml | docker compose --project-directory . -f - config --quiet
       - name: Build production image
         run: docker build --tag flare-api:ci .
