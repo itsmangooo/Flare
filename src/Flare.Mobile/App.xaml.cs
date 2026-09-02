@@ -5,14 +5,14 @@ namespace Flare.Mobile;
 
 public partial class App : Application
 {
-    private readonly StartupPage _startup;
+    private readonly IServiceProvider _services;
     private readonly AppNavigator _navigator;
     private readonly LiveTelemetryService _telemetry;
 
-    public App(StartupPage startup, AppNavigator navigator, LiveTelemetryService telemetry)
+    public App(IServiceProvider services, AppNavigator navigator, LiveTelemetryService telemetry)
     {
         InitializeComponent();
-        _startup = startup;
+        _services = services;
         _navigator = navigator;
         _telemetry = telemetry;
         UserAppTheme = Preferences.Default.Get("flare.theme", "Dark") == "System"
@@ -22,7 +22,9 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        var window = new Window(_startup);
+        // Resolve the first page only after InitializeComponent has loaded application resources.
+        // Resolving it as an App constructor dependency makes StaticResource lookups fail at startup.
+        var window = new Window(_services.GetRequiredService<StartupPage>());
         _navigator.Attach(window);
         window.Resumed += (_, _) => _ = _telemetry.StartAsync();
         window.Stopped += (_, _) => _ = _telemetry.StopAsync();
