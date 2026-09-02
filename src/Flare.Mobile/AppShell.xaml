@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:pages="clr-namespace:Flare.Mobile.Pages"
+       x:Class="Flare.Mobile.AppShell"
+       FlyoutBehavior="Disabled"
+       NavBarIsVisible="False"
+       Shell.TabBarBackgroundColor="{StaticResource Surface}"
+       Shell.TabBarForegroundColor="{StaticResource Accent}"
+       Shell.TabBarUnselectedColor="{StaticResource TextMuted}"
+       Shell.TabBarTitleColor="{StaticResource TextSecondary}">
+    <TabBar>
+        <ShellContent Title="Overview" Icon="overview.svg" ContentTemplate="{DataTemplate pages:OverviewPage}" />
+        <ShellContent Title="Containers" Icon="containers.svg" ContentTemplate="{DataTemplate pages:ContainersPage}" />
+        <ShellContent Title="Deployments" Icon="deployments.svg" ContentTemplate="{DataTemplate pages:DeploymentsPage}" />
+        <ShellContent Title="Activity" Icon="activity.svg" ContentTemplate="{DataTemplate pages:ActivityPage}" />
+    </TabBar>
+</Shell>

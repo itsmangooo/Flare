@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BindablePage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Flare.Mobile.Pages"
+             x:Class="Flare.Mobile.Pages.ContainerDetailPage"
+             x:DataType="pages:ContainerDetailPage"
+             SafeAreaEdges="Container"
+             Shell.NavBarIsVisible="True"
+             Title="Container">
+    <ScrollView>
+        <VerticalStackLayout Padding="20,18,20,32" Spacing="0">
+            <Label Text="CONTAINER" Style="{StaticResource Eyebrow}" />
+            <Label Text="{Binding Detail.Name}" Style="{StaticResource PageTitle}" />
+            <Label Text="{Binding Detail.Image}" Style="{StaticResource Secondary}" Margin="0,3,0,18" />
+            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}" IsVisible="{Binding HasError}" Margin="0,0,0,12" />
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="14">
+                <VerticalStackLayout><Label Text="STATE" Style="{StaticResource Eyebrow}"/><Label Text="{Binding Detail.State}" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Column="1"><Label Text="HEALTH" Style="{StaticResource Eyebrow}"/><Label Text="{Binding Detail.Health}" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="1"><Label Text="ID" Style="{StaticResource Eyebrow}"/><Label Text="{Binding Detail.ShortId}" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="1" Grid.Column="1"><Label Text="RESTARTS" Style="{StaticResource Eyebrow}"/><Label Text="{Binding Detail.RestartCount}" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="2"><Label Text="CREATED" Style="{StaticResource Eyebrow}"/><Label Text="{Binding Detail.CreatedAt, Converter={StaticResource Timestamp}}" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="2" Grid.Column="1"><Label Text="UPTIME" Style="{StaticResource Eyebrow}"/><Label Text="{Binding Detail.StartedAt, Converter={StaticResource UptimeSince}}" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="3"><Label Text="CPU" Style="{StaticResource Eyebrow}"/><Label Text="{Binding Detail.CpuPercent, Converter={StaticResource Percent}}" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="3" Grid.Column="1"><Label Text="MEMORY" Style="{StaticResource Eyebrow}"/><Label Text="{Binding MemoryLine}" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="4"><Label Text="NETWORK RX" Style="{StaticResource Eyebrow}"/><Label Text="{Binding Detail.NetworkReceiveBytes, Converter={StaticResource Bytes}}" /></VerticalStackLayout>
+                <VerticalStackLayout Grid.Row="4" Grid.Column="1"><Label Text="NETWORK TX" Style="{StaticResource Eyebrow}"/><Label Text="{Binding Detail.NetworkTransmitBytes, Converter={StaticResource Bytes}}" /></VerticalStackLayout>
+            </Grid>
+
+            <VerticalStackLayout IsVisible="{Binding HasPorts}">
+                <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,20" />
+                <Label Text="EXPOSED PORTS" Style="{StaticResource Eyebrow}" Margin="0,0,0,6" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding PortLines}">
+                    <BindableLayout.ItemTemplate><DataTemplate x:DataType="x:String"><Label Text="{Binding .}" Style="{StaticResource Secondary}" Padding="0,4" /></DataTemplate></BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout IsVisible="{Binding HasLabels}">
+                <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,20" />
+                <Label Text="LABELS" Style="{StaticResource Eyebrow}" Margin="0,0,0,6" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding LabelLines}">
+                    <BindableLayout.ItemTemplate><DataTemplate x:DataType="x:String"><Label Text="{Binding .}" Style="{StaticResource Secondary}" FontFamily="monospace" FontSize="11" Padding="0,3" LineBreakMode="TailTruncation" /></DataTemplate></BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+
+            <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,20" />
+            <Label Text="ACTIONS" Style="{StaticResource Eyebrow}" Margin="0,0,0,10" />
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Button Text="Start" Style="{StaticResource QuietButton}" Clicked="StartClicked" />
+                <Button Grid.Column="1" Text="Stop" Style="{StaticResource QuietButton}" Clicked="StopClicked" />
+                <Button Grid.Column="2" Text="Restart" Style="{StaticResource QuietButton}" Clicked="RestartClicked" />
+            </Grid>
+
+            <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,20" />
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8" ColumnSpacing="6">
+                <VerticalStackLayout Spacing="1"><Label Text="RECENT LOGS" Style="{StaticResource Eyebrow}" /><Label Text="{Binding LogPosition}" Style="{StaticResource Secondary}" FontSize="10" /></VerticalStackLayout>
+                <Button Grid.Column="1" Text="Latest" Style="{StaticResource QuietButton}" FontSize="11" Clicked="LatestLogsClicked" />
+                <Button Grid.Column="2" Text="Older" Style="{StaticResource QuietButton}" FontSize="11" IsEnabled="{Binding CanLoadOlder}" Clicked="OlderLogsClicked" />
+                <Picker x:Name="TailPicker" Grid.Column="3" WidthRequest="82" SelectedIndex="1" SelectedIndexChanged="TailChanged">
+                    <Picker.Items><x:String>100</x:String><x:String>300</x:String><x:String>1000</x:String></Picker.Items>
+                </Picker>
+            </Grid>
+            <HorizontalStackLayout HorizontalOptions="End" Spacing="5" Margin="0,0,0,8"><Label Text="LIVE FOLLOW" Style="{StaticResource Eyebrow}" VerticalTextAlignment="Center"/><Switch x:Name="LiveSwitch" Toggled="LiveToggled" /></HorizontalStackLayout>
+            <Border Stroke="{StaticResource Border}" StrokeThickness="1" Background="{StaticResource Surface}" Padding="12">
+                <ScrollView HeightRequest="320" Orientation="Both">
+                    <Label Text="{Binding Logs}" FontFamily="monospace" FontSize="11" LineBreakMode="NoWrap" />
+                </ScrollView>
+            </Border>
+            <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Margin="0,12" />
+        </VerticalStackLayout>
+    </ScrollView>
+</pages:BindablePage>

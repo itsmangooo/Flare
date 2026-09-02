@@ -1,0 +1,10 @@
+**/bin
+**/obj
+.android-sdk
+.dotnet
+.git
+.github
+.jdk
+src/Flare.Mobile
+tests
+*.md

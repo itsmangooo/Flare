@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.300
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Install Android workload
+        run: dotnet workload install maui-android --skip-manifest-update
+      - name: Restore
+        run: dotnet restore Flare.sln
+      - name: Build backend
+        run: dotnet build src/Flare.Api/Flare.Api.csproj --configuration Release --no-restore
+      - name: Test
+        run: dotnet test tests/Flare.Api.Tests/Flare.Api.Tests.csproj --configuration Release --no-restore
+      - name: Test mobile core behavior
+        run: dotnet test tests/Flare.Mobile.Tests/Flare.Mobile.Tests.csproj --configuration Release --no-restore
+      - name: Build Android APK
+        run: dotnet build src/Flare.Mobile/Flare.Mobile.csproj --configuration Release --no-restore --runtime android-arm64
+
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production image
+        run: docker build --tag flare-api:ci .

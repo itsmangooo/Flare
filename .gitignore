@@ -1,0 +1,37 @@
+# Build output
+**/bin/
+**/obj/
+artifacts/
+
+# Local SDKs and tools
+.android-sdk/
+.dotnet/
+.jdk/
+.tools/
+
+# IDE and user files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pfx
+*.jks
+*.keystore
+
+# Android output
+*.apk
+*.aab
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Unused MAUI template binary assets (Flare uses system fonts and SVG artwork)
+src/Flare.Mobile/Resources/Fonts/
+src/Flare.Mobile/Resources/Images/dotnet_bot.png

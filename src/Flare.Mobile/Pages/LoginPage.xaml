@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BindablePage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Flare.Mobile.Pages"
+             x:Class="Flare.Mobile.Pages.LoginPage"
+             x:DataType="pages:LoginPage"
+             SafeAreaEdges="All"
+             NavigationPage.HasNavigationBar="False">
+    <Grid Padding="24,40" RowDefinitions="*,Auto" RowSpacing="24">
+        <VerticalStackLayout VerticalOptions="Center" Spacing="10">
+            <Label Text="FLARE" Style="{StaticResource Eyebrow}" TextColor="{StaticResource Accent}" />
+            <Label Text="Sign in" Style="{StaticResource PageTitle}" />
+            <Label Text="Use the administrator account created with the one-time server bootstrap."
+                   Style="{StaticResource Secondary}" />
+            <Label Text="EMAIL" Style="{StaticResource Eyebrow}" Margin="0,18,0,0" />
+            <Entry x:Name="EmailEntry" Placeholder="admin@example.com" Keyboard="Email" ReturnType="Next" />
+            <Label Text="PASSWORD" Style="{StaticResource Eyebrow}" />
+            <Entry x:Name="PasswordEntry" Placeholder="Password" IsPassword="True" ReturnType="Go" Completed="LoginClicked" />
+            <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}" IsVisible="{Binding HasError}" />
+            <Label Text="{Binding ServerUrl}" Style="{StaticResource Secondary}" Margin="0,10,0,0" />
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Row="1" Spacing="10">
+            <Button Text="Sign in" Style="{StaticResource PrimaryButton}" Clicked="LoginClicked" IsEnabled="{Binding IsNotBusy}" />
+            <Button Text="Change server" Style="{StaticResource QuietButton}" Clicked="ChangeServerClicked" />
+        </VerticalStackLayout>
+        <ActivityIndicator Grid.RowSpan="2" IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" HorizontalOptions="Center" VerticalOptions="Center" />
+    </Grid>
+</pages:BindablePage>

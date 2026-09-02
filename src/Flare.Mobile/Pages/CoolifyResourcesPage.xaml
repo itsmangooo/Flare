@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<pages:BindablePage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:pages="clr-namespace:Flare.Mobile.Pages"
+             xmlns:contracts="clr-namespace:Flare.Contracts;assembly=Flare.Contracts"
+             x:Class="Flare.Mobile.Pages.CoolifyResourcesPage"
+             x:DataType="pages:CoolifyResourcesPage" SafeAreaEdges="Container" Shell.NavBarIsVisible="True" Title="Coolify resources">
+    <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="20,18,20,32" Spacing="0">
+                <Label Text="COOLIFY" Style="{StaticResource Eyebrow}" TextColor="{StaticResource Accent}" />
+                <Label Text="Resources" Style="{StaticResource PageTitle}" />
+                <Label Text="Servers, applications, and services visible to the configured least-privilege Coolify token." Style="{StaticResource Secondary}" Margin="0,4,0,20" />
+                <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}" IsVisible="{Binding HasError}" Margin="0,0,0,10" />
+
+                <Label Text="SERVERS" Style="{StaticResource Eyebrow}" Margin="0,0,0,6" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Servers}"><BindableLayout.ItemTemplate><DataTemplate x:DataType="contracts:CoolifyServerResponse">
+                    <Grid ColumnDefinitions="10,*,Auto" Padding="0,10"><Ellipse WidthRequest="7" HeightRequest="7" Fill="{StaticResource Success}"/><VerticalStackLayout Grid.Column="1"><Label Text="{Binding Name}" FontAttributes="Bold"/><Label Text="{Binding Uuid}" Style="{StaticResource Secondary}"/></VerticalStackLayout><Label Grid.Column="2" Text="{Binding IsReachable, StringFormat='Reachable: {0}'}" Style="{StaticResource Secondary}"/></Grid>
+                </DataTemplate></BindableLayout.ItemTemplate></VerticalStackLayout>
+                <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,16" />
+
+                <Label Text="SERVER RESOURCES" Style="{StaticResource Eyebrow}" Margin="0,0,0,6" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding ServerResources}"><BindableLayout.ItemTemplate><DataTemplate x:DataType="contracts:CoolifyResourceResponse">
+                    <Grid ColumnDefinitions="10,*,Auto" Padding="0,10"><Ellipse WidthRequest="7" HeightRequest="7" Fill="{Binding Status, Converter={StaticResource StatusColor}}"/><VerticalStackLayout Grid.Column="1"><Label Text="{Binding Name}" FontAttributes="Bold"/><Label Text="{Binding Type}" Style="{StaticResource Secondary}"/></VerticalStackLayout><Label Grid.Column="2" Text="{Binding Status}" Style="{StaticResource Secondary}"/></Grid>
+                </DataTemplate></BindableLayout.ItemTemplate></VerticalStackLayout>
+                <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,16" />
+
+                <Label Text="APPLICATIONS" Style="{StaticResource Eyebrow}" Margin="0,0,0,6" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Applications}"><BindableLayout.ItemTemplate><DataTemplate x:DataType="contracts:CoolifyApplicationResponse">
+                    <VerticalStackLayout Padding="0,10" Spacing="6">
+                        <Grid ColumnDefinitions="10,*,Auto"><Ellipse WidthRequest="7" HeightRequest="7" Fill="{Binding Status, Converter={StaticResource StatusColor}}"/><VerticalStackLayout Grid.Column="1"><Label Text="{Binding Name}" FontAttributes="Bold"/><Label Text="{Binding GitBranch, StringFormat='{0}'}" Style="{StaticResource Secondary}"/></VerticalStackLayout><Label Grid.Column="2" Text="{Binding Status}" Style="{StaticResource Secondary}"/></Grid>
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+                            <Button Text="Start" Style="{StaticResource QuietButton}" FontSize="11" CommandParameter="{Binding .}" Clicked="StartApplicationClicked"/>
+                            <Button Grid.Column="1" Text="Stop" Style="{StaticResource QuietButton}" FontSize="11" CommandParameter="{Binding .}" Clicked="StopApplicationClicked"/>
+                            <Button Grid.Column="2" Text="Restart" Style="{StaticResource QuietButton}" FontSize="11" CommandParameter="{Binding .}" Clicked="RestartApplicationClicked"/>
+                            <Button Grid.Column="3" Text="Deploy" Style="{StaticResource QuietButton}" FontSize="11" CommandParameter="{Binding .}" Clicked="RedeployApplicationClicked"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </DataTemplate></BindableLayout.ItemTemplate></VerticalStackLayout>
+                <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,16" />
+
+                <Label Text="SERVICES" Style="{StaticResource Eyebrow}" Margin="0,0,0,6" />
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Services}"><BindableLayout.ItemTemplate><DataTemplate x:DataType="contracts:CoolifyServiceResponse">
+                    <Grid ColumnDefinitions="10,*,Auto" Padding="0,10"><Ellipse WidthRequest="7" HeightRequest="7" Fill="{Binding Status, Converter={StaticResource StatusColor}}"/><VerticalStackLayout Grid.Column="1"><Label Text="{Binding Name}" FontAttributes="Bold"/><Label Text="{Binding Description}" Style="{StaticResource Secondary}" LineBreakMode="TailTruncation"/></VerticalStackLayout><Button Grid.Column="2" Text="Restart" Style="{StaticResource QuietButton}" CommandParameter="{Binding .}" Clicked="RestartServiceClicked"/></Grid>
+                </DataTemplate></BindableLayout.ItemTemplate></VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</pages:BindablePage>
