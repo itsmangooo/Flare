@@ -4,7 +4,7 @@
 
 Create a PostgreSQL resource and a Docker Compose application from this repository. Use `/` as the base directory and `/compose.yml` as the Docker Compose location. If PostgreSQL is a separate Coolify resource, enable **Connect to Predefined Network** and use its full internal service hostname in the connection string.
 
-Assign an HTTPS domain to the `api` service and route it to container port `8080`. Do not add a host `ports` mapping: `compose.yml` exposes the port only to Coolify's proxy network. The address entered in the Android app is the public URL, for example `https://flare.example.com`, with no `/api` suffix. `/health/live` is the container health check and `/health/ready` additionally verifies PostgreSQL connectivity.
+Assign an HTTPS domain to the `api` service and route it to container port `8080`. Do not add a host `ports` mapping: `compose.yml` exposes the port only to Coolify's proxy network. Keep Coolify's HTTP-to-HTTPS redirect enabled at the public edge; Flare.Api intentionally serves HTTP on the private proxy network and does not issue its own HTTPS redirect. Forwarded headers let it recognize the original public HTTPS scheme. The address entered in the Android app is the public URL, for example `https://flare.example.com`, with no `/api` suffix. `/health/live` is the container health check and `/health/ready` additionally verifies PostgreSQL connectivity.
 
 The root `Dockerfile` publishes only `Flare.Api` into a .NET 10 chiseled runtime image, runs as the built-in non-root user, listens on port 8080, and handles SIGTERM through ASP.NET Core's normal graceful shutdown.
 

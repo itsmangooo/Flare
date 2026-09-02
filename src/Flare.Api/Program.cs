@@ -205,8 +205,9 @@ app.UseRequestTimeouts();
 if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
-    app.UseHttpsRedirection();
 }
+// TLS termination and HTTP-to-HTTPS redirects belong to Coolify/Traefik. Kestrel intentionally
+// serves HTTP on the private container network; redirecting here can loop when the edge URL is HTTPS.
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
