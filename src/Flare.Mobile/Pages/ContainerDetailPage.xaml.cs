@@ -1,4 +1,5 @@
 using Flare.Contracts;
+using Flare.Mobile.Controls;
 using Flare.Mobile.Services;
 using Microsoft.Extensions.Logging;
 
@@ -122,9 +123,14 @@ public partial class ContainerDetailPage : BindablePage, IDisposable
         {
             await RunUiActionSafelyAsync(_logger, operation, async () =>
             {
-                var selected = await DisplayActionSheetAsync(
-                    $"{label} {Detail?.Name ?? "the container"}?", "Cancel", null, label);
-                if (selected != label) return;
+                var containerName = Detail?.Name ?? "the container";
+                var confirmed = await FlareGlassBottomSheet.ShowConfirmationAsync(
+                    this,
+                    $"{label} {containerName}?",
+                    $"Flare will request Docker to {action} this container.",
+                    label,
+                    destructive: action == "stop");
+                if (!confirmed) return;
 
                 IsBusy = true;
                 ErrorMessage = null;

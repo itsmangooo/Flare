@@ -1,4 +1,5 @@
 using Flare.Contracts;
+using Flare.Mobile.Controls;
 using Flare.Mobile.Services;
 using Microsoft.Extensions.Logging;
 
@@ -46,7 +47,12 @@ public partial class SettingsPage : BindablePage
     private async void ReconnectClicked(object? sender, EventArgs eventArgs) => await ReconnectAsync();
     private async void LogoutClicked(object? sender, EventArgs eventArgs)
     {
-        if (!await DisplayAlertAsync("Log out?", "The secure session tokens will be removed from this device.", "Logout", "Cancel")) return;
+        if (!await FlareGlassModal.ShowConfirmationAsync(
+                this,
+                "Log out?",
+                "The secure session tokens will be removed from this device.",
+                "Logout",
+                destructive: true)) return;
         try { await _auth.LogoutAsync(CancellationToken.None); } catch (FlareApiException) { _session.ClearAuthentication(); }
         try { await _navigator.ShowLoginAsync(); }
         catch (Exception exception)

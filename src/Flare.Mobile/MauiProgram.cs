@@ -1,5 +1,7 @@
 using Flare.Mobile.Pages;
+using Flare.Mobile.Controls;
 using Flare.Mobile.Platforms.Android;
+using Flare.Mobile.Platforms.Android.LiquidGlass;
 using Flare.Mobile.Services;
 using Microsoft.Extensions.Logging;
 
@@ -10,7 +12,15 @@ public static class MauiProgram
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
-        builder.UseMauiApp<App>();
+        builder
+            .UseMauiApp<App>()
+            .ConfigureMauiHandlers(handlers =>
+                handlers.AddHandler<LiquidGlassSurface, LiquidGlassSurfaceHandler>());
+        Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping("FlareGlassEntry", (handler, _) =>
+        {
+            handler.PlatformView.Background = null;
+            handler.PlatformView.SetPadding(0, 0, 0, 0);
+        });
         builder.Logging.AddDebug();
         builder.Logging.AddProvider(new AndroidLogProvider());
         builder.Services.AddSingleton(new HttpClient { Timeout = TimeSpan.FromSeconds(15) });

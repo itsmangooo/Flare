@@ -2,6 +2,7 @@
 <pages:BindablePage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:pages="clr-namespace:Flare.Mobile.Pages"
+             xmlns:controls="clr-namespace:Flare.Mobile.Controls"
              x:Class="Flare.Mobile.Pages.SettingsPage"
              x:DataType="pages:SettingsPage" SafeAreaEdges="Container" Shell.NavBarIsVisible="True" Title="Settings">
     <ScrollView>
@@ -10,12 +11,12 @@
             <Label Text="Settings" Style="{StaticResource PageTitle}" Margin="0,0,0,24" />
 
             <Label Text="ACCOUNT" Style="{StaticResource Eyebrow}" />
-            <Grid ColumnDefinitions="*,Auto" Padding="0,12"><VerticalStackLayout><Label Text="{Binding Email}" FontAttributes="Bold"/><Label Text="Administrator session" Style="{StaticResource Secondary}"/></VerticalStackLayout><Button Grid.Column="1" Text="Logout" Style="{StaticResource QuietButton}" Clicked="LogoutClicked" /></Grid>
+            <Grid ColumnDefinitions="*,Auto" Padding="0,12"><VerticalStackLayout><Label Text="{Binding Email}" FontAttributes="Bold"/><Label Text="Administrator session" Style="{StaticResource Secondary}"/></VerticalStackLayout><controls:FlareGlassButton Grid.Column="1" Text="Logout" IsDestructive="True" Clicked="LogoutClicked" /></Grid>
             <BoxView HeightRequest="1" Color="{StaticResource Border}" />
 
             <Label Text="SERVER" Style="{StaticResource Eyebrow}" Margin="0,22,0,0" />
-            <Grid ColumnDefinitions="*,Auto" Padding="0,12"><VerticalStackLayout><Label Text="{Binding ServerUrl}" LineBreakMode="TailTruncation"/><Label Text="{Binding Connectivity}" Style="{StaticResource Secondary}"/></VerticalStackLayout><Button Grid.Column="1" Text="Reconnect" Style="{StaticResource QuietButton}" Clicked="ReconnectClicked" /></Grid>
-            <Button Text="Change server" Style="{StaticResource QuietButton}" Clicked="ChangeServerClicked" />
+            <Grid ColumnDefinitions="*,Auto" Padding="0,12"><VerticalStackLayout><Label Text="{Binding ServerUrl}" LineBreakMode="TailTruncation"/><Label Text="{Binding Connectivity}" Style="{StaticResource Secondary}"/></VerticalStackLayout><controls:FlareGlassButton Grid.Column="1" Text="Reconnect" Clicked="ReconnectClicked" /></Grid>
+            <controls:FlareGlassButton Text="Change server" Clicked="ChangeServerClicked" />
             <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}" IsVisible="{Binding HasError}" Margin="0,8" />
             <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,18,0,0" />
 

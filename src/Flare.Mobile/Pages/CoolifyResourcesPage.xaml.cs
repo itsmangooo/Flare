@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Flare.Contracts;
+using Flare.Mobile.Controls;
 using Flare.Mobile.Services;
 using Microsoft.Extensions.Logging;
 
@@ -84,7 +85,13 @@ public partial class CoolifyResourcesPage : BindablePage
         {
             await RunUiActionSafelyAsync(_logger, operation, async () =>
             {
-                if (await DisplayActionSheetAsync(prompt, "Cancel", null, label) != label) return;
+                var confirmed = await FlareGlassBottomSheet.ShowConfirmationAsync(
+                    this,
+                    prompt,
+                    "This operation will be sent to the configured Coolify instance.",
+                    label,
+                    destructive: label == "Stop");
+                if (!confirmed) return;
 
                 IsBusy = true;
                 ErrorMessage = null;
@@ -120,7 +127,7 @@ public partial class CoolifyResourcesPage : BindablePage
 
     private void QueueApplicationAction(object? sender, string action, string label)
     {
-        if (sender is Button { CommandParameter: CoolifyApplicationResponse application })
+        if (sender is FlareGlassButton { CommandParameter: CoolifyApplicationResponse application })
         {
             _ = ApplicationActionAsync(application, action, label);
         }
@@ -128,7 +135,7 @@ public partial class CoolifyResourcesPage : BindablePage
 
     private void RestartServiceClicked(object? sender, EventArgs eventArgs)
     {
-        if (sender is Button { CommandParameter: CoolifyServiceResponse service })
+        if (sender is FlareGlassButton { CommandParameter: CoolifyServiceResponse service })
         {
             _ = RunActionAsync(
                 $"api/v1/coolify/services/{service.Uuid}/restart",

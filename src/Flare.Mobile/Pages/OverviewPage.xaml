@@ -7,16 +7,17 @@
              x:Class="Flare.Mobile.Pages.OverviewPage"
              x:DataType="pages:OverviewPage"
              SafeAreaEdges="Container"
-             Shell.NavBarIsVisible="False">
+             Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
+    <Grid>
     <RefreshView IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
         <ScrollView>
-            <VerticalStackLayout Padding="20,22,20,32" Spacing="0">
+            <VerticalStackLayout Padding="20,22,20,108" Spacing="0">
                 <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
                     <VerticalStackLayout Spacing="2">
                         <Label Text="FLARE" Style="{StaticResource Eyebrow}" TextColor="{StaticResource Accent}" />
                         <Label Text="Overview" Style="{StaticResource PageTitle}" />
                     </VerticalStackLayout>
-                    <Button Grid.Column="1" Text="ME" FontSize="11" Style="{StaticResource QuietButton}" WidthRequest="44" SemanticProperties.Description="Open settings" Clicked="SettingsClicked" />
+                    <controls:FlareGlassButton Grid.Column="1" Text="ME" FontSize="11" WidthRequest="44" SemanticProperties.Description="Open settings" Clicked="SettingsClicked" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,22">
@@ -24,14 +25,13 @@
                         <Label Text="{Binding HostName}" FontSize="18" FontAttributes="Bold" />
                         <Label Text="{Binding Uptime, StringFormat='Up {0}'}" Style="{StaticResource Secondary}" />
                     </VerticalStackLayout>
-                    <HorizontalStackLayout Grid.Column="1" Spacing="7" VerticalOptions="Center">
-                        <Ellipse WidthRequest="7" HeightRequest="7" Fill="{Binding Freshness, Converter={StaticResource StatusColor}}" />
-                        <Label Text="{Binding Freshness}" Style="{StaticResource Eyebrow}" />
-                    </HorizontalStackLayout>
+                    <controls:FlareStatusPill Grid.Column="1" Text="{Binding Freshness}" StatusColor="{Binding Freshness, Converter={StaticResource StatusColor}}" VerticalOptions="Center" />
                 </Grid>
 
                 <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}" IsVisible="{Binding HasError}" Margin="0,0,0,12" />
 
+                <controls:FlareGlassCard>
+                <VerticalStackLayout Spacing="0">
                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="7">
                     <Label Text="CPU" Style="{StaticResource Eyebrow}" />
                     <Label Grid.Column="1" Text="{Binding CpuPercent, Converter={StaticResource Percent}}" FontAttributes="Bold" />
@@ -74,6 +74,8 @@
                         <Label Text="{Binding NetworkTransmit, Converter={StaticResource Bytes}, ConverterParameter=rate}" FontAttributes="Bold" />
                     </VerticalStackLayout>
                 </Grid>
+                </VerticalStackLayout>
+                </controls:FlareGlassCard>
 
                 <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,22" />
 
@@ -103,4 +105,6 @@
             </VerticalStackLayout>
         </ScrollView>
     </RefreshView>
+    <controls:FlareGlassNavigationBar SelectedRoute="overview" Margin="14,0,14,12" VerticalOptions="End" />
+    </Grid>
 </pages:BindablePage>

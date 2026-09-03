@@ -2,6 +2,7 @@
 <pages:BindablePage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:pages="clr-namespace:Flare.Mobile.Pages"
+             xmlns:controls="clr-namespace:Flare.Mobile.Controls"
              xmlns:contracts="clr-namespace:Flare.Contracts;assembly=Flare.Contracts"
              x:Class="Flare.Mobile.Pages.CoolifyResourcesPage"
              x:DataType="pages:CoolifyResourcesPage" SafeAreaEdges="Container" Shell.NavBarIsVisible="True" Title="Coolify resources">
@@ -30,10 +31,10 @@
                     <VerticalStackLayout Padding="0,10" Spacing="6">
                         <Grid ColumnDefinitions="10,*,Auto"><Ellipse WidthRequest="7" HeightRequest="7" Fill="{Binding Status, Converter={StaticResource StatusColor}}"/><VerticalStackLayout Grid.Column="1"><Label Text="{Binding Name}" FontAttributes="Bold"/><Label Text="{Binding GitBranch, StringFormat='{0}'}" Style="{StaticResource Secondary}"/></VerticalStackLayout><Label Grid.Column="2" Text="{Binding Status}" Style="{StaticResource Secondary}"/></Grid>
                         <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
-                            <Button Text="Start" Style="{StaticResource QuietButton}" FontSize="11" CommandParameter="{Binding .}" Clicked="StartApplicationClicked"/>
-                            <Button Grid.Column="1" Text="Stop" Style="{StaticResource QuietButton}" FontSize="11" CommandParameter="{Binding .}" Clicked="StopApplicationClicked"/>
-                            <Button Grid.Column="2" Text="Restart" Style="{StaticResource QuietButton}" FontSize="11" CommandParameter="{Binding .}" Clicked="RestartApplicationClicked"/>
-                            <Button Grid.Column="3" Text="Deploy" Style="{StaticResource QuietButton}" FontSize="11" CommandParameter="{Binding .}" Clicked="RedeployApplicationClicked"/>
+                            <controls:FlareGlassButton Text="Start" FontSize="11" CommandParameter="{Binding .}" Clicked="StartApplicationClicked"/>
+                            <controls:FlareGlassButton Grid.Column="1" Text="Stop" IsDestructive="True" FontSize="11" CommandParameter="{Binding .}" Clicked="StopApplicationClicked"/>
+                            <controls:FlareGlassButton Grid.Column="2" Text="Restart" FontSize="11" CommandParameter="{Binding .}" Clicked="RestartApplicationClicked"/>
+                            <controls:FlareGlassButton Grid.Column="3" Text="Deploy" IsPrimary="True" FontSize="11" CommandParameter="{Binding .}" Clicked="RedeployApplicationClicked"/>
                         </Grid>
                     </VerticalStackLayout>
                 </DataTemplate></BindableLayout.ItemTemplate></VerticalStackLayout>
@@ -41,7 +42,7 @@
 
                 <Label Text="SERVICES" Style="{StaticResource Eyebrow}" Margin="0,0,0,6" />
                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding Services}"><BindableLayout.ItemTemplate><DataTemplate x:DataType="contracts:CoolifyServiceResponse">
-                    <Grid ColumnDefinitions="10,*,Auto" Padding="0,10"><Ellipse WidthRequest="7" HeightRequest="7" Fill="{Binding Status, Converter={StaticResource StatusColor}}"/><VerticalStackLayout Grid.Column="1"><Label Text="{Binding Name}" FontAttributes="Bold"/><Label Text="{Binding Description}" Style="{StaticResource Secondary}" LineBreakMode="TailTruncation"/></VerticalStackLayout><Button Grid.Column="2" Text="Restart" Style="{StaticResource QuietButton}" CommandParameter="{Binding .}" Clicked="RestartServiceClicked"/></Grid>
+                    <Grid ColumnDefinitions="10,*,Auto" Padding="0,10"><Ellipse WidthRequest="7" HeightRequest="7" Fill="{Binding Status, Converter={StaticResource StatusColor}}"/><VerticalStackLayout Grid.Column="1"><Label Text="{Binding Name}" FontAttributes="Bold"/><Label Text="{Binding Description}" Style="{StaticResource Secondary}" LineBreakMode="TailTruncation"/></VerticalStackLayout><controls:FlareGlassButton Grid.Column="2" Text="Restart" CommandParameter="{Binding .}" Clicked="RestartServiceClicked"/></Grid>
                 </DataTemplate></BindableLayout.ItemTemplate></VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>

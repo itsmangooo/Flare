@@ -2,6 +2,7 @@
 <pages:BindablePage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:pages="clr-namespace:Flare.Mobile.Pages"
+             xmlns:controls="clr-namespace:Flare.Mobile.Controls"
              x:Class="Flare.Mobile.Pages.ContainerDetailPage"
              x:DataType="pages:ContainerDetailPage"
              SafeAreaEdges="Container"
@@ -46,26 +47,26 @@
             <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,20" />
             <Label Text="ACTIONS" Style="{StaticResource Eyebrow}" Margin="0,0,0,10" />
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                <Button Text="Start" Style="{StaticResource QuietButton}" Clicked="StartClicked" />
-                <Button Grid.Column="1" Text="Stop" Style="{StaticResource QuietButton}" Clicked="StopClicked" />
-                <Button Grid.Column="2" Text="Restart" Style="{StaticResource QuietButton}" Clicked="RestartClicked" />
+                <controls:FlareGlassButton Text="Start" Clicked="StartClicked" />
+                <controls:FlareGlassButton Grid.Column="1" Text="Stop" IsDestructive="True" Clicked="StopClicked" />
+                <controls:FlareGlassButton Grid.Column="2" Text="Restart" Clicked="RestartClicked" />
             </Grid>
 
             <BoxView HeightRequest="1" Color="{StaticResource Border}" Margin="0,20" />
             <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,0,0,8" ColumnSpacing="6">
                 <VerticalStackLayout Spacing="1"><Label Text="RECENT LOGS" Style="{StaticResource Eyebrow}" /><Label Text="{Binding LogPosition}" Style="{StaticResource Secondary}" FontSize="10" /></VerticalStackLayout>
-                <Button Grid.Column="1" Text="Latest" Style="{StaticResource QuietButton}" FontSize="11" Clicked="LatestLogsClicked" />
-                <Button Grid.Column="2" Text="Older" Style="{StaticResource QuietButton}" FontSize="11" IsEnabled="{Binding CanLoadOlder}" Clicked="OlderLogsClicked" />
+                <controls:FlareGlassButton Grid.Column="1" Text="Latest" FontSize="11" Clicked="LatestLogsClicked" />
+                <controls:FlareGlassButton Grid.Column="2" Text="Older" FontSize="11" IsEnabled="{Binding CanLoadOlder}" Clicked="OlderLogsClicked" />
                 <Picker x:Name="TailPicker" Grid.Column="3" WidthRequest="82" SelectedIndex="1" SelectedIndexChanged="TailChanged">
                     <Picker.Items><x:String>100</x:String><x:String>300</x:String><x:String>1000</x:String></Picker.Items>
                 </Picker>
             </Grid>
             <HorizontalStackLayout HorizontalOptions="End" Spacing="5" Margin="0,0,0,8"><Label Text="LIVE FOLLOW" Style="{StaticResource Eyebrow}" VerticalTextAlignment="Center"/><Switch x:Name="LiveSwitch" Toggled="LiveToggled" /></HorizontalStackLayout>
-            <Border Stroke="{StaticResource Border}" StrokeThickness="1" Background="{StaticResource Surface}" Padding="12">
+            <controls:FlareGlassCard Padding="12" CornerRadius="12" BlurRadius="14" RefractionStrength="4">
                 <ScrollView HeightRequest="320" Orientation="Both">
                     <Label Text="{Binding Logs}" FontFamily="monospace" FontSize="11" LineBreakMode="NoWrap" />
                 </ScrollView>
-            </Border>
+            </controls:FlareGlassCard>
             <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" Margin="0,12" />
         </VerticalStackLayout>
     </ScrollView>

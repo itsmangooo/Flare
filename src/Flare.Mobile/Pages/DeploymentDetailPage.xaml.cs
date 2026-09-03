@@ -1,4 +1,5 @@
 using Flare.Contracts;
+using Flare.Mobile.Controls;
 using Flare.Mobile.Services;
 using Microsoft.Extensions.Logging;
 
@@ -73,9 +74,12 @@ public partial class DeploymentDetailPage : BindablePage
         {
             await RunUiActionSafelyAsync(_logger, operation, async () =>
             {
-                var selected = await DisplayActionSheetAsync(
-                    $"Queue a new deployment for {Deployment.ResourceName}?", "Cancel", null, "Redeploy");
-                if (selected != "Redeploy") return;
+                var confirmed = await FlareGlassBottomSheet.ShowConfirmationAsync(
+                    this,
+                    $"Redeploy {Deployment.ResourceName}?",
+                    "A new deployment will be queued through Coolify.",
+                    "Redeploy");
+                if (!confirmed) return;
 
                 IsBusy = true;
                 ErrorMessage = null;

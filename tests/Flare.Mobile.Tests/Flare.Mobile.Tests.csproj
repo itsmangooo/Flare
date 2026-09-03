@@ -28,6 +28,7 @@
     <Compile Include="..\..\src\Flare.Mobile\Services\IServerUrlStore.cs" Link="IServerUrlStore.cs" />
     <Compile Include="..\..\src\Flare.Mobile\Services\MobileLog.cs" Link="MobileLog.cs" />
     <Compile Include="..\..\src\Flare.Mobile\Services\SafeActionFeedback.cs" Link="SafeActionFeedback.cs" />
+    <Compile Include="..\..\src\Flare.Mobile\Controls\LiquidGlassEffectType.cs" Link="LiquidGlassEffectType.cs" />
   </ItemGroup>
 
 </Project>

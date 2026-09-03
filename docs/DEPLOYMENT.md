@@ -109,7 +109,7 @@ $env:FLARE_ANDROID_KEY_PASSWORD = "<from-secure-password-store>"
 dotnet build src\Flare.Mobile\Flare.Mobile.csproj -c Release -r android-arm64
 ```
 
-The signed artifact is written as `src/Flare.Mobile/bin/Release/net10.0-android/android-arm64/Flare-v1.0.3-android-arm64.apk`. Its name comes from `ApplicationDisplayVersion`; the Android manifest receives the same semantic `versionName` and the integer `ApplicationVersion` as `versionCode`.
+The signed artifact is written as `src/Flare.Mobile/bin/Release/net10.0-android/android-arm64/Flare-v1.1.0-android-arm64.apk`. Its name comes from `ApplicationDisplayVersion`; the Android manifest receives the same semantic `versionName` and the integer `ApplicationVersion` as `versionCode`.
 
 Before every release, increase `ApplicationDisplayVersion` using semantic versioning and increase `ApplicationVersion` to an integer greater than every previously published build. Always use the same release keystore and alias. Debug builds and CI use debug signing and must not be distributed.
 

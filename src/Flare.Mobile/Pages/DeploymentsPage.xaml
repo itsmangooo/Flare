@@ -2,16 +2,18 @@
 <pages:BindablePage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:pages="clr-namespace:Flare.Mobile.Pages"
+             xmlns:controls="clr-namespace:Flare.Mobile.Controls"
              xmlns:contracts="clr-namespace:Flare.Contracts;assembly=Flare.Contracts"
              x:Class="Flare.Mobile.Pages.DeploymentsPage"
              x:DataType="pages:DeploymentsPage"
              SafeAreaEdges="Container"
-             Shell.NavBarIsVisible="False">
-    <Grid RowDefinitions="Auto,*" Padding="20,22,20,0" RowSpacing="14">
+             Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
+    <Grid>
+    <Grid RowDefinitions="Auto,*" Padding="20,22,20,82" RowSpacing="14">
         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
             <VerticalStackLayout Spacing="2"><Label Text="COOLIFY" Style="{StaticResource Eyebrow}" /><Label Text="Deployments" Style="{StaticResource PageTitle}" /></VerticalStackLayout>
-            <Button Grid.Column="1" Text="Resources" Style="{StaticResource QuietButton}" Clicked="ResourcesClicked" />
-            <Button Grid.Column="2" Text="ME" FontSize="11" Style="{StaticResource QuietButton}" WidthRequest="44" SemanticProperties.Description="Open settings" Clicked="SettingsClicked" />
+            <controls:FlareGlassButton Grid.Column="1" Text="Resources" Clicked="ResourcesClicked" />
+            <controls:FlareGlassButton Grid.Column="2" Text="ME" FontSize="11" WidthRequest="44" SemanticProperties.Description="Open settings" Clicked="SettingsClicked" />
         </Grid>
         <RefreshView Grid.Row="1" IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
             <Grid>
@@ -40,5 +42,7 @@
                 <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}" IsVisible="{Binding HasError}" HorizontalOptions="Center" VerticalOptions="Center" />
             </Grid>
         </RefreshView>
+    </Grid>
+    <controls:FlareGlassNavigationBar SelectedRoute="deployments" Margin="14,0,14,12" VerticalOptions="End" />
     </Grid>
 </pages:BindablePage>

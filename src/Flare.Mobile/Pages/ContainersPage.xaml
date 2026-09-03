@@ -2,21 +2,25 @@
 <pages:BindablePage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:pages="clr-namespace:Flare.Mobile.Pages"
+             xmlns:controls="clr-namespace:Flare.Mobile.Controls"
              xmlns:contracts="clr-namespace:Flare.Contracts;assembly=Flare.Contracts"
              x:Class="Flare.Mobile.Pages.ContainersPage"
              x:DataType="pages:ContainersPage"
              SafeAreaEdges="All"
-             Shell.NavBarIsVisible="False">
-    <Grid RowDefinitions="Auto,Auto,*" Padding="20,22,20,0" RowSpacing="12">
+             Shell.NavBarIsVisible="False" Shell.TabBarIsVisible="False">
+    <Grid>
+    <Grid RowDefinitions="Auto,Auto,*" Padding="20,22,20,82" RowSpacing="12">
         <Grid ColumnDefinitions="*,Auto">
             <VerticalStackLayout Spacing="2"><Label Text="INFRASTRUCTURE" Style="{StaticResource Eyebrow}" /><Label Text="Containers" Style="{StaticResource PageTitle}" /></VerticalStackLayout>
-            <Button Grid.Column="1" Text="ME" FontSize="11" Style="{StaticResource QuietButton}" WidthRequest="44" SemanticProperties.Description="Open settings" Clicked="SettingsClicked" />
+            <controls:FlareGlassButton Grid.Column="1" Text="ME" FontSize="11" WidthRequest="44" SemanticProperties.Description="Open settings" Clicked="SettingsClicked" />
         </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="*,120" ColumnSpacing="8">
-            <SearchBar Placeholder="Search containers" TextChanged="SearchChanged" />
-            <Picker x:Name="FilterPicker" Grid.Column="1" SelectedIndex="0" SelectedIndexChanged="FilterChanged">
+            <controls:FlareGlassTextField Placeholder="Search containers" TextChanged="SearchChanged" HeightRequest="44" />
+            <controls:FlareLiquidGlassView Grid.Column="1" CornerRadius="12" BlurRadius="14" RefractionStrength="4" TintOpacity="0.4" Padding="8,0">
+            <Picker x:Name="FilterPicker" SelectedIndex="0" SelectedIndexChanged="FilterChanged" BackgroundColor="Transparent">
                 <Picker.Items><x:String>All</x:String><x:String>Running</x:String><x:String>Stopped</x:String><x:String>Unhealthy</x:String></Picker.Items>
             </Picker>
+            </controls:FlareLiquidGlassView>
         </Grid>
         <RefreshView Grid.Row="2" IsRefreshing="{Binding IsBusy}" Command="{Binding RefreshCommand}">
             <Grid>
@@ -46,5 +50,7 @@
                 <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource Danger}" IsVisible="{Binding HasError}" HorizontalOptions="Center" VerticalOptions="Center" />
             </Grid>
         </RefreshView>
+    </Grid>
+    <controls:FlareGlassNavigationBar SelectedRoute="containers" Margin="14,0,14,12" VerticalOptions="End" />
     </Grid>
 </pages:BindablePage>
