@@ -11,6 +11,7 @@
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Maui.Essentials" Version="10.0.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
@@ -25,6 +26,8 @@
     <Compile Include="..\..\src\Flare.Mobile\Services\ConnectionService.cs" Link="ConnectionService.cs" />
     <Compile Include="..\..\src\Flare.Mobile\Services\ConnectionLog.cs" Link="ConnectionLog.cs" />
     <Compile Include="..\..\src\Flare.Mobile\Services\IServerUrlStore.cs" Link="IServerUrlStore.cs" />
+    <Compile Include="..\..\src\Flare.Mobile\Services\MobileLog.cs" Link="MobileLog.cs" />
+    <Compile Include="..\..\src\Flare.Mobile\Services\SafeActionFeedback.cs" Link="SafeActionFeedback.cs" />
   </ItemGroup>
 
 </Project>

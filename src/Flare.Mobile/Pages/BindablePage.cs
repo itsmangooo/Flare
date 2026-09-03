@@ -1,4 +1,6 @@
 using System.Runtime.CompilerServices;
+using Flare.Mobile.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Flare.Mobile.Pages;
 
@@ -17,6 +19,30 @@ public abstract class BindablePage : ContentPage
         field = value;
         OnPropertyChanged(propertyName);
         return true;
+    }
+
+    protected async Task RunUiActionSafelyAsync(
+        ILogger logger,
+        string operation,
+        Func<Task> action)
+    {
+        try
+        {
+            await action();
+        }
+        catch (FlareApiException exception)
+        {
+            ErrorMessage = exception.Message;
+        }
+        catch (OperationCanceledException)
+        {
+            // Page/lifecycle cancellation is expected and does not need a user-facing error.
+        }
+        catch (Exception exception)
+        {
+            MobileLog.UiActionFailed(logger, operation, exception);
+            ErrorMessage = "Flare could not complete this action. Try again.";
+        }
     }
 
 }

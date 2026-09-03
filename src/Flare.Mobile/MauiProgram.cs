@@ -17,6 +17,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<SessionStore>();
         builder.Services.AddSingleton<IServerUrlStore>(services => services.GetRequiredService<SessionStore>());
         builder.Services.AddSingleton<ApiClient>();
+        builder.Services.AddSingleton<IActionFeedback, SafeActionFeedback>();
         builder.Services.AddSingleton<AuthService>();
         builder.Services.AddSingleton<ConnectionService>();
         builder.Services.AddSingleton<LiveTelemetryService>();

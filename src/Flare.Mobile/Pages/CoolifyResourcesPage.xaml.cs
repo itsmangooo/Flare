@@ -2,22 +2,43 @@ using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Flare.Contracts;
 using Flare.Mobile.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Flare.Mobile.Pages;
 
 public partial class CoolifyResourcesPage : BindablePage
 {
     private readonly ApiClient _api;
+    private readonly IActionFeedback _actionFeedback;
+    private readonly ILogger<CoolifyResourcesPage> _logger;
+    private int _actionInProgress;
     public ObservableCollection<CoolifyServerResponse> Servers { get; } = [];
     public ObservableCollection<CoolifyResourceResponse> ServerResources { get; } = [];
     public ObservableCollection<CoolifyApplicationResponse> Applications { get; } = [];
     public ObservableCollection<CoolifyServiceResponse> Services { get; } = [];
     public ICommand RefreshCommand { get; }
     public CoolifyResourcesPage(ApiClient api)
+        : this(api, AppServices.Get<IActionFeedback>(), AppServices.Get<ILogger<CoolifyResourcesPage>>())
     {
-        InitializeComponent(); _api = api; RefreshCommand = new Command(async () => await LoadAsync()); BindingContext = this;
     }
-    protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
+
+    internal CoolifyResourcesPage(
+        ApiClient api,
+        IActionFeedback actionFeedback,
+        ILogger<CoolifyResourcesPage> logger)
+    {
+        InitializeComponent();
+        _api = api;
+        _actionFeedback = actionFeedback;
+        _logger = logger;
+        RefreshCommand = new Command(() => _ = LoadAsync());
+        BindingContext = this;
+    }
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _ = LoadAsync();
+    }
     private async Task LoadAsync()
     {
         if (IsBusy) return; IsBusy = true; ErrorMessage = null;
@@ -35,29 +56,87 @@ public partial class CoolifyResourcesPage : BindablePage
             Replace(Applications, await applications); Replace(Services, await services);
         }
         catch (FlareApiException exception) { ErrorMessage = exception.Message; }
+        catch (Exception exception)
+        {
+            MobileLog.UiActionFailed(_logger, "coolify.resources.load", exception);
+            ErrorMessage = "Flare could not load Coolify resources. Try again.";
+        }
         finally { IsBusy = false; }
     }
     private async Task ApplicationActionAsync(CoolifyApplicationResponse application, string action, string label)
     {
-        if (await DisplayActionSheetAsync($"{label} {application.Name}?", "Cancel", null, label) != label) return;
-        await RunAsync($"api/v1/coolify/applications/{application.Uuid}/{action}");
+        await RunActionAsync(
+            $"api/v1/coolify/applications/{application.Uuid}/{action}",
+            $"{label} {application.Name}?",
+            label,
+            $"coolify.application.{action}");
     }
-    private async Task RunAsync(string path)
+
+    private async Task RunActionAsync(string path, string prompt, string label, string operation)
     {
-        HapticFeedback.Default.Perform(HapticFeedbackType.LongPress); IsBusy = true; ErrorMessage = null;
-        try { _ = await _api.PostAsync<ActionResponse>(path, null, true, CancellationToken.None); await Task.Delay(200); }
-        catch (FlareApiException exception) { ErrorMessage = exception.Message; }
-        finally { IsBusy = false; }
+        if (IsBusy || Interlocked.CompareExchange(ref _actionInProgress, 1, 0) != 0)
+        {
+            MobileLog.RepeatedActionIgnored(_logger, operation);
+            return;
+        }
+
+        try
+        {
+            await RunUiActionSafelyAsync(_logger, operation, async () =>
+            {
+                if (await DisplayActionSheetAsync(prompt, "Cancel", null, label) != label) return;
+
+                IsBusy = true;
+                ErrorMessage = null;
+                try
+                {
+                    _actionFeedback.TryPerformLongPress(operation);
+                    await _api.PostAsync<ActionResponse>(path, null, true, CancellationToken.None);
+                    await Task.Delay(200);
+                }
+                finally
+                {
+                    IsBusy = false;
+                }
+            });
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _actionInProgress, 0);
+        }
     }
-    private async void StartApplicationClicked(object? sender, EventArgs eventArgs) { if (((Button)sender!).CommandParameter is CoolifyApplicationResponse app) await ApplicationActionAsync(app, "start", "Start"); }
-    private async void StopApplicationClicked(object? sender, EventArgs eventArgs) { if (((Button)sender!).CommandParameter is CoolifyApplicationResponse app) await ApplicationActionAsync(app, "stop", "Stop"); }
-    private async void RestartApplicationClicked(object? sender, EventArgs eventArgs) { if (((Button)sender!).CommandParameter is CoolifyApplicationResponse app) await ApplicationActionAsync(app, "restart", "Restart"); }
-    private async void RedeployApplicationClicked(object? sender, EventArgs eventArgs) { if (((Button)sender!).CommandParameter is CoolifyApplicationResponse app) await ApplicationActionAsync(app, "redeploy", "Redeploy"); }
-    private async void RestartServiceClicked(object? sender, EventArgs eventArgs)
+
+    private void StartApplicationClicked(object? sender, EventArgs eventArgs) =>
+        QueueApplicationAction(sender, "start", "Start");
+
+    private void StopApplicationClicked(object? sender, EventArgs eventArgs) =>
+        QueueApplicationAction(sender, "stop", "Stop");
+
+    private void RestartApplicationClicked(object? sender, EventArgs eventArgs) =>
+        QueueApplicationAction(sender, "restart", "Restart");
+
+    private void RedeployApplicationClicked(object? sender, EventArgs eventArgs) =>
+        QueueApplicationAction(sender, "redeploy", "Redeploy");
+
+    private void QueueApplicationAction(object? sender, string action, string label)
     {
-        if (((Button)sender!).CommandParameter is not CoolifyServiceResponse service) return;
-        if (await DisplayActionSheetAsync($"Restart {service.Name}?", "Cancel", null, "Restart") == "Restart")
-            await RunAsync($"api/v1/coolify/services/{service.Uuid}/restart");
+        if (sender is Button { CommandParameter: CoolifyApplicationResponse application })
+        {
+            _ = ApplicationActionAsync(application, action, label);
+        }
     }
+
+    private void RestartServiceClicked(object? sender, EventArgs eventArgs)
+    {
+        if (sender is Button { CommandParameter: CoolifyServiceResponse service })
+        {
+            _ = RunActionAsync(
+                $"api/v1/coolify/services/{service.Uuid}/restart",
+                $"Restart {service.Name}?",
+                "Restart",
+                "coolify.service.restart");
+        }
+    }
+
     private static void Replace<T>(ObservableCollection<T> target, IEnumerable<T> source) { target.Clear(); foreach (var item in source) target.Add(item); }
 }

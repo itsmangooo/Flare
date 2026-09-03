@@ -108,12 +108,19 @@ public sealed class ApiClient(HttpClient httpClient, SessionStore sessionStore) 
         if (response.IsSuccessStatusCode)
         {
             if (response.StatusCode == HttpStatusCode.NoContent) return default!;
-            return await response.Content.ReadFromJsonAsync<T>(_json, cancellationToken)
-                ?? throw new FlareApiException("Flare returned an empty response.");
+            try
+            {
+                return await response.Content.ReadFromJsonAsync<T>(_json, cancellationToken)
+                    ?? throw new FlareApiException("Flare returned an empty response.", response.StatusCode);
+            }
+            catch (Exception exception) when (exception is JsonException or NotSupportedException)
+            {
+                throw new FlareApiException("Flare returned an invalid response.", response.StatusCode, exception);
+            }
         }
         ApiProblem? problem = null;
         try { problem = await response.Content.ReadFromJsonAsync<ApiProblem>(_json, cancellationToken); }
-        catch (JsonException) { }
+        catch (Exception exception) when (exception is JsonException or NotSupportedException) { }
         var message = response.StatusCode switch
         {
             HttpStatusCode.Forbidden => "You do not have permission to perform this action.",
@@ -129,7 +136,10 @@ public sealed class ApiClient(HttpClient httpClient, SessionStore sessionStore) 
     public void Dispose() => _refreshLock.Dispose();
 }
 
-public sealed class FlareApiException(string message, HttpStatusCode? statusCode = null) : Exception(message)
+public sealed class FlareApiException(
+    string message,
+    HttpStatusCode? statusCode = null,
+    Exception? innerException = null) : Exception(message, innerException)
 {
     public HttpStatusCode? StatusCode { get; } = statusCode;
 }

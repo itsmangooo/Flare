@@ -1,12 +1,16 @@
 using Flare.Contracts;
 using Flare.Mobile.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Flare.Mobile.Pages;
 
 public partial class DeploymentDetailPage : BindablePage
 {
     private readonly ApiClient _api;
+    private readonly IActionFeedback _actionFeedback;
+    private readonly ILogger<DeploymentDetailPage> _logger;
     private DeploymentResponse _deployment;
+    private int _actionInProgress;
     public DeploymentResponse Deployment
     {
         get => _deployment;
@@ -14,14 +18,33 @@ public partial class DeploymentDetailPage : BindablePage
     }
     public bool CanRedeploy => !string.IsNullOrWhiteSpace(Deployment.ResourceUuid);
     public DeploymentDetailPage(ApiClient api, DeploymentResponse deployment)
+        : this(api, deployment, AppServices.Get<IActionFeedback>(), AppServices.Get<ILogger<DeploymentDetailPage>>())
     {
-        InitializeComponent(); _api = api; _deployment = deployment; BindingContext = this;
     }
-    protected override async void OnAppearing()
+
+    internal DeploymentDetailPage(
+        ApiClient api,
+        DeploymentResponse deployment,
+        IActionFeedback actionFeedback,
+        ILogger<DeploymentDetailPage> logger)
+    {
+        InitializeComponent();
+        _api = api;
+        _deployment = deployment;
+        _actionFeedback = actionFeedback;
+        _logger = logger;
+        BindingContext = this;
+    }
+    protected override void OnAppearing()
     {
         base.OnAppearing();
+        _ = LoadDeploymentAsync();
+    }
+
+    private async Task LoadDeploymentAsync()
+    {
         if (string.IsNullOrWhiteSpace(Deployment.Uuid)) return;
-        try
+        await RunUiActionSafelyAsync(_logger, "coolify.deployment.load", async () =>
         {
             var resourceUuid = Deployment.ResourceUuid;
             var resourceName = Deployment.ResourceName;
@@ -33,17 +56,47 @@ public partial class DeploymentDetailPage : BindablePage
                     ? resourceName
                     : detail.ResourceName
             };
-        }
-        catch (FlareApiException exception) { ErrorMessage = exception.Message; }
+        });
     }
-    private async void RedeployClicked(object? sender, EventArgs eventArgs)
+    private void RedeployClicked(object? sender, EventArgs eventArgs) => _ = RedeployAsync();
+
+    private async Task RedeployAsync()
     {
-        var selected = await DisplayActionSheetAsync(
-            $"Queue a new deployment for {Deployment.ResourceName}?", "Cancel", null, "Redeploy");
-        if (selected != "Redeploy") return;
-        HapticFeedback.Default.Perform(HapticFeedbackType.LongPress); IsBusy = true; ErrorMessage = null;
-        try { _ = await _api.PostAsync<ActionResponse>($"api/v1/coolify/applications/{Deployment.ResourceUuid}/redeploy", null, true, CancellationToken.None); }
-        catch (FlareApiException exception) { ErrorMessage = exception.Message; }
-        finally { IsBusy = false; }
+        const string operation = "coolify.application.redeploy";
+        if (IsBusy || Interlocked.CompareExchange(ref _actionInProgress, 1, 0) != 0)
+        {
+            MobileLog.RepeatedActionIgnored(_logger, operation);
+            return;
+        }
+
+        try
+        {
+            await RunUiActionSafelyAsync(_logger, operation, async () =>
+            {
+                var selected = await DisplayActionSheetAsync(
+                    $"Queue a new deployment for {Deployment.ResourceName}?", "Cancel", null, "Redeploy");
+                if (selected != "Redeploy") return;
+
+                IsBusy = true;
+                ErrorMessage = null;
+                try
+                {
+                    _actionFeedback.TryPerformLongPress(operation);
+                    await _api.PostAsync<ActionResponse>(
+                        $"api/v1/coolify/applications/{Deployment.ResourceUuid}/redeploy",
+                        null,
+                        true,
+                        CancellationToken.None);
+                }
+                finally
+                {
+                    IsBusy = false;
+                }
+            });
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _actionInProgress, 0);
+        }
     }
 }

@@ -1,5 +1,6 @@
 using Flare.Contracts;
 using Flare.Mobile.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Flare.Mobile.Pages;
 
@@ -7,6 +8,8 @@ public partial class ContainerDetailPage : BindablePage, IDisposable
 {
     private readonly ApiClient _api;
     private readonly string _id;
+    private readonly IActionFeedback _actionFeedback;
+    private readonly ILogger<ContainerDetailPage> _logger;
     private ContainerDetailResponse? _detail;
     private string _logs = "Loading logs…";
     private string _memoryLine = "—";
@@ -16,6 +19,7 @@ public partial class ContainerDetailPage : BindablePage, IDisposable
     private DateTimeOffset? _oldestLogTimestamp;
     private bool _canLoadOlder;
     private bool _loadingLogs;
+    private int _actionInProgress;
     private CancellationTokenSource? _liveCancellation;
     public ContainerDetailResponse? Detail { get => _detail; private set => Set(ref _detail, value); }
     public string Logs { get => _logs; private set => Set(ref _logs, value); }
@@ -28,14 +32,29 @@ public partial class ContainerDetailPage : BindablePage, IDisposable
     public bool CanLoadOlder { get => _canLoadOlder; private set => Set(ref _canLoadOlder, value); }
 
     public ContainerDetailPage(ApiClient api, string id)
+        : this(api, id, AppServices.Get<IActionFeedback>(), AppServices.Get<ILogger<ContainerDetailPage>>())
+    {
+    }
+
+    internal ContainerDetailPage(
+        ApiClient api,
+        string id,
+        IActionFeedback actionFeedback,
+        ILogger<ContainerDetailPage> logger)
     {
         InitializeComponent();
         _api = api;
         _id = id;
+        _actionFeedback = actionFeedback;
+        _logger = logger;
         BindingContext = this;
     }
 
-    protected override async void OnAppearing() { base.OnAppearing(); await LoadAsync(); }
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        _ = LoadAsync();
+    }
     protected override void OnDisappearing() { _liveCancellation?.Cancel(); base.OnDisappearing(); }
 
     private async Task LoadAsync()
@@ -48,6 +67,11 @@ public partial class ContainerDetailPage : BindablePage, IDisposable
             await LoadLogsAsync(null, CancellationToken.None);
         }
         catch (FlareApiException exception) { ErrorMessage = exception.Message; }
+        catch (Exception exception)
+        {
+            MobileLog.UiActionFailed(_logger, "container.details.load", exception);
+            ErrorMessage = "Flare could not load this container. Try again.";
+        }
         finally { IsBusy = false; }
     }
 
@@ -87,44 +111,69 @@ public partial class ContainerDetailPage : BindablePage, IDisposable
 
     private async Task RunActionAsync(string action, string label)
     {
-        var selected = await DisplayActionSheetAsync(
-            $"{label} {Detail?.Name ?? "the container"}?", "Cancel", null, label);
-        if (selected != label) return;
-        HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);
-        IsBusy = true; ErrorMessage = null;
+        var operation = $"container.{action}";
+        if (IsBusy || Interlocked.CompareExchange(ref _actionInProgress, 1, 0) != 0)
+        {
+            MobileLog.RepeatedActionIgnored(_logger, operation);
+            return;
+        }
+
         try
         {
-            _ = await _api.PostAsync<ActionResponse>($"api/v1/containers/{_id}/{action}", null, true, CancellationToken.None);
-            await Task.Delay(250);
-            ApplyDetail(await _api.GetAsync<ContainerDetailResponse>($"api/v1/containers/{_id}", CancellationToken.None));
+            await RunUiActionSafelyAsync(_logger, operation, async () =>
+            {
+                var selected = await DisplayActionSheetAsync(
+                    $"{label} {Detail?.Name ?? "the container"}?", "Cancel", null, label);
+                if (selected != label) return;
+
+                IsBusy = true;
+                ErrorMessage = null;
+                try
+                {
+                    _actionFeedback.TryPerformLongPress(operation);
+                    await _api.PostAsync<ActionResponse>(
+                        $"api/v1/containers/{_id}/{action}", null, true, CancellationToken.None);
+                    await Task.Delay(250);
+                    ApplyDetail(await _api.GetAsync<ContainerDetailResponse>(
+                        $"api/v1/containers/{_id}", CancellationToken.None));
+                }
+                finally
+                {
+                    IsBusy = false;
+                }
+            });
         }
-        catch (FlareApiException exception) { ErrorMessage = exception.Message; }
-        finally { IsBusy = false; }
+        finally
+        {
+            Interlocked.Exchange(ref _actionInProgress, 0);
+        }
     }
 
-    private async void StartClicked(object? sender, EventArgs eventArgs) => await RunActionAsync("start", "Start");
-    private async void StopClicked(object? sender, EventArgs eventArgs) => await RunActionAsync("stop", "Stop");
-    private async void RestartClicked(object? sender, EventArgs eventArgs) => await RunActionAsync("restart", "Restart");
-    private async void TailChanged(object? sender, EventArgs eventArgs)
+    private void StartClicked(object? sender, EventArgs eventArgs) => _ = RunActionAsync("start", "Start");
+    private void StopClicked(object? sender, EventArgs eventArgs) => _ = RunActionAsync("stop", "Stop");
+    private void RestartClicked(object? sender, EventArgs eventArgs) => _ = RunActionAsync("restart", "Restart");
+    private void TailChanged(object? sender, EventArgs eventArgs)
     {
-        if (Detail is not null) await ReloadLogsAsync(null);
+        if (Detail is not null) _ = ReloadLogsAsync(null);
     }
-    private async void LatestLogsClicked(object? sender, EventArgs eventArgs)
+    private void LatestLogsClicked(object? sender, EventArgs eventArgs)
     {
-        await ReloadLogsAsync(null);
+        _ = ReloadLogsAsync(null);
     }
-    private async void OlderLogsClicked(object? sender, EventArgs eventArgs)
+    private void OlderLogsClicked(object? sender, EventArgs eventArgs)
     {
         if (_oldestLogTimestamp is not { } oldest) return;
         LiveSwitch.IsToggled = false;
-        await ReloadLogsAsync(oldest.AddTicks(-1));
+        _ = ReloadLogsAsync(oldest.AddTicks(-1));
     }
 
     private async Task ReloadLogsAsync(DateTimeOffset? before)
     {
         ErrorMessage = null;
-        try { await LoadLogsAsync(before, CancellationToken.None); }
-        catch (FlareApiException exception) { ErrorMessage = exception.Message; }
+        await RunUiActionSafelyAsync(
+            _logger,
+            "container.logs.load",
+            () => LoadLogsAsync(before, CancellationToken.None));
     }
     private void LiveToggled(object? sender, ToggledEventArgs eventArgs)
     {
@@ -147,6 +196,11 @@ public partial class ContainerDetailPage : BindablePage, IDisposable
                     ErrorMessage = null;
                 }
                 catch (FlareApiException exception) { ErrorMessage = exception.Message; }
+                catch (Exception exception)
+                {
+                    MobileLog.UiActionFailed(_logger, "container.logs.follow", exception);
+                    ErrorMessage = "Flare could not refresh the container logs. Try again.";
+                }
             }
         }
         catch (OperationCanceledException) { }

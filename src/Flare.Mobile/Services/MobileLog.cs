@@ -54,4 +54,13 @@ internal static partial class MobileLog
 
     [LoggerMessage(1501, LogLevel.Warning, "Telemetry failed to stop when the Android window stopped.")]
     public static partial void StopTelemetryFailed(ILogger logger, Exception exception);
+
+    [LoggerMessage(1600, LogLevel.Warning, "Haptic feedback failed for {Operation}; continuing without it.")]
+    public static partial void HapticFeedbackFailed(ILogger logger, string operation, Exception exception);
+
+    [LoggerMessage(1601, LogLevel.Debug, "Ignored repeated or overlapping UI action {Operation}.")]
+    public static partial void RepeatedActionIgnored(ILogger logger, string operation);
+
+    [LoggerMessage(1602, LogLevel.Error, "UI action {Operation} failed unexpectedly.")]
+    public static partial void UiActionFailed(ILogger logger, string operation, Exception exception);
 }
