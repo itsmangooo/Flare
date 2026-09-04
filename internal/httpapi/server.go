@@ -32,6 +32,7 @@ func New(cfg config.Config, version string, logger *slog.Logger, database databa
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.Timeout(30 * time.Second))
 	router.Use(requestLogger(logger))
+	registerPublicRoutes(router, version, database, time.Now())
 	router.Get("/health/live", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, healthResponse{Status: "healthy", Checks: map[string]healthCheck{}})
 	})
