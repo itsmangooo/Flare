@@ -186,7 +186,7 @@ final class FlareBottomNav extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: FlareColors.accentSoft,
                         borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: const Color(0x36FF7A5C)),
+                        border: Border.all(color: const Color(0x363F9CFF)),
                       ),
                     ),
                   ),

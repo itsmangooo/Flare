@@ -21,23 +21,35 @@ final class _FlareMarkPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final scale = size.width / 64;
     canvas.scale(scale, scale);
-    final outer = Path()
-      ..moveTo(35, 3)
-      ..cubicTo(39, 17, 52, 22, 52, 38)
-      ..cubicTo(52, 51, 43, 60, 31, 60)
-      ..cubicTo(19, 60, 11, 51, 11, 40)
-      ..cubicTo(11, 29, 18, 22, 29, 11)
-      ..cubicTo(28, 21, 33, 23, 35, 3)
+    final signal = Path()
+      ..moveTo(34, 3)
+      ..lineTo(50, 28)
+      ..lineTo(42, 26)
+      ..lineTo(54, 43)
+      ..lineTo(36, 61)
+      ..lineTo(17, 55)
+      ..lineTo(10, 38)
+      ..lineTo(28, 14)
+      ..lineTo(28, 33)
+      ..lineTo(39, 21)
       ..close();
-    final inner = Path()
-      ..moveTo(33, 27)
-      ..cubicTo(35, 36, 42, 38, 41, 46)
-      ..cubicTo(40, 53, 35, 56, 30, 56)
-      ..cubicTo(24, 56, 20, 52, 20, 46)
-      ..cubicTo(20, 40, 24, 36, 33, 27)
+    final upperFacet = Path()
+      ..moveTo(34, 3)
+      ..lineTo(50, 28)
+      ..lineTo(42, 26)
+      ..lineTo(28, 39)
+      ..lineTo(28, 14)
       ..close();
-    canvas.drawPath(outer, Paint()..color = FlareColors.accent);
-    canvas.drawPath(inner, Paint()..color = const Color(0xFFFFA07F));
+    final core = Path()
+      ..moveTo(29, 32)
+      ..lineTo(43, 47)
+      ..lineTo(35, 57)
+      ..lineTo(23, 52)
+      ..lineTo(19, 43)
+      ..close();
+    canvas.drawPath(signal, Paint()..color = FlareColors.brandDeep);
+    canvas.drawPath(upperFacet, Paint()..color = FlareColors.accent);
+    canvas.drawPath(core, Paint()..color = FlareColors.brandCyan);
   }
 
   @override

@@ -136,7 +136,7 @@ final class _FilterChip extends StatelessWidget {
           color: selected ? FlareColors.accentSoft : FlareColors.surface,
           borderRadius: BorderRadius.circular(FlareRadii.small),
           border: Border.all(
-            color: selected ? const Color(0x55FF6847) : FlareColors.border,
+            color: selected ? const Color(0x552F81F7) : FlareColors.border,
           ),
         ),
         child: Text(
