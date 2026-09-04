@@ -23,6 +23,14 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Test Go backend migration
+        run: go test ./...
+      - name: Vet and build Go backend migration
+        run: go vet ./... && go build -trimpath ./cmd/flare
       - name: Restore
         run: dotnet restore Flare.sln
       - name: Build backend
