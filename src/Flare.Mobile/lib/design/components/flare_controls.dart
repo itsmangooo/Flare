@@ -74,8 +74,8 @@ final class _FlareButtonState extends State<FlareButton> {
     final (background, foreground, border) = switch (widget.tone) {
       FlareButtonTone.primary => (
         FlareColors.accent,
-        const Color(0xFF180704),
-        const Color(0xFFFF8B71),
+        const Color(0xFF04101E),
+        const Color(0xFF68B2FF),
       ),
       FlareButtonTone.danger => (
         FlareColors.dangerSoft,
@@ -210,7 +210,7 @@ final class _FlareIconButtonState extends State<FlareIconButton> {
             borderRadius: BorderRadius.circular(FlareRadii.normal),
             border: Border.all(
               color: widget.accent
-                  ? const Color(0x44FF6847)
+                  ? const Color(0x442F81F7)
                   : FlareColors.border,
             ),
           ),

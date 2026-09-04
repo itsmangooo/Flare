@@ -528,7 +528,7 @@ final class _LogOption extends StatelessWidget {
         color: selected ? FlareColors.accentSoft : FlareColors.surface,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: selected ? const Color(0x55FF6847) : FlareColors.border,
+          color: selected ? const Color(0x552F81F7) : FlareColors.border,
         ),
       ),
       child: Row(

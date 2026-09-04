@@ -10,8 +10,10 @@ abstract final class FlareColors {
   static const text = Color(0xFFF5F7FA);
   static const textSecondary = Color(0xFFA1A9B5);
   static const muted = Color(0xFF67707C);
-  static const accent = Color(0xFFFF6847);
-  static const accentSoft = Color(0x26FF6847);
+  static const brandDeep = Color(0xFF135DDA);
+  static const accent = Color(0xFF2F81F7);
+  static const brandCyan = Color(0xFF55D6FF);
+  static const accentSoft = Color(0x262F81F7);
   static const success = Color(0xFF55C991);
   static const successSoft = Color(0x2455C991);
   static const warning = Color(0xFFE5AE5B);
