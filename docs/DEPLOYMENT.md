@@ -106,11 +106,13 @@ $env:FLARE_ANDROID_KEY_ALIAS = "flare-release"
 $env:FLARE_ANDROID_KEYSTORE_PASSWORD = "<from-secure-password-store>"
 $env:FLARE_ANDROID_KEY_PASSWORD = "<from-secure-password-store>"
 
-dotnet build src\Flare.Mobile\Flare.Mobile.csproj -c Release -r android-arm64
+Set-Location src\Flare.Mobile
+flutter pub get
+.\tool\build-release.ps1
 ```
 
-The signed artifact is written as `src/Flare.Mobile/bin/Release/net10.0-android/android-arm64/Flare-v1.1.0-android-arm64.apk`. Its name comes from `ApplicationDisplayVersion`; the Android manifest receives the same semantic `versionName` and the integer `ApplicationVersion` as `versionCode`.
+The signed artifact is written under `src/Flare.Mobile/build/app/outputs/flutter-apk/`. Flutter reads `versionName` and `versionCode` from the `version` field in `pubspec.yaml`; for example, `version: 1.2.0+6` produces semantic version `1.2.0` and Android version code `6`. The release helper also copies it to a versioned filename such as `Flare-v1.2.0-build6-android.apk`.
 
-Before every release, increase `ApplicationDisplayVersion` using semantic versioning and increase `ApplicationVersion` to an integer greater than every previously published build. Always use the same release keystore and alias. Debug builds and CI use debug signing and must not be distributed.
+Before every release, increase the semantic portion before `+` and increase the integer build number after `+` to a value greater than every previously published build. Always use the same release keystore and alias. Debug builds and CI use debug signing and must not be distributed.
 
 Install an update with `adb install -r <apk-path>` or open the APK normally on the device. APKs published before the stable release key was introduced cannot be upgraded in place because their signing certificate differs; uninstall one of those builds once, then install the first stable-key release. Later stable-key releases upgrade normally.

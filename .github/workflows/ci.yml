@@ -23,18 +23,29 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - name: Install Android workload
-        run: dotnet workload install maui-android --skip-manifest-update
       - name: Restore
         run: dotnet restore Flare.sln
       - name: Build backend
         run: dotnet build src/Flare.Api/Flare.Api.csproj --configuration Release --no-restore
       - name: Test
         run: dotnet test tests/Flare.Api.Tests/Flare.Api.Tests.csproj --configuration Release --no-restore
-      - name: Test mobile core behavior
-        run: dotnet test tests/Flare.Mobile.Tests/Flare.Mobile.Tests.csproj --configuration Release --no-restore
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - name: Restore Flutter packages
+        working-directory: src/Flare.Mobile
+        run: flutter pub get
+      - name: Analyze Flutter client
+        working-directory: src/Flare.Mobile
+        run: flutter analyze --fatal-infos
+      - name: Test Flutter client
+        working-directory: src/Flare.Mobile
+        run: flutter test
       - name: Build Android app (Debug signing)
-        run: dotnet build src/Flare.Mobile/Flare.Mobile.csproj --configuration Debug --no-restore --runtime android-arm64
+        working-directory: src/Flare.Mobile
+        run: flutter build apk --debug
 
   container:
     runs-on: ubuntu-latest

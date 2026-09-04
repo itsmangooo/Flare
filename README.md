@@ -1,6 +1,6 @@
 # Flare
 
-Flare is a self-hosted Android homelab administration app. The native .NET MAUI client talks only to the ASP.NET Core API; Docker and Coolify credentials never leave the homelab.
+Flare is a self-hosted Android homelab administration app. The native Flutter client talks only to the ASP.NET Core API; Docker and Coolify credentials never leave the homelab.
 
 ## What is included
 
@@ -15,7 +15,7 @@ Flare is a self-hosted Android homelab administration app. The native .NET MAUI 
 
 ```text
 Flare.sln
-src/Flare.Mobile/       Android-only .NET MAUI client
+src/Flare.Mobile/       Flutter/Dart Android client
 src/Flare.Api/          ASP.NET Core API
 src/Flare.Contracts/    Shared wire contracts
 tests/Flare.Api.Tests/  Security, metrics, and integration-contract tests
@@ -23,15 +23,18 @@ tests/Flare.Api.Tests/  Security, metrics, and integration-contract tests
 
 ## Local verification
 
-Install .NET SDK 10.0.300, Java 17, the Android SDK, and the `maui-android` workload, then run:
+Install .NET SDK 10.0.300, Flutter 3.47.2, Java 17, and the Android SDK, then run:
 
 ```powershell
-dotnet workload install maui-android
 dotnet tool restore
 dotnet restore Flare.sln
 dotnet build src/Flare.Api/Flare.Api.csproj -c Release
 dotnet test tests/Flare.Api.Tests/Flare.Api.Tests.csproj -c Release
-dotnet build src/Flare.Mobile/Flare.Mobile.csproj -c Debug -r android-arm64
+cd src/Flare.Mobile
+flutter pub get
+flutter analyze --fatal-infos
+flutter test
+flutter build apk --debug
 ```
 
 Debug builds use Android debug signing. Distributable Release builds require the persistent release keystore and four signing values documented in [Production deployment](docs/DEPLOYMENT.md#android-release-signing); a Release build fails if any value is missing.

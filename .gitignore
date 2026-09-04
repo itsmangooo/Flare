@@ -28,6 +28,14 @@ artifacts/
 *.apk
 *.aab
 
+# Flutter/Dart generated output
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/build/
+src/Flare.Mobile/android/.gradle/
+src/Flare.Mobile/android/local.properties
+
 # OS files
 .DS_Store
 Thumbs.db
