@@ -18,6 +18,8 @@ import (
 	"github.com/itsmangooo/flare/internal/database"
 	"github.com/itsmangooo/flare/internal/httpapi"
 	"github.com/itsmangooo/flare/internal/monitoring"
+	"github.com/itsmangooo/flare/internal/overview"
+	"github.com/itsmangooo/flare/internal/telemetry"
 )
 
 var version = "dev"
@@ -56,7 +58,12 @@ func main() {
 	authHandler := auth.NewHandler(cfg, db, logger)
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
-	server := httpapi.New(cfg, version, logger, db, authHandler, containerHandler, activityHandler)
+	activityReader := activity.NewReader(db)
+	hostMetrics := telemetry.NewCollector(cfg.HostName, cfg.HostProcPath, cfg.HostRootFSPath, logger)
+	overviewHandler := authHandler.Authenticate(overview.NewHandler(docker, hostMetrics, db, activityReader, logger))
+	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
+		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
+	})
 	errCh := make(chan error, 1)
 	go func() {
 		logger.Info("Flare Go API listening", "address", cfg.HTTPAddress, "version", version)
