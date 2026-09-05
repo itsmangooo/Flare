@@ -58,6 +58,8 @@ func main() {
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
 	activityReader := activity.NewReader(db)
 	hostMetrics := telemetry.NewCollector(cfg.HostName, cfg.HostProcPath, cfg.HostRootFSPath, logger)
+	metricSampler := telemetry.NewSampler(hostMetrics, db, logger)
+	go metricSampler.Run(ctx)
 	overviewHandler := authHandler.Authenticate(overview.NewHandler(docker, hostMetrics, db, activityReader, logger))
 	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
 		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
