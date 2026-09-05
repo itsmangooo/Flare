@@ -19,6 +19,9 @@ func TestLoadAcceptsExistingNpgsqlConfiguration(t *testing.T) {
 	if cfg.HTTPAddress != ":8080" || cfg.CoolifyBaseURL != "https://coolify.example.test" {
 		t.Fatalf("unexpected config: %#v", cfg)
 	}
+	if cfg.HostName != "homelab" || cfg.HostProcPath != "/host/proc" || cfg.HostRootFSPath != "/host/rootfs" {
+		t.Fatalf("unexpected host telemetry defaults: %#v", cfg)
+	}
 	for _, expected := range []string{"postgresql://app:p%40ss%20word@db:5433/flare", "sslmode=require"} {
 		if !strings.Contains(cfg.DatabaseURL, expected) {
 			t.Fatalf("DatabaseURL %q does not contain %q", cfg.DatabaseURL, expected)

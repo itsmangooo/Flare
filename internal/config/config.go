@@ -14,6 +14,9 @@ type Config struct {
 	HTTPAddress     string
 	DatabaseURL     string
 	DockerHost      string
+	HostName        string
+	HostProcPath    string
+	HostRootFSPath  string
 	CoolifyBaseURL  string
 	CoolifyToken    string
 	BootstrapToken  string
@@ -28,6 +31,9 @@ func Load() (Config, error) {
 	cfg := Config{
 		HTTPAddress:    value("FLARE_HTTP_ADDRESS", ":8080"),
 		DockerHost:     value("DOCKER_HOST", "unix:///var/run/docker.sock"),
+		HostName:       value("FLARE_HOST_NAME", "homelab"),
+		HostProcPath:   value("HOST_PROC_PATH", "/host/proc"),
+		HostRootFSPath: value("HOST_ROOTFS_PATH", "/host/rootfs"),
 		CoolifyBaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv("COOLIFY_BASE_URL")), "/"),
 		CoolifyToken:   strings.TrimSpace(os.Getenv("COOLIFY_API_TOKEN")),
 		BootstrapToken: strings.TrimSpace(os.Getenv("FLARE_BOOTSTRAP_TOKEN")),
