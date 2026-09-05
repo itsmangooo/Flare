@@ -4,6 +4,7 @@ import 'package:flare_mobile/core/theme/flare_theme.dart';
 import 'package:flare_mobile/features/activity/activity_page.dart';
 import 'package:flare_mobile/features/containers/containers_page.dart';
 import 'package:flare_mobile/features/deployments/deployments_page.dart';
+import 'package:flare_mobile/features/domains/domains_page.dart';
 import 'package:flare_mobile/features/overview/overview_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -147,5 +148,46 @@ void main() {
     expect(find.text('Container Restart'), findsOneWidget);
     expect(find.text('postgres'), findsOneWidget);
     expect(find.text('Infrastructure'), findsOneWidget);
+  });
+
+  testWidgets('domains render configured Cloudflare inventory', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          domainsProvider.overrideWith(
+            (ref) async => (
+              status: const CloudflareStatusModel(
+                configured: true,
+                tunnelsConfigured: true,
+              ),
+              zones: const <DomainZoneModel>[
+                DomainZoneModel(
+                  id: 'zone-1',
+                  name: 'example.test',
+                  status: 'active',
+                  type: 'full',
+                ),
+              ],
+              tunnels: const <CloudflareTunnelModel>[
+                CloudflareTunnelModel(
+                  id: 'tunnel-1',
+                  name: 'homelab',
+                  status: 'healthy',
+                  configSource: 'cloudflare',
+                ),
+              ],
+            ),
+          ),
+        ],
+        child: app(const DomainsPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Domains'), findsOneWidget);
+    expect(find.text('Cloudflare'), findsOneWidget);
+    expect(find.text('example.test'), findsOneWidget);
+    expect(find.text('homelab'), findsOneWidget);
+    expect(find.text('CONNECTED'), findsOneWidget);
   });
 }

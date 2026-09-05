@@ -11,6 +11,7 @@ import '../../features/containers/containers_page.dart';
 import '../../features/deployments/coolify_resources_page.dart';
 import '../../features/deployments/deployment_detail_page.dart';
 import '../../features/deployments/deployments_page.dart';
+import '../../features/domains/domains_page.dart';
 import '../../features/overview/overview_page.dart';
 import '../../features/settings/settings_page.dart';
 
@@ -76,6 +77,11 @@ final GoRouter flareRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/coolify',
       builder: (context, state) => const CoolifyResourcesPage(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/domains',
+      builder: (context, state) => const DomainsPage(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

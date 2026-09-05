@@ -560,3 +560,108 @@ final class ServerInfoModel {
   final String serverVersion;
   final DateTime serverTime;
 }
+
+final class CloudflareStatusModel {
+  const CloudflareStatusModel({
+    required this.configured,
+    required this.tunnelsConfigured,
+  });
+  factory CloudflareStatusModel.fromJson(Map<String, dynamic> json) =>
+      CloudflareStatusModel(
+        configured: json['configured'] == true,
+        tunnelsConfigured: json['tunnelsConfigured'] == true,
+      );
+  final bool configured;
+  final bool tunnelsConfigured;
+}
+
+final class DomainZoneModel {
+  const DomainZoneModel({
+    required this.id,
+    required this.name,
+    required this.status,
+    required this.type,
+  });
+  factory DomainZoneModel.fromJson(Map<String, dynamic> json) =>
+      DomainZoneModel(
+        id: json['id']?.toString() ?? '',
+        name: json['name']?.toString() ?? 'Unknown domain',
+        status: json['status']?.toString() ?? 'unknown',
+        type: json['type']?.toString() ?? 'unknown',
+      );
+  final String id;
+  final String name;
+  final String status;
+  final String type;
+}
+
+final class DNSRecordModel {
+  const DNSRecordModel({
+    required this.id,
+    required this.zoneId,
+    required this.name,
+    required this.type,
+    required this.target,
+    required this.ttl,
+    required this.proxiable,
+    this.proxied,
+  });
+  factory DNSRecordModel.fromJson(Map<String, dynamic> json) => DNSRecordModel(
+    id: json['id']?.toString() ?? '',
+    zoneId: json['zoneId']?.toString() ?? '',
+    name: json['name']?.toString() ?? 'Unknown record',
+    type: json['type']?.toString() ?? 'UNKNOWN',
+    target: json['target']?.toString() ?? '',
+    ttl: _int(json['ttl']) ?? 0,
+    proxied: json['proxied'] as bool?,
+    proxiable: json['proxiable'] == true,
+  );
+  final String id;
+  final String zoneId;
+  final String name;
+  final String type;
+  final String target;
+  final int ttl;
+  final bool? proxied;
+  final bool proxiable;
+}
+
+final class CloudflareTunnelModel {
+  const CloudflareTunnelModel({
+    required this.id,
+    required this.name,
+    required this.status,
+    required this.configSource,
+  });
+  factory CloudflareTunnelModel.fromJson(Map<String, dynamic> json) =>
+      CloudflareTunnelModel(
+        id: json['id']?.toString() ?? '',
+        name: json['name']?.toString() ?? 'Unknown tunnel',
+        status: json['status']?.toString() ?? 'unknown',
+        configSource: json['configSource']?.toString() ?? 'unknown',
+      );
+  final String id;
+  final String name;
+  final String status;
+  final String configSource;
+}
+
+final class TunnelRouteModel {
+  const TunnelRouteModel({
+    required this.tunnelId,
+    required this.hostname,
+    required this.originKind,
+    this.path,
+  });
+  factory TunnelRouteModel.fromJson(Map<String, dynamic> json) =>
+      TunnelRouteModel(
+        tunnelId: json['tunnelId']?.toString() ?? '',
+        hostname: json['hostname']?.toString() ?? '',
+        path: json['path']?.toString(),
+        originKind: json['originKind']?.toString() ?? 'unknown',
+      );
+  final String tunnelId;
+  final String hostname;
+  final String? path;
+  final String originKind;
+}
