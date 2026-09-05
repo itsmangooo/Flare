@@ -83,8 +83,7 @@ func main() {
 	overviewHandler := authHandler.Authenticate(overview.NewHandler(docker, hostMetrics, db, activityReader, logger))
 	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
 		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
-		Domains: domainHandler, Topology: topologyHandler,
-		Domains: domainHandler, Coolify: coolifyHandler, System: systemHandler,
+		Domains: domainHandler, Topology: topologyHandler, Coolify: coolifyHandler, System: systemHandler,
 	})
 	errCh := make(chan error, 1)
 	go func() {
