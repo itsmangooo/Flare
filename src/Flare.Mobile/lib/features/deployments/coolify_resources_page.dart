@@ -73,6 +73,7 @@ final class _CoolifyResourcesPageState
   @override
   Widget build(BuildContext context) {
     final data = ref.watch(coolifyProvider);
+    final palette = context.flare;
     return FlareScaffold(
       eyebrow: 'COOLIFY',
       title: 'Resources',
@@ -93,8 +94,8 @@ final class _CoolifyResourcesPageState
                 onRetry: () => ref.invalidate(coolifyProvider),
               ),
               data: (values) => RefreshIndicator(
-                color: FlareColors.accent,
-                backgroundColor: FlareColors.surfaceHigh,
+                color: palette.accent,
+                backgroundColor: palette.surfaceHigh,
                 onRefresh: () async => ref.refresh(coolifyProvider.future),
                 child: switch (_tab) {
                   _ResourceTab.applications => _ApplicationList(
@@ -123,46 +124,47 @@ final class _Tabs extends StatelessWidget {
   final _ResourceTab selected;
   final ValueChanged<_ResourceTab> onSelected;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(4),
-    decoration: BoxDecoration(
-      color: FlareColors.surface,
-      borderRadius: BorderRadius.circular(FlareRadii.normal),
-      border: Border.all(color: FlareColors.border),
-    ),
-    child: Row(
-      children: _ResourceTab.values
-          .map(
-            (tab) => Expanded(
-              child: InkWell(
-                onTap: () => onSelected(tab),
-                borderRadius: BorderRadius.circular(8),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 170),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: selected == tab
-                        ? FlareColors.accentSoft
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    tab.name[0].toUpperCase() + tab.name.substring(1),
-                    textAlign: TextAlign.center,
-                    style: FlareType.metadata.copyWith(
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(FlareRadii.normal),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        children: _ResourceTab.values
+            .map(
+              (tab) => Expanded(
+                child: InkWell(
+                  onTap: () => onSelected(tab),
+                  borderRadius: BorderRadius.circular(8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 170),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
                       color: selected == tab
-                          ? FlareColors.accent
-                          : FlareColors.muted,
-                      fontWeight: FontWeight.w600,
+                          ? palette.accentSoft
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      tab.name[0].toUpperCase() + tab.name.substring(1),
+                      textAlign: TextAlign.center,
+                      style: FlareType.metadata.copyWith(
+                        color: selected == tab ? palette.accent : palette.muted,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          )
-          .toList(growable: false),
-    ),
-  );
+            )
+            .toList(growable: false),
+      ),
+    );
+  }
 }
 
 typedef _RunResource =
@@ -377,111 +379,114 @@ final class _ServerExpansionState extends ConsumerState<_ServerExpansion> {
   }
 
   @override
-  Widget build(BuildContext context) => FlareCard(
-    onTap: _toggle,
-    child: Column(
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            PhosphorIcon(
-              PhosphorIconsRegular.hardDrives,
-              size: 19,
-              color: widget.server.isReachable == true
-                  ? FlareColors.success
-                  : FlareColors.danger,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                widget.server.name,
-                style: FlareType.body.copyWith(fontWeight: FontWeight.w600),
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return FlareCard(
+      onTap: _toggle,
+      child: Column(
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              PhosphorIcon(
+                PhosphorIconsRegular.hardDrives,
+                size: 19,
+                color: widget.server.isReachable == true
+                    ? palette.success
+                    : palette.danger,
               ),
-            ),
-            FlareStatusBadge(
-              label: widget.server.isReachable == true
-                  ? 'Reachable'
-                  : 'Offline',
-              tone: widget.server.isReachable == true
-                  ? FlareStatusTone.success
-                  : FlareStatusTone.danger,
-              dot: false,
-            ),
-            const SizedBox(width: 7),
-            AnimatedRotation(
-              turns: expanded ? 0.5 : 0,
-              duration: const Duration(milliseconds: 180),
-              child: const PhosphorIcon(
-                PhosphorIconsRegular.caretDown,
-                size: 15,
-                color: FlareColors.muted,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  widget.server.name,
+                  style: FlareType.body.copyWith(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-          ],
-        ),
-        if (expanded) ...<Widget>[
-          const SizedBox(height: 13),
-          const FlareDivider(),
-          const SizedBox(height: 10),
-          FutureBuilder<List<CoolifyResourceModel>>(
-            future: resources,
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Text(
-                  'Resources unavailable.',
-                  style: FlareType.metadata.copyWith(color: FlareColors.danger),
-                );
-              }
-              if (!snapshot.hasData) {
-                return const LinearProgressIndicator(
-                  minHeight: 2,
-                  color: FlareColors.accent,
-                  backgroundColor: FlareColors.border,
-                );
-              }
-              if (snapshot.data!.isEmpty) {
-                return const Text(
-                  'No resources on this server.',
-                  style: FlareType.metadata,
-                );
-              }
-              return Column(
-                children: snapshot.data!
-                    .map(
-                      (resource) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                resource.name,
-                                style: FlareType.metadata.copyWith(
-                                  color: FlareColors.text,
+              FlareStatusBadge(
+                label: widget.server.isReachable == true
+                    ? 'Reachable'
+                    : 'Offline',
+                tone: widget.server.isReachable == true
+                    ? FlareStatusTone.success
+                    : FlareStatusTone.danger,
+                dot: false,
+              ),
+              const SizedBox(width: 7),
+              AnimatedRotation(
+                turns: expanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: PhosphorIcon(
+                  PhosphorIconsRegular.caretDown,
+                  size: 15,
+                  color: palette.muted,
+                ),
+              ),
+            ],
+          ),
+          if (expanded) ...<Widget>[
+            const SizedBox(height: 13),
+            const FlareDivider(),
+            const SizedBox(height: 10),
+            FutureBuilder<List<CoolifyResourceModel>>(
+              future: resources,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Text(
+                    'Resources unavailable.',
+                    style: FlareType.metadata.copyWith(color: palette.danger),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return LinearProgressIndicator(
+                    minHeight: 2,
+                    color: palette.accent,
+                    backgroundColor: palette.border,
+                  );
+                }
+                if (snapshot.data!.isEmpty) {
+                  return const Text(
+                    'No resources on this server.',
+                    style: FlareType.metadata,
+                  );
+                }
+                return Column(
+                  children: snapshot.data!
+                      .map(
+                        (resource) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            children: <Widget>[
+                              Expanded(
+                                child: Text(
+                                  resource.name,
+                                  style: FlareType.metadata.copyWith(
+                                    color: palette.text,
+                                  ),
                                 ),
                               ),
-                            ),
-                            Text(
-                              resource.type,
-                              style: FlareType.metadata.copyWith(
-                                color: FlareColors.muted,
+                              Text(
+                                resource.type,
+                                style: FlareType.metadata.copyWith(
+                                  color: palette.muted,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              resource.status ?? 'unknown',
-                              style: FlareType.metadata,
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              Text(
+                                resource.status ?? 'unknown',
+                                style: FlareType.metadata,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    )
-                    .toList(growable: false),
-              );
-            },
-          ),
+                      )
+                      .toList(growable: false),
+                );
+              },
+            ),
+          ],
         ],
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 final class _ResourceRow extends StatelessWidget {
@@ -496,41 +501,44 @@ final class _ResourceRow extends StatelessWidget {
   final String? status;
   final List<Widget> actions;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 3),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: Text(
-                name,
-                style: FlareType.body.copyWith(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  name,
+                  style: FlareType.body.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-            ),
-            FlareStatusBadge(
-              label: status ?? 'Unknown',
-              tone: (status ?? '').toLowerCase().contains('running')
-                  ? FlareStatusTone.success
-                  : FlareStatusTone.neutral,
-              dot: false,
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: FlareType.metadata.copyWith(color: FlareColors.muted),
-        ),
-        const SizedBox(height: 11),
-        Wrap(spacing: 7, runSpacing: 7, children: actions),
-      ],
-    ),
-  );
+              FlareStatusBadge(
+                label: status ?? 'Unknown',
+                tone: (status ?? '').toLowerCase().contains('running')
+                    ? FlareStatusTone.success
+                    : FlareStatusTone.neutral,
+                dot: false,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: FlareType.metadata.copyWith(color: palette.muted),
+          ),
+          const SizedBox(height: 11),
+          Wrap(spacing: 7, runSpacing: 7, children: actions),
+        ],
+      ),
+    );
+  }
 }

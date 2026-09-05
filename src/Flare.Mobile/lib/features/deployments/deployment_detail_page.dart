@@ -102,7 +102,8 @@ final class _DeploymentDetailPageState
   @override
   Widget build(BuildContext context) {
     final deployment = _deployment;
-    final status = deploymentStatus(deployment?.status);
+    final palette = context.flare;
+    final status = deploymentStatus(deployment?.status, palette);
     return FlareScaffold(
       eyebrow: 'DEPLOYMENT',
       title: deployment?.resourceName ?? 'Deployment',
@@ -144,7 +145,7 @@ final class _DeploymentDetailPageState
                       _TimelineRow(
                         label: 'Started',
                         value: formatDateTime(deployment.startedAt),
-                        color: FlareColors.info,
+                        color: palette.info,
                       ),
                       const FlareDivider(indent: 6),
                       _TimelineRow(
@@ -156,7 +157,7 @@ final class _DeploymentDetailPageState
                       _TimelineRow(
                         label: 'Duration',
                         value: formatDuration(deployment.duration),
-                        color: FlareColors.textSecondary,
+                        color: palette.textSecondary,
                       ),
                     ],
                   ),
@@ -200,7 +201,7 @@ final class _DeploymentDetailPageState
                   decoration: BoxDecoration(
                     color: const Color(0xFF05070A),
                     borderRadius: BorderRadius.circular(FlareRadii.small),
-                    border: Border.all(color: FlareColors.borderStrong),
+                    border: Border.all(color: palette.borderStrong),
                   ),
                   child: SingleChildScrollView(
                     child: SelectableText(
@@ -240,12 +241,12 @@ final class _TimelineRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: FlareType.metadata.copyWith(color: FlareColors.muted),
+            style: FlareType.metadata.copyWith(color: context.flare.muted),
           ),
         ),
         Text(
           value,
-          style: FlareType.metadata.copyWith(color: FlareColors.text),
+          style: FlareType.metadata.copyWith(color: context.flare.text),
         ),
       ],
     ),
@@ -271,7 +272,7 @@ final class _DetailRow extends StatelessWidget {
           width: 74,
           child: Text(
             label,
-            style: FlareType.metadata.copyWith(color: FlareColors.muted),
+            style: FlareType.metadata.copyWith(color: context.flare.muted),
           ),
         ),
         Expanded(
@@ -279,8 +280,8 @@ final class _DetailRow extends StatelessWidget {
             value,
             textAlign: TextAlign.right,
             style: mono
-                ? FlareType.mono
-                : FlareType.metadata.copyWith(color: FlareColors.text),
+                ? FlareType.mono.copyWith(color: context.flare.textSecondary)
+                : FlareType.metadata.copyWith(color: context.flare.text),
           ),
         ),
       ],

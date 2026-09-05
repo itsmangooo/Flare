@@ -69,113 +69,123 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: FlareColors.background,
-    body: SafeArea(
-      child: LayoutBuilder(
-        builder: (context, constraints) => SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: AutofillGroup(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      const Row(
-                        children: <Widget>[
-                          FlareMark(size: 40),
-                          SizedBox(width: 12),
-                          Text(
-                            'FLARE',
-                            style: TextStyle(
-                              color: FlareColors.text,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 3,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Scaffold(
+      backgroundColor: palette.background,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight - 48,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: AutofillGroup(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            const FlareMark(size: 40),
+                            const SizedBox(width: 12),
+                            Text(
+                              'FLARE',
+                              style: TextStyle(
+                                color: palette.text,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 3,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 34),
-                      Text(
-                        'Welcome back',
-                        style: FlareType.display.copyWith(fontSize: 32),
-                      ),
-                      const SizedBox(height: 7),
-                      Row(
-                        children: <Widget>[
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: FlareColors.success,
-                              shape: BoxShape.circle,
+                          ],
+                        ),
+                        const SizedBox(height: 34),
+                        Text(
+                          'Welcome back',
+                          style: FlareType.display.copyWith(fontSize: 32),
+                        ),
+                        const SizedBox(height: 7),
+                        Row(
+                          children: <Widget>[
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: palette.success,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 7),
-                          Text(_server, style: FlareType.metadata),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                      FlareTextField(
-                        controller: _email,
-                        label: 'Email',
-                        hint: 'admin@example.com',
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autofillHints: const <String>[
-                          AutofillHints.username,
-                          AutofillHints.email,
-                        ],
-                        leading: PhosphorIconsRegular.envelope,
-                      ),
-                      const SizedBox(height: 17),
-                      FlareTextField(
-                        controller: _password,
-                        label: 'Password',
-                        hint: 'Your password',
-                        obscureText: true,
-                        error: _error,
-                        textInputAction: TextInputAction.done,
-                        autofillHints: const <String>[AutofillHints.password],
-                        leading: PhosphorIconsRegular.lock,
-                        onSubmitted: (_) => _login(),
-                      ),
-                      const SizedBox(height: 20),
-                      FlareButton(
-                        label: _signingIn ? 'Signing in' : 'Sign in',
-                        icon: PhosphorIconsRegular.signIn,
-                        tone: FlareButtonTone.primary,
-                        loading: _signingIn,
-                        expand: true,
-                        onPressed: _signingIn ? null : _login,
-                      ),
-                      const SizedBox(height: 14),
-                      Align(
-                        child: InkWell(
-                          onTap: _signingIn
-                              ? null
-                              : () async {
-                                  await ref
-                                      .read(sessionStoreProvider)
-                                      .clearServer();
-                                  if (context.mounted) context.go('/connect');
-                                },
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Text(
-                              'Use a different server',
+                            const SizedBox(width: 7),
+                            Text(
+                              _server,
                               style: FlareType.metadata.copyWith(
-                                color: FlareColors.textSecondary,
+                                color: palette.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 30),
+                        FlareTextField(
+                          controller: _email,
+                          label: 'Email',
+                          hint: 'admin@example.com',
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const <String>[
+                            AutofillHints.username,
+                            AutofillHints.email,
+                          ],
+                          leading: PhosphorIconsRegular.envelope,
+                        ),
+                        const SizedBox(height: 17),
+                        FlareTextField(
+                          controller: _password,
+                          label: 'Password',
+                          hint: 'Your password',
+                          obscureText: true,
+                          error: _error,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const <String>[AutofillHints.password],
+                          leading: PhosphorIconsRegular.lock,
+                          onSubmitted: (_) => _login(),
+                        ),
+                        const SizedBox(height: 20),
+                        FlareButton(
+                          label: _signingIn ? 'Signing in' : 'Sign in',
+                          icon: PhosphorIconsRegular.signIn,
+                          tone: FlareButtonTone.primary,
+                          loading: _signingIn,
+                          expand: true,
+                          onPressed: _signingIn ? null : _login,
+                        ),
+                        const SizedBox(height: 14),
+                        Align(
+                          child: InkWell(
+                            onTap: _signingIn
+                                ? null
+                                : () async {
+                                    await ref
+                                        .read(sessionStoreProvider)
+                                        .clearServer();
+                                    if (context.mounted) context.go('/connect');
+                                  },
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(
+                                'Use a different server',
+                                style: FlareType.metadata.copyWith(
+                                  color: palette.textSecondary,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -183,6 +193,6 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

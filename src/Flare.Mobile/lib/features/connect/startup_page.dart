@@ -25,8 +25,9 @@ final class StartupPage extends ConsumerWidget {
       });
     });
     final state = ref.watch(startupDestinationProvider);
+    final palette = context.flare;
     return ColoredBox(
-      color: FlareColors.background,
+      color: palette.background,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -39,7 +40,7 @@ final class StartupPage extends ConsumerWidget {
             Text(
               'FLARE',
               style: FlareType.label.copyWith(
-                color: FlareColors.text,
+                color: palette.text,
                 letterSpacing: 4,
                 fontSize: 13,
               ),
@@ -48,7 +49,7 @@ final class StartupPage extends ConsumerWidget {
               const SizedBox(height: 20),
               Text(
                 'Secure storage could not be opened.',
-                style: FlareType.metadata.copyWith(color: FlareColors.danger),
+                style: FlareType.metadata.copyWith(color: palette.danger),
               ),
             ],
           ],
