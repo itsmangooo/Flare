@@ -7,6 +7,7 @@ import (
 )
 
 func TestLoadAcceptsExistingNpgsqlConfiguration(t *testing.T) {
+	t.Setenv("FLARE_JWT_SIGNING_KEY", "test-signing-key-with-at-least-32-bytes")
 	t.Setenv("ConnectionStrings__Postgres", "Host=db;Port=5433;Database=flare;Username=app;Password=p@ss word;SSL Mode=Require")
 	t.Setenv("COOLIFY_BASE_URL", "https://coolify.example.test/")
 	t.Setenv("COOLIFY_API_TOKEN", "secret")
@@ -26,6 +27,7 @@ func TestLoadAcceptsExistingNpgsqlConfiguration(t *testing.T) {
 }
 
 func TestLoadRejectsPartialCoolifyConfiguration(t *testing.T) {
+	t.Setenv("FLARE_JWT_SIGNING_KEY", "test-signing-key-with-at-least-32-bytes")
 	t.Setenv("ConnectionStrings__Postgres", "postgresql://app:test@db/flare")
 	t.Setenv("COOLIFY_BASE_URL", "https://coolify.example.test")
 	t.Setenv("COOLIFY_API_TOKEN", "")
@@ -35,6 +37,7 @@ func TestLoadRejectsPartialCoolifyConfiguration(t *testing.T) {
 }
 
 func TestLoadPreservesQuotedNpgsqlPassword(t *testing.T) {
+	t.Setenv("FLARE_JWT_SIGNING_KEY", "test-signing-key-with-at-least-32-bytes")
 	t.Setenv("ConnectionStrings__Postgres", `Host=db;Database=flare;Username=app;Password="p;ass""word";SSL Mode=Disable`)
 	t.Setenv("COOLIFY_BASE_URL", "")
 	t.Setenv("COOLIFY_API_TOKEN", "")
@@ -49,5 +52,13 @@ func TestLoadPreservesQuotedNpgsqlPassword(t *testing.T) {
 	password, present := parsed.User.Password()
 	if !present || password != `p;ass"word` {
 		t.Fatalf("quoted password = %q, present = %v", password, present)
+	}
+}
+
+func TestLoadRejectsWeakJWTKey(t *testing.T) {
+	t.Setenv("ConnectionStrings__Postgres", "postgresql://app:test@db/flare")
+	t.Setenv("FLARE_JWT_SIGNING_KEY", "too-short")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() should reject a weak JWT signing key")
 	}
 }
