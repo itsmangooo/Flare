@@ -31,6 +31,7 @@ type Routes struct {
 	Activity   http.Handler
 	Overview   http.Handler
 	Domains    http.Handler
+	Topology   http.Handler
 }
 
 func New(cfg config.Config, version string, logger *slog.Logger, database databasePinger, routes Routes) *http.Server {
@@ -55,6 +56,9 @@ func New(cfg config.Config, version string, logger *slog.Logger, database databa
 	}
 	if routes.Domains != nil {
 		router.Mount("/api/v1/domains", routes.Domains)
+	}
+	if routes.Topology != nil {
+		router.Mount("/api/v1/topology", routes.Topology)
 	}
 	router.Get("/health/live", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, healthResponse{Status: "healthy", Checks: map[string]healthCheck{}})

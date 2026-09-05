@@ -21,6 +21,7 @@ import (
 	"github.com/itsmangooo/flare/internal/monitoring"
 	"github.com/itsmangooo/flare/internal/overview"
 	"github.com/itsmangooo/flare/internal/telemetry"
+	"github.com/itsmangooo/flare/internal/topology"
 )
 
 var version = "dev"
@@ -65,6 +66,7 @@ func main() {
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
 	domainHandler := authHandler.Authenticate(cloudflare.NewHandler(cloudflareClient, logger))
+	topologyHandler := authHandler.Authenticate(topology.NewHandler(docker, cfg.HostName, logger))
 	activityReader := activity.NewReader(db)
 	hostMetrics := telemetry.NewCollector(cfg.HostName, cfg.HostProcPath, cfg.HostRootFSPath, logger)
 	metricSampler := telemetry.NewSampler(hostMetrics, db, logger)
@@ -72,7 +74,7 @@ func main() {
 	overviewHandler := authHandler.Authenticate(overview.NewHandler(docker, hostMetrics, db, activityReader, logger))
 	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
 		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
-		Domains: domainHandler,
+		Domains: domainHandler, Topology: topologyHandler,
 	})
 	errCh := make(chan error, 1)
 	go func() {
