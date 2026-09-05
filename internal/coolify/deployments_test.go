@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -61,7 +62,7 @@ func TestDeploymentDetailUsesDocumentedEndpointAndRunningHasNoFinish(t *testing.
 }
 
 func TestDeploymentPageAggregatesApplicationsAndSortsNewestFirst(t *testing.T) {
-	server := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
 		case "/api/v1/applications":
 			_, _ = io.WriteString(writer, `[{"uuid":"app_1","name":"one"},{"uuid":"app_2","name":"two"}]`)
@@ -73,6 +74,8 @@ func TestDeploymentPageAggregatesApplicationsAndSortsNewestFirst(t *testing.T) {
 			http.NotFound(writer, request)
 		}
 	}))
+	server.Config.ErrorLog = log.New(io.Discard, "", 0)
+	server.StartTLS()
 	defer server.Close()
 	client := testClient(t, server, "token")
 
