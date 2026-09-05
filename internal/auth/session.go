@@ -17,11 +17,34 @@ import (
 type refreshRequest struct {
 	RefreshToken string `json:"refreshToken"`
 }
-type sessionUser struct {
+
+// User is the authenticated identity attached to an API request.
+type User struct {
 	ID    uuid.UUID
 	Email string
+	Roles []string
 }
 type sessionKey struct{}
+
+// UserFromContext returns the identity verified by Authenticate.
+func UserFromContext(ctx context.Context) (User, bool) {
+	user, ok := ctx.Value(sessionKey{}).(User)
+	return user, ok
+}
+
+// HasRole reports whether the authenticated identity has the requested role.
+func HasRole(ctx context.Context, role string) bool {
+	user, ok := UserFromContext(ctx)
+	if !ok {
+		return false
+	}
+	for _, candidate := range user.Roles {
+		if candidate == role {
+			return true
+		}
+	}
+	return false
+}
 
 func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 	var request refreshRequest
@@ -97,7 +120,7 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusBadRequest, "Logout failed.", "Refresh token is invalid.")
 		return
 	}
-	user := r.Context().Value(sessionKey{}).(sessionUser)
+	user, _ := UserFromContext(r.Context())
 	hash := sha256.Sum256([]byte(request.RefreshToken))
 	now := time.Now().UTC()
 	result, err := h.db.Exec(r.Context(), `UPDATE "RefreshTokens" SET "RevokedAt"=$3,"RevokedByIp"=$4 WHERE "TokenHash"=$1 AND "UserId"=$2 AND "RevokedAt" IS NULL`, strings.ToUpper(hex.EncodeToString(hash[:])), user.ID, now, nullable(clientIP(r)))
@@ -118,7 +141,7 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) me(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(sessionKey{}).(sessionUser)
+	user, _ := UserFromContext(r.Context())
 	var email string
 	if err := h.db.QueryRow(r.Context(), `SELECT "Email" FROM "Users" WHERE "Id"=$1`, user.ID).Scan(&email); errors.Is(err, pgx.ErrNoRows) {
 		writeProblem(w, http.StatusUnauthorized, "Unauthorized.", "")
@@ -175,7 +198,8 @@ func (h *Handler) authenticate(next http.Handler) http.Handler {
 			return
 		}
 		email := stringClaim(claims, "email")
-		ctx := context.WithValue(r.Context(), sessionKey{}, sessionUser{ID: id, Email: email})
+		roles := stringClaims(claims, "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
+		ctx := context.WithValue(r.Context(), sessionKey{}, User{ID: id, Email: email, Roles: roles})
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -183,4 +207,23 @@ func (h *Handler) authenticate(next http.Handler) http.Handler {
 func stringClaim(claims jwt.MapClaims, name string) string {
 	value, _ := claims[name].(string)
 	return value
+}
+
+func stringClaims(claims jwt.MapClaims, name string) []string {
+	switch value := claims[name].(type) {
+	case string:
+		return []string{value}
+	case []string:
+		return value
+	case []any:
+		result := make([]string, 0, len(value))
+		for _, candidate := range value {
+			if text, ok := candidate.(string); ok {
+				result = append(result, text)
+			}
+		}
+		return result
+	default:
+		return nil
+	}
 }
