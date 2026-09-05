@@ -7,14 +7,21 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
-	HTTPAddress    string
-	DatabaseURL    string
-	DockerHost     string
-	CoolifyBaseURL string
-	CoolifyToken   string
+	HTTPAddress     string
+	DatabaseURL     string
+	DockerHost      string
+	CoolifyBaseURL  string
+	CoolifyToken    string
+	BootstrapToken  string
+	JWTSigningKey   string
+	JWTIssuer       string
+	JWTAudience     string
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
 }
 
 func Load() (Config, error) {
@@ -23,7 +30,21 @@ func Load() (Config, error) {
 		DockerHost:     value("DOCKER_HOST", "unix:///var/run/docker.sock"),
 		CoolifyBaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv("COOLIFY_BASE_URL")), "/"),
 		CoolifyToken:   strings.TrimSpace(os.Getenv("COOLIFY_API_TOKEN")),
+		BootstrapToken: strings.TrimSpace(os.Getenv("FLARE_BOOTSTRAP_TOKEN")),
+		JWTSigningKey:  os.Getenv("FLARE_JWT_SIGNING_KEY"),
+		JWTIssuer:      value("FLARE_JWT_ISSUER", "Flare.Api"),
+		JWTAudience:    value("FLARE_JWT_AUDIENCE", "Flare.Mobile"),
 	}
+	accessMinutes, err := boundedInt("FLARE_ACCESS_TOKEN_MINUTES", 15, 5, 60)
+	if err != nil {
+		return Config{}, err
+	}
+	refreshDays, err := boundedInt("FLARE_REFRESH_TOKEN_DAYS", 30, 1, 90)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.AccessTokenTTL = time.Duration(accessMinutes) * time.Minute
+	cfg.RefreshTokenTTL = time.Duration(refreshDays) * 24 * time.Hour
 
 	databaseURL, err := postgresURL(strings.TrimSpace(os.Getenv("ConnectionStrings__Postgres")))
 	if err != nil {
@@ -40,7 +61,22 @@ func Load() (Config, error) {
 			return Config{}, errors.New("COOLIFY_BASE_URL must be an absolute HTTPS URL")
 		}
 	}
+	if len([]byte(cfg.JWTSigningKey)) < 32 {
+		return Config{}, errors.New("FLARE_JWT_SIGNING_KEY must contain at least 32 UTF-8 bytes")
+	}
 	return cfg, nil
+}
+
+func boundedInt(name string, fallback, minimum, maximum int) (int, error) {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return fallback, nil
+	}
+	result, err := strconv.Atoi(raw)
+	if err != nil || result < minimum || result > maximum {
+		return 0, fmt.Errorf("%s must be between %d and %d", name, minimum, maximum)
+	}
+	return result, nil
 }
 
 func value(name, fallback string) string {
