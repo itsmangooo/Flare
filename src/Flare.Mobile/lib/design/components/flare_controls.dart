@@ -82,9 +82,9 @@ final class _FlareButtonState extends State<FlareButton> {
         palette.accent.withValues(alpha: 0.72),
       ),
       FlareButtonTone.danger => (
-        FlareColors.dangerSoft,
-        const Color(0xFFFFC7C9),
-        const Color(0x55F16F75),
+        palette.dangerSoft,
+        palette.danger,
+        palette.danger.withValues(alpha: 0.33),
       ),
       FlareButtonTone.neutral => (
         palette.surfaceHigh,
@@ -295,7 +295,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
     final palette = context.flare;
     final error = widget.error;
     final borderColor = error != null
-        ? FlareColors.danger
+        ? palette.danger
         : _focus.hasFocus
         ? palette.accent
         : palette.borderStrong;
@@ -384,9 +384,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
                   padding: const EdgeInsets.only(top: 6, left: 2),
                   child: Text(
                     error,
-                    style: FlareType.metadata.copyWith(
-                      color: FlareColors.danger,
-                    ),
+                    style: FlareType.metadata.copyWith(color: palette.danger),
                   ),
                 ),
         ),
@@ -472,10 +470,10 @@ final class FlareStatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.flare;
     final (color, background) = switch (tone) {
-      FlareStatusTone.success => (FlareColors.success, FlareColors.successSoft),
-      FlareStatusTone.warning => (FlareColors.warning, FlareColors.warningSoft),
-      FlareStatusTone.danger => (FlareColors.danger, FlareColors.dangerSoft),
-      FlareStatusTone.info => (FlareColors.info, FlareColors.infoSoft),
+      FlareStatusTone.success => (palette.success, palette.successSoft),
+      FlareStatusTone.warning => (palette.warning, palette.warningSoft),
+      FlareStatusTone.danger => (palette.danger, palette.dangerSoft),
+      FlareStatusTone.info => (palette.info, palette.infoSoft),
       FlareStatusTone.neutral => (
         palette.textSecondary,
         palette.muted.withValues(alpha: 0.08),

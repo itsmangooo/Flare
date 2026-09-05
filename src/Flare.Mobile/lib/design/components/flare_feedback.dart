@@ -16,16 +16,14 @@ abstract final class FlareToast {
   }) {
     _active?.remove();
     final overlay = Overlay.of(context);
+    final palette = context.flare;
     final (icon, color) = switch (tone) {
       FlareToastTone.success => (
         PhosphorIconsFill.checkCircle,
-        FlareColors.success,
+        palette.success,
       ),
-      FlareToastTone.error => (
-        PhosphorIconsFill.warningCircle,
-        FlareColors.danger,
-      ),
-      FlareToastTone.info => (PhosphorIconsFill.info, FlareColors.info),
+      FlareToastTone.error => (PhosphorIconsFill.warningCircle, palette.danger),
+      FlareToastTone.info => (PhosphorIconsFill.info, palette.info),
     };
     late final OverlayEntry entry;
     entry = OverlayEntry(

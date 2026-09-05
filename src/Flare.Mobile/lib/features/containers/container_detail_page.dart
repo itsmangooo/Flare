@@ -171,6 +171,7 @@ final class _ContainerDetailPageState
   @override
   Widget build(BuildContext context) {
     final detail = _detail;
+    final palette = context.flare;
     return FlareScaffold(
       eyebrow: 'CONTAINER',
       title: detail?.name ?? 'Container',
@@ -192,8 +193,8 @@ final class _ContainerDetailPageState
               message: 'Docker no longer reports this container.',
             )
           : RefreshIndicator(
-              color: FlareColors.accent,
-              backgroundColor: FlareColors.surfaceHigh,
+              color: palette.accent,
+              backgroundColor: palette.surfaceHigh,
               onRefresh: _load,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -280,9 +281,7 @@ final class _ContainerDetailPageState
                         detail.labels.entries
                             .map((entry) => '${entry.key}=${entry.value}')
                             .join('\n'),
-                        style: FlareType.mono.copyWith(
-                          color: FlareColors.muted,
-                        ),
+                        style: FlareType.mono.copyWith(color: palette.muted),
                       ),
                     ),
                   ],
@@ -355,7 +354,7 @@ final class _Metrics extends StatelessWidget {
                   detail.memoryLimitBytes! > 0
               ? detail.memoryBytes! / detail.memoryLimitBytes! * 100
               : null,
-          color: FlareColors.info,
+          color: context.flare.info,
         ),
       ),
     ],
@@ -367,20 +366,29 @@ final class _CompactMetric extends StatelessWidget {
     required this.label,
     required this.value,
     required this.usage,
-    this.color = FlareColors.accent,
+    this.color,
   });
   final String label;
   final String value;
   final double? usage;
-  final Color color;
+  final Color? color;
   @override
   Widget build(BuildContext context) => FlareCard(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(label, style: FlareType.label),
+        Text(
+          label,
+          style: FlareType.label.copyWith(color: context.flare.muted),
+        ),
         const SizedBox(height: 10),
-        Text(value, style: FlareType.metric.copyWith(fontSize: 23)),
+        Text(
+          value,
+          style: FlareType.metric.copyWith(
+            fontSize: 23,
+            color: context.flare.text,
+          ),
+        ),
         const SizedBox(height: 13),
         FlareUsageBar(value: usage, color: color),
       ],
@@ -438,7 +446,7 @@ final class _InfoRow extends StatelessWidget {
           width: 92,
           child: Text(
             label,
-            style: FlareType.metadata.copyWith(color: FlareColors.muted),
+            style: FlareType.metadata.copyWith(color: context.flare.muted),
           ),
         ),
         Expanded(
@@ -446,8 +454,8 @@ final class _InfoRow extends StatelessWidget {
             value,
             textAlign: TextAlign.right,
             style: mono
-                ? FlareType.mono
-                : FlareType.metadata.copyWith(color: FlareColors.text),
+                ? FlareType.mono.copyWith(color: context.flare.textSecondary)
+                : FlareType.metadata.copyWith(color: context.flare.text),
           ),
         ),
       ],
@@ -476,7 +484,12 @@ final class _LogsHeader extends StatelessWidget {
     children: <Widget>[
       Row(
         children: <Widget>[
-          const Expanded(child: Text('Logs', style: FlareType.title)),
+          Expanded(
+            child: Text(
+              'Logs',
+              style: FlareType.title.copyWith(color: context.flare.text),
+            ),
+          ),
           FlareIconButton(
             icon: PhosphorIconsRegular.arrowClockwise,
             semanticLabel: 'Refresh logs',
@@ -519,40 +532,45 @@ final class _LogOption extends StatelessWidget {
   final VoidCallback onTap;
   final PhosphorIconData? icon;
   @override
-  Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(6),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: selected ? FlareColors.accentSoft : FlareColors.surface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: selected ? const Color(0x552F81F7) : FlareColors.border,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? palette.accentSoft : palette.surface,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: selected
+                ? palette.accent.withValues(alpha: 0.33)
+                : palette.border,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (icon != null) ...<Widget>[
+              PhosphorIcon(
+                icon!,
+                size: 13,
+                color: selected ? palette.accent : palette.muted,
+              ),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: FlareType.metadata.copyWith(
+                color: selected ? palette.accent : palette.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (icon != null) ...<Widget>[
-            PhosphorIcon(
-              icon!,
-              size: 13,
-              color: selected ? FlareColors.accent : FlareColors.muted,
-            ),
-            const SizedBox(width: 5),
-          ],
-          Text(
-            label,
-            style: FlareType.metadata.copyWith(
-              color: selected ? FlareColors.accent : FlareColors.textSecondary,
-              fontSize: 11,
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
+    );
+  }
 }
 
 final class _LogConsole extends StatelessWidget {
@@ -566,7 +584,7 @@ final class _LogConsole extends StatelessWidget {
     decoration: BoxDecoration(
       color: const Color(0xFF05070A),
       borderRadius: BorderRadius.circular(FlareRadii.small),
-      border: Border.all(color: FlareColors.borderStrong),
+      border: Border.all(color: context.flare.borderStrong),
     ),
     child: SingleChildScrollView(
       child: SelectableText(
