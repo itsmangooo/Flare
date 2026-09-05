@@ -25,7 +25,7 @@ type healthCheck struct {
 	Status string `json:"status"`
 }
 
-func New(cfg config.Config, version string, logger *slog.Logger, database databasePinger) *http.Server {
+func New(cfg config.Config, version string, logger *slog.Logger, database databasePinger, authRoutes http.Handler) *http.Server {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
@@ -33,6 +33,9 @@ func New(cfg config.Config, version string, logger *slog.Logger, database databa
 	router.Use(middleware.Timeout(30 * time.Second))
 	router.Use(requestLogger(logger))
 	registerPublicRoutes(router, version, database, time.Now())
+	if authRoutes != nil {
+		router.Mount("/api/v1/auth", authRoutes)
+	}
 	router.Get("/health/live", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, healthResponse{Status: "healthy", Checks: map[string]healthCheck{}})
 	})
