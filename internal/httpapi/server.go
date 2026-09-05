@@ -25,7 +25,14 @@ type healthCheck struct {
 	Status string `json:"status"`
 }
 
-func New(cfg config.Config, version string, logger *slog.Logger, database databasePinger, authRoutes, containerRoutes, activityRoutes http.Handler) *http.Server {
+type Routes struct {
+	Auth       http.Handler
+	Containers http.Handler
+	Activity   http.Handler
+	Overview   http.Handler
+}
+
+func New(cfg config.Config, version string, logger *slog.Logger, database databasePinger, routes Routes) *http.Server {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
@@ -33,14 +40,17 @@ func New(cfg config.Config, version string, logger *slog.Logger, database databa
 	router.Use(middleware.Timeout(30 * time.Second))
 	router.Use(requestLogger(logger))
 	registerPublicRoutes(router, version, database, time.Now())
-	if authRoutes != nil {
-		router.Mount("/api/v1/auth", authRoutes)
+	if routes.Auth != nil {
+		router.Mount("/api/v1/auth", routes.Auth)
 	}
-	if containerRoutes != nil {
-		router.Mount("/api/v1/containers", containerRoutes)
+	if routes.Containers != nil {
+		router.Mount("/api/v1/containers", routes.Containers)
 	}
-	if activityRoutes != nil {
-		router.Mount("/api/v1/activity", activityRoutes)
+	if routes.Activity != nil {
+		router.Mount("/api/v1/activity", routes.Activity)
+	}
+	if routes.Overview != nil {
+		router.Mount("/api/v1/overview", routes.Overview)
 	}
 	router.Get("/health/live", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, healthResponse{Status: "healthy", Checks: map[string]healthCheck{}})
