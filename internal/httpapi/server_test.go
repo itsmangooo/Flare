@@ -32,7 +32,7 @@ func TestHealthContracts(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			server := New(config.Config{HTTPAddress: ":0"}, "test", logger, test.ping)
+			server := New(config.Config{HTTPAddress: ":0"}, "test", logger, test.ping, nil)
 			response := httptest.NewRecorder()
 			server.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, test.path, nil))
 			if response.Code != test.wantStatus || !strings.Contains(response.Body.String(), test.wantBody) {
@@ -44,7 +44,7 @@ func TestHealthContracts(t *testing.T) {
 
 func TestPublicPageIsUsefulAndSanitized(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	server := New(config.Config{HTTPAddress: ":0"}, "1.4.2", logger, pingFunc(func(context.Context) error { return nil }))
+	server := New(config.Config{HTTPAddress: ":0"}, "1.4.2", logger, pingFunc(func(context.Context) error { return nil }), nil)
 	response := httptest.NewRecorder()
 	server.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
 
@@ -66,7 +66,7 @@ func TestPublicPageIsUsefulAndSanitized(t *testing.T) {
 
 func TestPublicPageReportsUnavailableDatabase(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-	server := New(config.Config{HTTPAddress: ":0"}, "test", logger, pingFunc(func(context.Context) error { return errors.New("offline") }))
+	server := New(config.Config{HTTPAddress: ":0"}, "test", logger, pingFunc(func(context.Context) error { return errors.New("offline") }), nil)
 	response := httptest.NewRecorder()
 	server.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), "Unavailable") {

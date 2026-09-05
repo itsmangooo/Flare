@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/itsmangooo/flare/internal/auth"
 	"github.com/itsmangooo/flare/internal/config"
 	"github.com/itsmangooo/flare/internal/database"
 	"github.com/itsmangooo/flare/internal/httpapi"
@@ -42,7 +43,7 @@ func main() {
 	}
 	defer db.Close()
 
-	server := httpapi.New(cfg, version, logger, db)
+	server := httpapi.New(cfg, version, logger, db, auth.NewHandler(cfg, db, logger))
 	errCh := make(chan error, 1)
 	go func() {
 		logger.Info("Flare Go API listening", "address", cfg.HTTPAddress, "version", version)
