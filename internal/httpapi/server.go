@@ -61,6 +61,7 @@ func New(cfg config.Config, version string, logger *slog.Logger, database databa
 	}
 	if routes.Topology != nil {
 		router.Mount("/api/v1/topology", routes.Topology)
+	}
 	if routes.Coolify != nil {
 		router.Mount("/api/v1/coolify", routes.Coolify)
 	}
