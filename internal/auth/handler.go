@@ -34,6 +34,7 @@ type Handler struct {
 	db      database
 	logger  *slog.Logger
 	limiter *ipLimiter
+	router  http.Handler
 }
 
 type ipWindow struct {
@@ -85,7 +86,7 @@ type identityUser struct {
 	AccessFailedCount int
 }
 
-func NewHandler(cfg config.Config, db database, logger *slog.Logger) http.Handler {
+func NewHandler(cfg config.Config, db database, logger *slog.Logger) *Handler {
 	handler := &Handler{cfg: cfg, db: db, logger: logger, limiter: &ipLimiter{clients: make(map[string]ipWindow)}}
 	router := chi.NewRouter()
 	router.Use(handler.rateLimit)
@@ -95,8 +96,12 @@ func NewHandler(cfg config.Config, db database, logger *slog.Logger) http.Handle
 	router.Post("/refresh", handler.refresh)
 	router.With(handler.authenticate).Post("/logout", handler.logout)
 	router.With(handler.authenticate).Get("/me", handler.me)
-	return router
+	handler.router = router
+	return handler
 }
+
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) { h.router.ServeHTTP(w, r) }
+func (h *Handler) Authenticate(next http.Handler) http.Handler      { return h.authenticate(next) }
 
 func (h *Handler) bootstrapStatus(w http.ResponseWriter, r *http.Request) {
 	var exists bool

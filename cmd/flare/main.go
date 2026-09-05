@@ -13,6 +13,7 @@ import (
 
 	"github.com/itsmangooo/flare/internal/auth"
 	"github.com/itsmangooo/flare/internal/config"
+	"github.com/itsmangooo/flare/internal/containers"
 	"github.com/itsmangooo/flare/internal/database"
 	"github.com/itsmangooo/flare/internal/httpapi"
 )
@@ -43,7 +44,15 @@ func main() {
 	}
 	defer db.Close()
 
-	server := httpapi.New(cfg, version, logger, db, auth.NewHandler(cfg, db, logger))
+	docker, err := containers.NewDockerClient(cfg.DockerHost)
+	if err != nil {
+		logger.Error("Docker client configuration failed", "error", err)
+		os.Exit(1)
+	}
+	defer docker.Close()
+	authHandler := auth.NewHandler(cfg, db, logger)
+	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, logger))
+	server := httpapi.New(cfg, version, logger, db, authHandler, containerHandler)
 	errCh := make(chan error, 1)
 	go func() {
 		logger.Info("Flare Go API listening", "address", cfg.HTTPAddress, "version", version)
