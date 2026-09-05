@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'theme_settings.dart';
+
 abstract final class FlareColors {
   static const background = Color(0xFF07090C);
   static const backgroundSecondary = Color(0xFF0C0F14);
@@ -22,6 +24,136 @@ abstract final class FlareColors {
   static const dangerSoft = Color(0x24F16F75);
   static const info = Color(0xFF70A8E8);
   static const infoSoft = Color(0x2470A8E8);
+}
+
+extension FlareAccentPresentation on FlareAccent {
+  String get label => switch (this) {
+    FlareAccent.blue => 'Flare Blue',
+    FlareAccent.cyan => 'Cyan',
+    FlareAccent.violet => 'Violet',
+    FlareAccent.emerald => 'Emerald',
+    FlareAccent.amber => 'Amber',
+  };
+
+  Color get color => switch (this) {
+    FlareAccent.blue => const Color(0xFF2F81F7),
+    FlareAccent.cyan => const Color(0xFF16B8D4),
+    FlareAccent.violet => const Color(0xFF8B6FF2),
+    FlareAccent.emerald => const Color(0xFF26A878),
+    FlareAccent.amber => const Color(0xFFD49732),
+  };
+}
+
+@immutable
+final class FlarePalette extends ThemeExtension<FlarePalette> {
+  const FlarePalette({
+    required this.background,
+    required this.backgroundSecondary,
+    required this.surface,
+    required this.surfaceHigh,
+    required this.border,
+    required this.borderStrong,
+    required this.text,
+    required this.textSecondary,
+    required this.muted,
+    required this.accent,
+    required this.accentSoft,
+  });
+
+  factory FlarePalette.dark(FlareAccent accent, {bool oled = false}) =>
+      FlarePalette(
+        background: oled ? Colors.black : FlareColors.background,
+        backgroundSecondary: oled
+            ? const Color(0xFF050505)
+            : FlareColors.backgroundSecondary,
+        surface: oled ? const Color(0xFF0A0A0A) : FlareColors.surface,
+        surfaceHigh: oled ? const Color(0xFF121212) : FlareColors.surfaceHigh,
+        border: FlareColors.border,
+        borderStrong: FlareColors.borderStrong,
+        text: FlareColors.text,
+        textSecondary: FlareColors.textSecondary,
+        muted: FlareColors.muted,
+        accent: accent.color,
+        accentSoft: accent.color.withAlpha(38),
+      );
+
+  factory FlarePalette.light(FlareAccent accent) => FlarePalette(
+    background: const Color(0xFFF7F8FA),
+    backgroundSecondary: const Color(0xFFF2F4F7),
+    surface: Colors.white,
+    surfaceHigh: const Color(0xFFF2F4F7),
+    border: const Color(0x0F000000),
+    borderStrong: const Color(0x1A000000),
+    text: const Color(0xFF17191D),
+    textSecondary: const Color(0xFF6E7681),
+    muted: const Color(0xFF87909C),
+    accent: accent.color,
+    accentSoft: accent.color.withAlpha(28),
+  );
+
+  final Color background;
+  final Color backgroundSecondary;
+  final Color surface;
+  final Color surfaceHigh;
+  final Color border;
+  final Color borderStrong;
+  final Color text;
+  final Color textSecondary;
+  final Color muted;
+  final Color accent;
+  final Color accentSoft;
+
+  static FlarePalette of(BuildContext context) =>
+      Theme.of(context).extension<FlarePalette>()!;
+
+  @override
+  FlarePalette copyWith({
+    Color? background,
+    Color? backgroundSecondary,
+    Color? surface,
+    Color? surfaceHigh,
+    Color? border,
+    Color? borderStrong,
+    Color? text,
+    Color? textSecondary,
+    Color? muted,
+    Color? accent,
+    Color? accentSoft,
+  }) => FlarePalette(
+    background: background ?? this.background,
+    backgroundSecondary: backgroundSecondary ?? this.backgroundSecondary,
+    surface: surface ?? this.surface,
+    surfaceHigh: surfaceHigh ?? this.surfaceHigh,
+    border: border ?? this.border,
+    borderStrong: borderStrong ?? this.borderStrong,
+    text: text ?? this.text,
+    textSecondary: textSecondary ?? this.textSecondary,
+    muted: muted ?? this.muted,
+    accent: accent ?? this.accent,
+    accentSoft: accentSoft ?? this.accentSoft,
+  );
+
+  @override
+  FlarePalette lerp(covariant FlarePalette? other, double t) {
+    if (other == null) return this;
+    return FlarePalette(
+      background: Color.lerp(background, other.background, t)!,
+      backgroundSecondary: Color.lerp(
+        backgroundSecondary,
+        other.backgroundSecondary,
+        t,
+      )!,
+      surface: Color.lerp(surface, other.surface, t)!,
+      surfaceHigh: Color.lerp(surfaceHigh, other.surfaceHigh, t)!,
+      border: Color.lerp(border, other.border, t)!,
+      borderStrong: Color.lerp(borderStrong, other.borderStrong, t)!,
+      text: Color.lerp(text, other.text, t)!,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+      muted: Color.lerp(muted, other.muted, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      accentSoft: Color.lerp(accentSoft, other.accentSoft, t)!,
+    );
+  }
 }
 
 abstract final class FlareSpace {
@@ -91,27 +223,43 @@ abstract final class FlareType {
   );
 }
 
-ThemeData buildFlareTheme() => ThemeData(
-  brightness: Brightness.dark,
-  fontFamily: 'Inter',
-  scaffoldBackgroundColor: FlareColors.background,
-  colorScheme: const ColorScheme.dark(
-    primary: FlareColors.accent,
-    surface: FlareColors.surface,
-    error: FlareColors.danger,
-  ),
-  splashFactory: NoSplash.splashFactory,
-  highlightColor: Colors.transparent,
-  hoverColor: Colors.transparent,
-  focusColor: Colors.transparent,
-  textSelectionTheme: const TextSelectionThemeData(
-    cursorColor: FlareColors.accent,
-    selectionColor: FlareColors.accentSoft,
-    selectionHandleColor: FlareColors.accent,
-  ),
-  pageTransitionsTheme: const PageTransitionsTheme(
-    builders: <TargetPlatform, PageTransitionsBuilder>{
-      TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-    },
-  ),
-);
+ThemeData buildFlareTheme({
+  Brightness brightness = Brightness.dark,
+  FlareAccent accent = FlareAccent.blue,
+  bool oled = false,
+}) {
+  final palette = brightness == Brightness.light
+      ? FlarePalette.light(accent)
+      : FlarePalette.dark(accent, oled: oled);
+  return ThemeData(
+    brightness: brightness,
+    fontFamily: 'Inter',
+    scaffoldBackgroundColor: palette.background,
+    colorScheme: ColorScheme(
+      brightness: brightness,
+      primary: palette.accent,
+      onPrimary: brightness == Brightness.light ? Colors.white : palette.text,
+      secondary: palette.accent,
+      onSecondary: brightness == Brightness.light ? Colors.white : palette.text,
+      error: FlareColors.danger,
+      onError: Colors.white,
+      surface: palette.surface,
+      onSurface: palette.text,
+    ),
+    extensions: <ThemeExtension<dynamic>>[palette],
+    splashFactory: NoSplash.splashFactory,
+    highlightColor: Colors.transparent,
+    hoverColor: Colors.transparent,
+    focusColor: Colors.transparent,
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: palette.accent,
+      selectionColor: palette.accentSoft,
+      selectionHandleColor: palette.accent,
+    ),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: <TargetPlatform, PageTransitionsBuilder>{
+        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+      },
+    ),
+  );
+}

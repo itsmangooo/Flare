@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers.dart';
 import '../core/routing/app_router.dart';
 import '../core/theme/flare_theme.dart';
+import '../core/theme/theme_settings.dart';
 
 final class FlareApp extends ConsumerStatefulWidget {
   const FlareApp({super.key});
@@ -50,12 +51,27 @@ final class _FlareAppState extends ConsumerState<FlareApp> {
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp.router(
-    title: 'Flare',
-    debugShowCheckedModeBanner: false,
-    theme: buildFlareTheme(),
-    darkTheme: buildFlareTheme(),
-    themeMode: ThemeMode.dark,
-    routerConfig: flareRouter,
-  );
+  Widget build(BuildContext context) {
+    final settings =
+        ref.watch(themeSettingsProvider).value ?? const FlareThemeSettings();
+    final mode = switch (settings.mode) {
+      FlareThemeMode.system => ThemeMode.system,
+      FlareThemeMode.light => ThemeMode.light,
+      FlareThemeMode.dark || FlareThemeMode.oled => ThemeMode.dark,
+    };
+    return MaterialApp.router(
+      title: 'Flare',
+      debugShowCheckedModeBanner: false,
+      theme: buildFlareTheme(
+        brightness: Brightness.light,
+        accent: settings.accent,
+      ),
+      darkTheme: buildFlareTheme(
+        accent: settings.accent,
+        oled: settings.mode == FlareThemeMode.oled,
+      ),
+      themeMode: mode,
+      routerConfig: flareRouter,
+    );
+  }
 }
