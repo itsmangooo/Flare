@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/itsmangooo/flare/internal/alerts"
 	"github.com/jackc/pgx/v5/pgconn"
 	eventtypes "github.com/moby/moby/api/types/events"
 	"github.com/moby/moby/client"
@@ -25,6 +26,15 @@ type fakeDatabase struct {
 	mu     sync.Mutex
 	events []recordedEvent
 	notify chan struct{}
+}
+
+type fakeAlertSink struct {
+	notifications []alerts.Notification
+}
+
+func (sink *fakeAlertSink) Notify(_ context.Context, notification alerts.Notification) error {
+	sink.notifications = append(sink.notifications, notification)
+	return nil
 }
 
 func (database *fakeDatabase) Exec(_ context.Context, _ string, arguments ...any) (pgconn.CommandTag, error) {
@@ -51,7 +61,8 @@ func (database *fakeDatabase) snapshot() []recordedEvent {
 
 func TestDockerEventsCreateAlertsRecoveriesAndRestartLoop(t *testing.T) {
 	database := &fakeDatabase{}
-	monitor := NewDockerMonitor(nil, database, slog.New(slog.DiscardHandler))
+	sink := &fakeAlertSink{}
+	monitor := NewDockerMonitor(nil, database, slog.New(slog.DiscardHandler), sink)
 	base := time.Date(2026, 9, 5, 10, 0, 0, 0, time.UTC)
 	id := "0123456789abcdef"
 
@@ -83,6 +94,13 @@ func TestDockerEventsCreateAlertsRecoveriesAndRestartLoop(t *testing.T) {
 	}
 	if events[0].result != 1 || events[len(events)-1].result != 0 {
 		t.Fatalf("results = %#v", events)
+	}
+	if len(sink.notifications) != len(events) {
+		t.Fatalf("notifications = %#v", sink.notifications)
+	}
+	if sink.notifications[0].Title != "Container stopped unexpectedly" || sink.notifications[0].Priority != 5 ||
+		sink.notifications[len(sink.notifications)-1].Title != "Container recovered" || sink.notifications[len(sink.notifications)-1].Priority != 2 {
+		t.Fatalf("notifications = %#v", sink.notifications)
 	}
 }
 

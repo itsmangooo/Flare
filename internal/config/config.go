@@ -12,6 +12,7 @@ import (
 )
 
 var cloudflareIdentifier = regexp.MustCompile(`^[A-Fa-f0-9]{32}$`)
+var ntfyTopic = regexp.MustCompile(`^[-_A-Za-z0-9]{1,64}$`)
 
 type Config struct {
 	HTTPAddress         string
@@ -24,6 +25,9 @@ type Config struct {
 	CoolifyToken        string
 	CloudflareToken     string
 	CloudflareAccountID string
+	NtfyBaseURL         string
+	NtfyTopic           string
+	NtfyToken           string
 	BootstrapToken      string
 	JWTSigningKey       string
 	JWTIssuer           string
@@ -43,6 +47,9 @@ func Load() (Config, error) {
 		CoolifyToken:        strings.TrimSpace(os.Getenv("COOLIFY_API_TOKEN")),
 		CloudflareToken:     strings.TrimSpace(os.Getenv("CLOUDFLARE_API_TOKEN")),
 		CloudflareAccountID: strings.TrimSpace(os.Getenv("CLOUDFLARE_ACCOUNT_ID")),
+		NtfyBaseURL:         strings.TrimRight(strings.TrimSpace(os.Getenv("NTFY_BASE_URL")), "/"),
+		NtfyTopic:           strings.TrimSpace(os.Getenv("NTFY_TOPIC")),
+		NtfyToken:           strings.TrimSpace(os.Getenv("NTFY_TOKEN")),
 		BootstrapToken:      strings.TrimSpace(os.Getenv("FLARE_BOOTSTRAP_TOKEN")),
 		JWTSigningKey:       os.Getenv("FLARE_JWT_SIGNING_KEY"),
 		JWTIssuer:           value("FLARE_JWT_ISSUER", "Flare.Api"),
@@ -79,6 +86,21 @@ func Load() (Config, error) {
 	}
 	if cfg.CloudflareAccountID != "" && !cloudflareIdentifier.MatchString(cfg.CloudflareAccountID) {
 		return Config{}, errors.New("CLOUDFLARE_ACCOUNT_ID must be a 32-character Cloudflare identifier")
+	}
+	if (cfg.NtfyBaseURL == "") != (cfg.NtfyTopic == "") {
+		return Config{}, errors.New("NTFY_BASE_URL and NTFY_TOPIC must be set together")
+	}
+	if cfg.NtfyToken != "" && cfg.NtfyBaseURL == "" {
+		return Config{}, errors.New("NTFY_BASE_URL and NTFY_TOPIC are required when NTFY_TOKEN is set")
+	}
+	if cfg.NtfyBaseURL != "" {
+		parsed, err := url.Parse(cfg.NtfyBaseURL)
+		if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
+			return Config{}, errors.New("NTFY_BASE_URL must be an absolute HTTPS origin without credentials, query, or fragment")
+		}
+		if !ntfyTopic.MatchString(cfg.NtfyTopic) {
+			return Config{}, errors.New("NTFY_TOPIC must be 1-64 letters, numbers, underscores, or dashes")
+		}
 	}
 	if len([]byte(cfg.JWTSigningKey)) < 32 {
 		return Config{}, errors.New("FLARE_JWT_SIGNING_KEY must contain at least 32 UTF-8 bytes")

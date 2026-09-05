@@ -23,6 +23,9 @@ Configure these production variables:
 | `FLARE_ACCESS_TOKEN_MINUTES` | no | 5–60, default 15 |
 | `FLARE_REFRESH_TOKEN_DAYS` | no | 1–90, default 30 |
 | `FLARE_JWT_ISSUER` / `FLARE_JWT_AUDIENCE` | no | Token validation names |
+| `NTFY_BASE_URL` | no | HTTPS root URL of an optional ntfy notification server |
+| `NTFY_TOPIC` | with `NTFY_BASE_URL` | Private topic receiving infrastructure alerts; 1-64 letters, numbers, `_`, or `-` |
+| `NTFY_TOKEN` | no | Optional ntfy Bearer token with write access to only the alert topic |
 
 `compose.yml` fixes `ASPNETCORE_ENVIRONMENT=Production`, `ASPNETCORE_URLS=http://+:8080`, the mounted host telemetry paths, and `FLARE_TRUST_ALL_FORWARDERS=true`. The latter is safe here because the Compose definition does not publish port 8080 directly; traffic reaches it through Coolify's proxy network.
 
@@ -44,12 +47,17 @@ COOLIFY_API_TOKEN=<least-privilege-read-and-deploy-token>
 DOCKER_SOCKET_GID=<numeric-gid>
 FLARE_BOOTSTRAP_TOKEN=<one-time-random-token>
 FLARE_HOST_NAME=<display-name>
+NTFY_BASE_URL=https://<your-ntfy-domain>
+NTFY_TOPIC=<private-random-alert-topic>
+NTFY_TOKEN=<optional-topic-write-token>
 ```
 
 Only `FLARE_BOOTSTRAP_TOKEN` should be cleared after the first administrator has been created. Retain the signing key and database credentials across every restart and deployment; changing the signing key immediately invalidates all access tokens.
 
 Never place secrets in the repository. `.env.example` contains placeholders only.
 The chiseled image disables PostgreSQL GSS session encryption because Kerberos libraries are intentionally absent; configure `SSL Mode` in `ConnectionStrings__Postgres` when database transport encryption is required.
+
+The Go backend treats ntfy as optional. When configured, it publishes Docker outage, unexpected-stop, out-of-memory, unhealthy, restart-loop, and recovery notifications through ntfy's JSON API. Use a private, hard-to-guess topic and preferably protect it with a dedicated write-scoped access token. Alert delivery is retried and never includes Docker labels, raw daemon errors, tokens, or internal network addresses.
 
 ## Database migrations
 

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/itsmangooo/flare/internal/activity"
+	"github.com/itsmangooo/flare/internal/alerts"
 	"github.com/itsmangooo/flare/internal/auth"
 	"github.com/itsmangooo/flare/internal/cloudflare"
 	"github.com/itsmangooo/flare/internal/config"
@@ -58,7 +59,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer docker.Close()
-	go monitoring.NewDockerMonitor(docker, db, logger).Run(ctx)
+	ntfyPublisher, err := alerts.NewNtfyPublisher(cfg.NtfyBaseURL, cfg.NtfyTopic, cfg.NtfyToken)
+	if err != nil {
+		logger.Error("ntfy configuration failed", "error", err)
+		os.Exit(1)
+	}
+	alertDispatcher := alerts.NewDispatcher(ntfyPublisher, logger)
+	go alertDispatcher.Run(ctx)
+	go monitoring.NewDockerMonitor(docker, db, logger, alertDispatcher).Run(ctx)
 	cloudflareClient, err := cloudflare.NewClient(cfg.CloudflareToken, cfg.CloudflareAccountID, logger)
 	if err != nil {
 		logger.Error("Cloudflare client configuration failed", "error", err)
