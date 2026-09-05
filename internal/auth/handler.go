@@ -48,6 +48,7 @@ type ipLimiter struct {
 type database interface {
 	executor
 	BeginTx(context.Context, pgx.TxOptions) (pgx.Tx, error)
+	Query(context.Context, string, ...any) (pgx.Rows, error)
 	QueryRow(context.Context, string, ...any) pgx.Row
 }
 
@@ -91,6 +92,9 @@ func NewHandler(cfg config.Config, db database, logger *slog.Logger) http.Handle
 	router.Get("/bootstrap/status", handler.bootstrapStatus)
 	router.Post("/bootstrap", handler.bootstrap)
 	router.Post("/login", handler.login)
+	router.Post("/refresh", handler.refresh)
+	router.With(handler.authenticate).Post("/logout", handler.logout)
+	router.With(handler.authenticate).Get("/me", handler.me)
 	return router
 }
 
@@ -162,7 +166,7 @@ func (h *Handler) bootstrap(w http.ResponseWriter, r *http.Request) {
 		h.internalError(w, r, err)
 		return
 	}
-	response, err := h.issue(r.Context(), tx, identityUser{ID: userID, Email: email}, []string{administratorRole}, clientIP(r), now)
+	response, _, err := h.issue(r.Context(), tx, identityUser{ID: userID, Email: email}, []string{administratorRole}, clientIP(r), now, uuid.New())
 	if err == nil {
 		err = insertAudit(r.Context(), tx, &userID, email, "auth.bootstrap", "first-admin", 0, requestID(r), "", now)
 	}
@@ -252,17 +256,12 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		h.internalError(w, r, err)
 		return
 	}
-	rows, err := tx.Query(r.Context(), `SELECT r."Name" FROM "Roles" r JOIN "UserRoles" ur ON ur."RoleId"=r."Id" WHERE ur."UserId"=$1 ORDER BY r."Name"`, user.ID)
+	roles, err := rolesForUser(r.Context(), tx, user.ID)
 	if err != nil {
 		h.internalError(w, r, err)
 		return
 	}
-	roles, err := pgx.CollectRows(rows, pgx.RowTo[string])
-	if err != nil {
-		h.internalError(w, r, err)
-		return
-	}
-	response, err := h.issue(r.Context(), tx, user, roles, clientIP(r), now)
+	response, _, err := h.issue(r.Context(), tx, user, roles, clientIP(r), now, uuid.New())
 	if err == nil {
 		err = insertAudit(r.Context(), tx, &user.ID, email, "auth.login", email, 0, requestID(r), "", now)
 	}
@@ -276,7 +275,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response)
 }
 
-func (h *Handler) issue(ctx context.Context, tx pgx.Tx, user identityUser, roles []string, ip string, now time.Time) (tokenResponse, error) {
+func (h *Handler) issue(ctx context.Context, tx pgx.Tx, user identityUser, roles []string, ip string, now time.Time, familyID uuid.UUID) (tokenResponse, uuid.UUID, error) {
 	accessExpiry, refreshExpiry := now.Add(h.cfg.AccessTokenTTL), now.Add(h.cfg.RefreshTokenTTL)
 	claims := jwt.MapClaims{"sub": user.ID.String(), "email": user.Email, "jti": uuid.NewString(), "iss": h.cfg.JWTIssuer, "aud": h.cfg.JWTAudience, "nbf": now.Unix(), "exp": accessExpiry.Unix(),
 		"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier": user.ID.String(), "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress": user.Email}
@@ -287,16 +286,17 @@ func (h *Handler) issue(ctx context.Context, tx pgx.Tx, user identityUser, roles
 	}
 	access, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(h.cfg.JWTSigningKey))
 	if err != nil {
-		return tokenResponse{}, err
+		return tokenResponse{}, uuid.Nil, err
 	}
 	random := make([]byte, 64)
 	if _, err = rand.Read(random); err != nil {
-		return tokenResponse{}, err
+		return tokenResponse{}, uuid.Nil, err
 	}
 	refresh := base64.RawURLEncoding.EncodeToString(random)
 	hash := sha256.Sum256([]byte(refresh))
-	_, err = tx.Exec(ctx, `INSERT INTO "RefreshTokens" ("Id","TokenHash","FamilyId","UserId","CreatedAt","ExpiresAt","CreatedByIp") VALUES ($1,$2,$3,$4,$5,$6,$7)`, uuid.New(), strings.ToUpper(hex.EncodeToString(hash[:])), uuid.New(), user.ID, now, refreshExpiry, nullable(ip))
-	return tokenResponse{access, accessExpiry, refresh, refreshExpiry, userResponse{user.ID, user.Email, roles}}, err
+	tokenID := uuid.New()
+	_, err = tx.Exec(ctx, `INSERT INTO "RefreshTokens" ("Id","TokenHash","FamilyId","UserId","CreatedAt","ExpiresAt","CreatedByIp") VALUES ($1,$2,$3,$4,$5,$6,$7)`, tokenID, strings.ToUpper(hex.EncodeToString(hash[:])), familyID, user.ID, now, refreshExpiry, nullable(ip))
+	return tokenResponse{access, accessExpiry, refresh, refreshExpiry, userResponse{user.ID, user.Email, roles}}, tokenID, err
 }
 
 func (h *Handler) recordAudit(ctx context.Context, userID *uuid.UUID, actor, action, target string, result int, correlationID, detail string) {
