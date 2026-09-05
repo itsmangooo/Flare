@@ -7,25 +7,70 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strings"
 	"testing"
 
+	"github.com/containerd/errdefs"
 	containertypes "github.com/moby/moby/api/types/container"
+	networktypes "github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/client"
 )
 
 type fakeDocker struct {
-	items   []containertypes.Summary
-	err     error
-	inspect containertypes.InspectResponse
-	stats   string
+	items      []containertypes.Summary
+	err        error
+	inspect    containertypes.InspectResponse
+	inspectErr error
+	stats      string
 }
 
 func (f fakeDocker) ContainerList(context.Context, client.ContainerListOptions) (client.ContainerListResult, error) {
 	return client.ContainerListResult{Items: f.items}, f.err
 }
 func (f fakeDocker) ContainerInspect(context.Context, string, client.ContainerInspectOptions) (client.ContainerInspectResult, error) {
-	return client.ContainerInspectResult{Container: f.inspect}, nil
+	return client.ContainerInspectResult{Container: f.inspect}, f.inspectErr
+}
+
+func TestDetailPreservesFlutterContractAndSanitizesLabels(t *testing.T) {
+	port := networktypes.MustParsePort("8080/tcp")
+	docker := fakeDocker{
+		inspect: containertypes.InspectResponse{
+			ID: strings.Repeat("a", 64), Name: "/api", Created: "2026-09-05T06:00:00Z", RestartCount: 3,
+			Config:          &containertypes.Config{Image: "api:2", Labels: map[string]string{"team": "flare", "api_token": "do-not-return"}},
+			State:           &containertypes.State{Status: "running", StartedAt: "2026-09-05T07:00:00Z", Health: &containertypes.Health{Status: "healthy"}},
+			NetworkSettings: &containertypes.NetworkSettings{Ports: networktypes.PortMap{port: {{HostIP: netip.MustParseAddr("127.0.0.1"), HostPort: "18080"}}}},
+		},
+		stats: `{"cpu_stats":{"cpu_usage":{"total_usage":200},"system_cpu_usage":2000,"online_cpus":2},"precpu_stats":{"cpu_usage":{"total_usage":100},"system_cpu_usage":1000},"memory_stats":{"usage":1000,"limit":4096,"stats":{"inactive_file":100}},"networks":{"eth0":{"rx_bytes":40,"tx_bytes":20}}}`,
+	}
+	response := httptest.NewRecorder()
+	NewHandler(docker, slog.New(slog.NewTextHandler(io.Discard, nil))).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/"+strings.Repeat("a", 64), nil))
+	body := response.Body.String()
+	for _, expected := range []string{`"shortId":"aaaaaaaaaaaa"`, `"name":"api"`, `"state":"Running"`, `"health":"Healthy"`, `"memoryLimitBytes":4096`, `"networkReceiveBytes":40`, `"privatePort":8080`, `"publicPort":18080`, `"team":"flare"`} {
+		if !strings.Contains(body, expected) {
+			t.Fatalf("response missing %s: %s", expected, body)
+		}
+	}
+	if response.Code != http.StatusOK || strings.Contains(body, "api_token") || strings.Contains(body, "do-not-return") {
+		t.Fatalf("response = %d %s", response.Code, body)
+	}
+}
+
+func TestDetailRejectsInvalidIdentifier(t *testing.T) {
+	response := httptest.NewRecorder()
+	NewHandler(fakeDocker{}, slog.New(slog.NewTextHandler(io.Discard, nil))).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/not-an-id", nil))
+	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), "Container identifier is invalid") {
+		t.Fatalf("response = %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestDetailReturnsNotFoundProblem(t *testing.T) {
+	response := httptest.NewRecorder()
+	docker := fakeDocker{inspectErr: errdefs.ErrNotFound}
+	NewHandler(docker, slog.New(slog.NewTextHandler(io.Discard, nil))).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/"+strings.Repeat("b", 12), nil))
+	if response.Code != http.StatusNotFound || strings.Contains(response.Body.String(), "missing") {
+		t.Fatalf("response = %d %s", response.Code, response.Body.String())
+	}
 }
 func (f fakeDocker) ContainerStats(context.Context, string, client.ContainerStatsOptions) (client.ContainerStatsResult, error) {
 	return client.ContainerStatsResult{Body: io.NopCloser(strings.NewReader(f.stats))}, nil
