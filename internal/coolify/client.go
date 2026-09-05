@@ -20,10 +20,11 @@ import (
 const maximumResponseBytes = 8 << 20
 
 var (
-	ErrNotConfigured = errors.New("Coolify integration is not configured")
-	ErrNotFound      = errors.New("Coolify resource was not found")
-	ErrUnavailable   = errors.New("Coolify is unavailable")
-	identifier       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
+	ErrNotConfigured     = errors.New("Coolify integration is not configured")
+	ErrNotFound          = errors.New("Coolify resource was not found")
+	ErrUnavailable       = errors.New("Coolify is unavailable")
+	ErrInvalidIdentifier = errors.New("Coolify identifier is invalid")
+	identifier           = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
 )
 
 type Server struct {
@@ -128,7 +129,7 @@ func (client *Client) Servers(ctx context.Context) ([]Server, error) {
 
 func (client *Client) ServerResources(ctx context.Context, serverUUID string) ([]Resource, error) {
 	if !identifier.MatchString(serverUUID) {
-		return nil, errors.New("Coolify identifier is invalid")
+		return nil, ErrInvalidIdentifier
 	}
 	type rawResource struct {
 		UUID   string  `json:"uuid"`
@@ -270,7 +271,7 @@ func (client *Client) Deployments(ctx context.Context, page, pageSize int) (Depl
 
 func (client *Client) ApplicationDeployments(ctx context.Context, applicationUUID string, skip, take int) ([]Deployment, error) {
 	if !identifier.MatchString(applicationUUID) {
-		return nil, errors.New("Coolify identifier is invalid")
+		return nil, ErrInvalidIdentifier
 	}
 	skip = max(skip, 0)
 	take = min(max(take, 1), 100)
@@ -289,7 +290,7 @@ func (client *Client) ApplicationDeployments(ctx context.Context, applicationUUI
 
 func (client *Client) Deployment(ctx context.Context, deploymentUUID string) (Deployment, error) {
 	if !identifier.MatchString(deploymentUUID) {
-		return Deployment{}, errors.New("Coolify identifier is invalid")
+		return Deployment{}, ErrInvalidIdentifier
 	}
 	var raw rawDeployment
 	if err := client.get(ctx, "deployments/"+url.PathEscape(deploymentUUID), &raw); err != nil {
