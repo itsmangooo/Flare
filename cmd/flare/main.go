@@ -51,7 +51,7 @@ func main() {
 	}
 	defer docker.Close()
 	authHandler := auth.NewHandler(cfg, db, logger)
-	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, logger))
+	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	server := httpapi.New(cfg, version, logger, db, authHandler, containerHandler)
 	errCh := make(chan error, 1)
 	go func() {
