@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/itsmangooo/flare/internal/activity"
 	"github.com/itsmangooo/flare/internal/auth"
 	"github.com/itsmangooo/flare/internal/config"
 	"github.com/itsmangooo/flare/internal/containers"
@@ -52,7 +53,8 @@ func main() {
 	defer docker.Close()
 	authHandler := auth.NewHandler(cfg, db, logger)
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
-	server := httpapi.New(cfg, version, logger, db, authHandler, containerHandler)
+	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
+	server := httpapi.New(cfg, version, logger, db, authHandler, containerHandler, activityHandler)
 	errCh := make(chan error, 1)
 	go func() {
 		logger.Info("Flare Go API listening", "address", cfg.HTTPAddress, "version", version)
