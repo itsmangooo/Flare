@@ -23,6 +23,7 @@ import (
 	"github.com/itsmangooo/flare/internal/overview"
 	"github.com/itsmangooo/flare/internal/systeminfo"
 	"github.com/itsmangooo/flare/internal/telemetry"
+	"github.com/itsmangooo/flare/internal/topology"
 )
 
 var version = "dev"
@@ -72,6 +73,7 @@ func main() {
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
 	domainHandler := authHandler.Authenticate(cloudflare.NewHandler(cloudflareClient, logger))
+	topologyHandler := authHandler.Authenticate(topology.NewHandler(docker, cfg.HostName, logger))
 	coolifyHandler := authHandler.Authenticate(coolify.NewHandler(coolifyClient, db, logger))
 	systemHandler := authHandler.Authenticate(systeminfo.NewHandler(version, time.Now))
 	activityReader := activity.NewReader(db)
@@ -81,6 +83,7 @@ func main() {
 	overviewHandler := authHandler.Authenticate(overview.NewHandler(docker, hostMetrics, db, activityReader, logger))
 	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
 		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
+		Domains: domainHandler, Topology: topologyHandler,
 		Domains: domainHandler, Coolify: coolifyHandler, System: systemHandler,
 	})
 	errCh := make(chan error, 1)
