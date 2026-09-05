@@ -13,6 +13,7 @@ import (
 
 	"github.com/itsmangooo/flare/internal/activity"
 	"github.com/itsmangooo/flare/internal/auth"
+	"github.com/itsmangooo/flare/internal/cloudflare"
 	"github.com/itsmangooo/flare/internal/config"
 	"github.com/itsmangooo/flare/internal/containers"
 	"github.com/itsmangooo/flare/internal/database"
@@ -55,9 +56,15 @@ func main() {
 	}
 	defer docker.Close()
 	go monitoring.NewDockerMonitor(docker, db, logger).Run(ctx)
+	cloudflareClient, err := cloudflare.NewClient(cfg.CloudflareToken, cfg.CloudflareAccountID, logger)
+	if err != nil {
+		logger.Error("Cloudflare client configuration failed", "error", err)
+		os.Exit(1)
+	}
 	authHandler := auth.NewHandler(cfg, db, logger)
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
+	domainHandler := authHandler.Authenticate(cloudflare.NewHandler(cloudflareClient, logger))
 	activityReader := activity.NewReader(db)
 	hostMetrics := telemetry.NewCollector(cfg.HostName, cfg.HostProcPath, cfg.HostRootFSPath, logger)
 	metricSampler := telemetry.NewSampler(hostMetrics, db, logger)
@@ -65,6 +72,7 @@ func main() {
 	overviewHandler := authHandler.Authenticate(overview.NewHandler(docker, hostMetrics, db, activityReader, logger))
 	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
 		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
+		Domains: domainHandler,
 	})
 	errCh := make(chan error, 1)
 	go func() {

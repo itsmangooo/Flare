@@ -24,10 +24,11 @@ const (
 )
 
 var (
-	ErrNotConfigured = errors.New("Cloudflare integration is not configured")
-	ErrNotFound      = errors.New("Cloudflare resource was not found")
-	ErrUnavailable   = errors.New("Cloudflare is unavailable")
-	cloudflareID     = regexp.MustCompile(`^[A-Fa-f0-9]{32}$`)
+	ErrNotConfigured     = errors.New("Cloudflare integration is not configured")
+	ErrNotFound          = errors.New("Cloudflare resource was not found")
+	ErrUnavailable       = errors.New("Cloudflare is unavailable")
+	ErrInvalidIdentifier = errors.New("Cloudflare identifier is invalid")
+	cloudflareID         = regexp.MustCompile(`^[A-Fa-f0-9]{32}$`)
 )
 
 type Zone struct {
@@ -121,7 +122,7 @@ func (client *Client) Zones(ctx context.Context) ([]Zone, error) {
 
 func (client *Client) DNSRecords(ctx context.Context, zoneID string) ([]DNSRecord, error) {
 	if !cloudflareID.MatchString(zoneID) {
-		return nil, errors.New("Cloudflare zone identifier is invalid")
+		return nil, ErrInvalidIdentifier
 	}
 	type rawRecord struct {
 		ID        string `json:"id"`
@@ -170,7 +171,7 @@ func (client *Client) TunnelRoutes(ctx context.Context, tunnelID string) ([]Tunn
 		return nil, ErrNotConfigured
 	}
 	if _, err := uuid.Parse(tunnelID); err != nil {
-		return nil, errors.New("Cloudflare tunnel identifier is invalid")
+		return nil, ErrInvalidIdentifier
 	}
 	type rawConfiguration struct {
 		Config struct {

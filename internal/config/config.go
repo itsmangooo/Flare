@@ -5,41 +5,48 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
+var cloudflareIdentifier = regexp.MustCompile(`^[A-Fa-f0-9]{32}$`)
+
 type Config struct {
-	HTTPAddress     string
-	DatabaseURL     string
-	DockerHost      string
-	HostName        string
-	HostProcPath    string
-	HostRootFSPath  string
-	CoolifyBaseURL  string
-	CoolifyToken    string
-	BootstrapToken  string
-	JWTSigningKey   string
-	JWTIssuer       string
-	JWTAudience     string
-	AccessTokenTTL  time.Duration
-	RefreshTokenTTL time.Duration
+	HTTPAddress         string
+	DatabaseURL         string
+	DockerHost          string
+	HostName            string
+	HostProcPath        string
+	HostRootFSPath      string
+	CoolifyBaseURL      string
+	CoolifyToken        string
+	CloudflareToken     string
+	CloudflareAccountID string
+	BootstrapToken      string
+	JWTSigningKey       string
+	JWTIssuer           string
+	JWTAudience         string
+	AccessTokenTTL      time.Duration
+	RefreshTokenTTL     time.Duration
 }
 
 func Load() (Config, error) {
 	cfg := Config{
-		HTTPAddress:    value("FLARE_HTTP_ADDRESS", ":8080"),
-		DockerHost:     value("DOCKER_HOST", "unix:///var/run/docker.sock"),
-		HostName:       value("FLARE_HOST_NAME", "homelab"),
-		HostProcPath:   value("HOST_PROC_PATH", "/host/proc"),
-		HostRootFSPath: value("HOST_ROOTFS_PATH", "/host/rootfs"),
-		CoolifyBaseURL: strings.TrimRight(strings.TrimSpace(os.Getenv("COOLIFY_BASE_URL")), "/"),
-		CoolifyToken:   strings.TrimSpace(os.Getenv("COOLIFY_API_TOKEN")),
-		BootstrapToken: strings.TrimSpace(os.Getenv("FLARE_BOOTSTRAP_TOKEN")),
-		JWTSigningKey:  os.Getenv("FLARE_JWT_SIGNING_KEY"),
-		JWTIssuer:      value("FLARE_JWT_ISSUER", "Flare.Api"),
-		JWTAudience:    value("FLARE_JWT_AUDIENCE", "Flare.Mobile"),
+		HTTPAddress:         value("FLARE_HTTP_ADDRESS", ":8080"),
+		DockerHost:          value("DOCKER_HOST", "unix:///var/run/docker.sock"),
+		HostName:            value("FLARE_HOST_NAME", "homelab"),
+		HostProcPath:        value("HOST_PROC_PATH", "/host/proc"),
+		HostRootFSPath:      value("HOST_ROOTFS_PATH", "/host/rootfs"),
+		CoolifyBaseURL:      strings.TrimRight(strings.TrimSpace(os.Getenv("COOLIFY_BASE_URL")), "/"),
+		CoolifyToken:        strings.TrimSpace(os.Getenv("COOLIFY_API_TOKEN")),
+		CloudflareToken:     strings.TrimSpace(os.Getenv("CLOUDFLARE_API_TOKEN")),
+		CloudflareAccountID: strings.TrimSpace(os.Getenv("CLOUDFLARE_ACCOUNT_ID")),
+		BootstrapToken:      strings.TrimSpace(os.Getenv("FLARE_BOOTSTRAP_TOKEN")),
+		JWTSigningKey:       os.Getenv("FLARE_JWT_SIGNING_KEY"),
+		JWTIssuer:           value("FLARE_JWT_ISSUER", "Flare.Api"),
+		JWTAudience:         value("FLARE_JWT_AUDIENCE", "Flare.Mobile"),
 	}
 	accessMinutes, err := boundedInt("FLARE_ACCESS_TOKEN_MINUTES", 15, 5, 60)
 	if err != nil {
@@ -66,6 +73,12 @@ func Load() (Config, error) {
 		if err != nil || parsed.Scheme != "https" || parsed.Host == "" {
 			return Config{}, errors.New("COOLIFY_BASE_URL must be an absolute HTTPS URL")
 		}
+	}
+	if cfg.CloudflareToken == "" && cfg.CloudflareAccountID != "" {
+		return Config{}, errors.New("CLOUDFLARE_API_TOKEN is required when CLOUDFLARE_ACCOUNT_ID is set")
+	}
+	if cfg.CloudflareAccountID != "" && !cloudflareIdentifier.MatchString(cfg.CloudflareAccountID) {
+		return Config{}, errors.New("CLOUDFLARE_ACCOUNT_ID must be a 32-character Cloudflare identifier")
 	}
 	if len([]byte(cfg.JWTSigningKey)) < 32 {
 		return Config{}, errors.New("FLARE_JWT_SIGNING_KEY must contain at least 32 UTF-8 bytes")
