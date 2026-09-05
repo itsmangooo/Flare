@@ -17,6 +17,7 @@ final class DeploymentsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deployments = ref.watch(deploymentsProvider);
+    final palette = context.flare;
     return FlareScaffold(
       title: 'Deployments',
       actions: <Widget>[
@@ -44,8 +45,8 @@ final class DeploymentsPage extends ConsumerWidget {
                 icon: PhosphorIconsRegular.rocketLaunch,
               )
             : RefreshIndicator(
-                color: FlareColors.accent,
-                backgroundColor: FlareColors.surfaceHigh,
+                color: palette.accent,
+                backgroundColor: palette.surfaceHigh,
                 onRefresh: () async => ref.refresh(deploymentsProvider.future),
                 child: ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -65,28 +66,31 @@ final class DeploymentsPage extends ConsumerWidget {
   }
 }
 
-(FlareStatusTone, Color, String) deploymentStatus(String? raw) {
+(FlareStatusTone, Color, String) deploymentStatus(
+  String? raw,
+  FlarePalette palette,
+) {
   final status = raw?.toLowerCase() ?? 'unknown';
   if (status.contains('success') ||
       status.contains('finish') ||
       status.contains('complete')) {
-    return (FlareStatusTone.success, FlareColors.success, 'Successful');
+    return (FlareStatusTone.success, palette.success, 'Successful');
   }
   if (status.contains('fail') ||
       status.contains('error') ||
       status.contains('cancel')) {
     return (
       FlareStatusTone.danger,
-      FlareColors.danger,
+      palette.danger,
       status.contains('cancel') ? 'Cancelled' : 'Failed',
     );
   }
   if (status.contains('progress') ||
       status.contains('running') ||
       status.contains('queue')) {
-    return (FlareStatusTone.warning, FlareColors.warning, 'In progress');
+    return (FlareStatusTone.warning, palette.warning, 'In progress');
   }
-  return (FlareStatusTone.neutral, FlareColors.muted, raw ?? 'Unknown');
+  return (FlareStatusTone.neutral, palette.muted, raw ?? 'Unknown');
 }
 
 final class _DeploymentTile extends StatelessWidget {
@@ -95,7 +99,8 @@ final class _DeploymentTile extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
-    final (tone, color, status) = deploymentStatus(deployment.status);
+    final palette = context.flare;
+    final (tone, color, status) = deploymentStatus(deployment.status, palette);
     return InkWell(
       borderRadius: BorderRadius.circular(FlareRadii.small),
       onTap: onTap,
@@ -166,9 +171,7 @@ final class _DeploymentTile extends StatelessWidget {
                       deployment.commitMessage!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: FlareType.metadata.copyWith(
-                        color: FlareColors.muted,
-                      ),
+                      style: FlareType.metadata.copyWith(color: palette.muted),
                     ),
                   ],
                   const SizedBox(height: 8),
@@ -177,7 +180,7 @@ final class _DeploymentTile extends StatelessWidget {
                       Text(
                         formatRelative(deployment.startedAt),
                         style: FlareType.metadata.copyWith(
-                          color: FlareColors.muted,
+                          color: palette.muted,
                         ),
                       ),
                       if (deployment.duration != null) ...<Widget>[
@@ -185,7 +188,7 @@ final class _DeploymentTile extends StatelessWidget {
                         Text(
                           formatDuration(deployment.duration),
                           style: FlareType.metadata.copyWith(
-                            color: FlareColors.muted,
+                            color: palette.muted,
                           ),
                         ),
                       ],
@@ -194,12 +197,12 @@ final class _DeploymentTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.only(top: 10, left: 5),
+            Padding(
+              padding: const EdgeInsets.only(top: 10, left: 5),
               child: PhosphorIcon(
                 PhosphorIconsRegular.caretRight,
                 size: 16,
-                color: FlareColors.muted,
+                color: palette.muted,
               ),
             ),
           ],

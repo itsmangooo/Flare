@@ -37,9 +37,9 @@ final class FlareContainerTile extends StatelessWidget {
         ? 'Unhealthy'
         : container.state.name;
     final dotColor = switch (tone) {
-      FlareStatusTone.success => FlareColors.success,
-      FlareStatusTone.warning => FlareColors.warning,
-      FlareStatusTone.danger => FlareColors.danger,
+      FlareStatusTone.success => palette.success,
+      FlareStatusTone.warning => palette.warning,
+      FlareStatusTone.danger => palette.danger,
       _ => palette.muted,
     };
     return Semantics(
@@ -148,8 +148,8 @@ final class FlareActivityTile extends StatelessWidget {
     final success = event.result == OperationResult.succeeded;
     final security = event.kind == ActivityKind.security;
     final color = success
-        ? (security ? FlareColors.info : FlareColors.success)
-        : FlareColors.danger;
+        ? (security ? palette.info : palette.success)
+        : palette.danger;
     final icon = security
         ? PhosphorIconsRegular.shieldCheck
         : PhosphorIconsRegular.pulse;

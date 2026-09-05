@@ -8,6 +8,7 @@ import '../../core/api/api_client.dart';
 import '../../core/api/models.dart';
 import '../../core/providers.dart';
 import '../../core/theme/flare_theme.dart';
+import '../../core/theme/theme_settings.dart';
 import '../../design/components/flare_controls.dart';
 import '../../design/components/flare_feedback.dart';
 import '../../design/components/flare_scaffold.dart';
@@ -143,77 +144,175 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  Future<void> _chooseTheme(FlareThemeSettings settings) async {
+    final selected = await FlareBottomSheet.show<FlareThemeMode>(
+      context,
+      barrierLabel: 'Dismiss theme selection',
+      child: _ChoiceSheet<FlareThemeMode>(
+        title: 'Theme',
+        selected: settings.mode,
+        items: const <_Choice<FlareThemeMode>>[
+          _Choice(FlareThemeMode.system, 'System', 'Follow Android appearance'),
+          _Choice(
+            FlareThemeMode.light,
+            'Light',
+            'Clean neutral light surfaces',
+          ),
+          _Choice(FlareThemeMode.dark, 'Dark', 'Flare charcoal surfaces'),
+          _Choice(FlareThemeMode.oled, 'OLED', 'True-black primary background'),
+        ],
+      ),
+    );
+    if (selected == null || !mounted) return;
+    try {
+      await ref.read(themeSettingsProvider.notifier).setMode(selected);
+    } on Object {
+      if (mounted) {
+        FlareToast.show(
+          context,
+          'Theme preference could not be saved.',
+          tone: FlareToastTone.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _chooseAccent(FlareThemeSettings settings) async {
+    final selected = await FlareBottomSheet.show<FlareAccent>(
+      context,
+      barrierLabel: 'Dismiss accent selection',
+      child: _ChoiceSheet<FlareAccent>(
+        title: 'Accent',
+        selected: settings.accent,
+        items: FlareAccent.values
+            .map(
+              (accent) => _Choice<FlareAccent>(
+                accent,
+                accent.label,
+                'Navigation, controls and chart emphasis',
+                color: accent.color,
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    try {
+      await ref.read(themeSettingsProvider.notifier).setAccent(selected);
+    } on Object {
+      if (mounted) {
+        FlareToast.show(
+          context,
+          'Accent preference could not be saved.',
+          tone: FlareToastTone.error,
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => FlareScaffold(
-    title: 'Settings',
-    leading: const FlareBackButton(),
-    body: ListView(
-      padding: const EdgeInsets.only(top: 8, bottom: 30),
-      children: <Widget>[
-        const _SettingsHeader('ACCOUNT'),
-        _SettingsRow(
-          icon: PhosphorIconsRegular.userCircle,
-          title: _email,
-          subtitle: 'Administrator session',
-          trailing: FlareButton(
-            label: 'Log out',
-            compact: true,
-            tone: FlareButtonTone.danger,
-            loading: _signingOut,
-            onPressed: _signingOut ? null : _logout,
+  Widget build(BuildContext context) {
+    final settings =
+        ref.watch(themeSettingsProvider).value ?? const FlareThemeSettings();
+    final palette = context.flare;
+    return FlareScaffold(
+      title: 'Settings',
+      leading: const FlareBackButton(),
+      body: ListView(
+        padding: const EdgeInsets.only(top: 8, bottom: 30),
+        children: <Widget>[
+          const _SettingsHeader('ACCOUNT'),
+          _SettingsRow(
+            icon: PhosphorIconsRegular.userCircle,
+            title: _email,
+            subtitle: 'Administrator session',
+            trailing: FlareButton(
+              label: 'Log out',
+              compact: true,
+              tone: FlareButtonTone.danger,
+              loading: _signingOut,
+              onPressed: _signingOut ? null : _logout,
+            ),
           ),
-        ),
-        const FlareDivider(),
-        const _SettingsHeader('SERVER'),
-        _SettingsRow(
-          icon: PhosphorIconsRegular.hardDrives,
-          title: _serverUrl,
-          subtitle: _connectivity,
-          subtitleColor: _connectivity == 'Connected'
-              ? FlareColors.success
-              : _connectivity == 'Unreachable'
-              ? FlareColors.danger
-              : FlareColors.warning,
-          trailing: FlareButton(
-            label: 'Reconnect',
-            compact: true,
-            loading: _checking,
-            onPressed: _checking ? null : _reconnect,
+          const FlareDivider(),
+          const _SettingsHeader('SERVER'),
+          _SettingsRow(
+            icon: PhosphorIconsRegular.hardDrives,
+            title: _serverUrl,
+            subtitle: _connectivity,
+            subtitleColor: _connectivity == 'Connected'
+                ? palette.success
+                : _connectivity == 'Unreachable'
+                ? palette.danger
+                : palette.warning,
+            trailing: FlareButton(
+              label: 'Reconnect',
+              compact: true,
+              loading: _checking,
+              onPressed: _checking ? null : _reconnect,
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: FlareButton(
-            label: 'Change server',
-            icon: PhosphorIconsRegular.arrowsLeftRight,
-            expand: true,
-            onPressed: _changeServer,
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: FlareButton(
+              label: 'Change server',
+              icon: PhosphorIconsRegular.arrowsLeftRight,
+              expand: true,
+              onPressed: _changeServer,
+            ),
           ),
-        ),
-        const FlareDividerBlock(),
-        const _SettingsHeader('APPEARANCE'),
-        const _SettingsRow(
-          icon: PhosphorIconsRegular.moon,
-          title: 'Flare dark',
-          subtitle: 'Purpose-built high-contrast infrastructure theme',
-          trailing: FlareStatusBadge(
-            label: 'Active',
-            tone: FlareStatusTone.success,
-            dot: false,
+          const FlareDividerBlock(),
+          const _SettingsHeader('APPEARANCE'),
+          _SettingsRow(
+            icon: PhosphorIconsRegular.circleHalfTilt,
+            title: _themeLabel(settings.mode),
+            subtitle: 'System, Light, Dark or OLED',
+            trailing: PhosphorIcon(
+              PhosphorIconsRegular.caretRight,
+              size: 16,
+              color: palette.muted,
+            ),
+            onTap: () => _chooseTheme(settings),
           ),
-        ),
-        const FlareDividerBlock(),
-        const _SettingsHeader('ABOUT'),
-        _ValueRow(label: 'Mobile version', value: _mobileVersion),
-        _ValueRow(label: 'API version', value: _serverInfo?.apiVersion ?? '—'),
-        _ValueRow(
-          label: 'Server version',
-          value: _serverInfo?.serverVersion ?? '—',
-        ),
-      ],
-    ),
-  );
+          const FlareDivider(indent: 50),
+          _SettingsRow(
+            icon: PhosphorIconsRegular.palette,
+            title: settings.accent.label,
+            subtitle: 'Interface accent',
+            trailing: Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                color: settings.accent.color,
+                shape: BoxShape.circle,
+                border: Border.all(color: palette.borderStrong),
+              ),
+            ),
+            onTap: () => _chooseAccent(settings),
+          ),
+          const FlareDividerBlock(),
+          const _SettingsHeader('ABOUT'),
+          _ValueRow(label: 'Mobile version', value: _mobileVersion),
+          _ValueRow(
+            label: 'API version',
+            value: _serverInfo?.apiVersion ?? '—',
+          ),
+          _ValueRow(
+            label: 'Server version',
+            value: _serverInfo?.serverVersion ?? '—',
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+String _themeLabel(FlareThemeMode mode) => switch (mode) {
+  FlareThemeMode.system => 'System',
+  FlareThemeMode.light => 'Light',
+  FlareThemeMode.dark => 'Dark',
+  FlareThemeMode.oled => 'OLED',
+};
 
 final class _SettingsHeader extends StatelessWidget {
   const _SettingsHeader(this.label);
@@ -223,7 +322,7 @@ final class _SettingsHeader extends StatelessWidget {
     padding: const EdgeInsets.only(top: 14, bottom: 9),
     child: Text(
       label,
-      style: FlareType.label.copyWith(color: FlareColors.accent),
+      style: FlareType.label.copyWith(color: context.flare.accent),
     ),
   );
 }
@@ -235,57 +334,71 @@ final class _SettingsRow extends StatelessWidget {
     required this.subtitle,
     required this.trailing,
     this.subtitleColor,
+    this.onTap,
   });
   final PhosphorIconData icon;
   final String title;
   final String subtitle;
   final Widget trailing;
   final Color? subtitleColor;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 12),
-    child: Row(
-      children: <Widget>[
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: FlareColors.surface,
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(color: FlareColors.border),
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    final content = Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(color: palette.border),
+            ),
+            alignment: Alignment.center,
+            child: PhosphorIcon(icon, size: 18, color: palette.textSecondary),
           ),
-          alignment: Alignment.center,
-          child: PhosphorIcon(icon, size: 18, color: FlareColors.textSecondary),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: FlareType.body.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: FlareType.metadata.copyWith(
-                  color: subtitleColor ?? FlareColors.muted,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: FlareType.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: palette.text,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: FlareType.metadata.copyWith(
+                    color: subtitleColor ?? palette.muted,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        trailing,
-      ],
-    ),
-  );
+          const SizedBox(width: 10),
+          trailing,
+        ],
+      ),
+    );
+    return onTap == null
+        ? content
+        : Semantics(
+            button: true,
+            child: InkWell(onTap: onTap, child: content),
+          );
+  }
 }
 
 final class _ValueRow extends StatelessWidget {
@@ -300,16 +413,100 @@ final class _ValueRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: FlareType.metadata.copyWith(color: FlareColors.muted),
+            style: FlareType.metadata.copyWith(color: context.flare.muted),
           ),
         ),
         Text(
           value,
-          style: FlareType.metadata.copyWith(color: FlareColors.text),
+          style: FlareType.metadata.copyWith(color: context.flare.text),
         ),
       ],
     ),
   );
+}
+
+final class _Choice<T> {
+  const _Choice(this.value, this.label, this.description, {this.color});
+  final T value;
+  final String label;
+  final String description;
+  final Color? color;
+}
+
+final class _ChoiceSheet<T> extends StatelessWidget {
+  const _ChoiceSheet({
+    required this.title,
+    required this.selected,
+    required this.items,
+  });
+  final String title;
+  final T selected;
+  final List<_Choice<T>> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(title, style: FlareType.title.copyWith(color: palette.text)),
+        const SizedBox(height: 12),
+        for (var index = 0; index < items.length; index++) ...<Widget>[
+          InkWell(
+            onTap: () => Navigator.pop(context, items[index].value),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: <Widget>[
+                  if (items[index].color case final color?) ...<Widget>[
+                    Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: palette.borderStrong),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          items[index].label,
+                          style: FlareType.body.copyWith(
+                            color: palette.text,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          items[index].description,
+                          style: FlareType.metadata.copyWith(
+                            color: palette.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (items[index].value == selected)
+                    PhosphorIcon(
+                      PhosphorIconsBold.check,
+                      size: 18,
+                      color: palette.accent,
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (index != items.length - 1) const FlareDivider(),
+        ],
+      ],
+    );
+  }
 }
 
 final class FlareDividerBlock extends StatelessWidget {

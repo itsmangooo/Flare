@@ -93,10 +93,10 @@ final class FlareErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const PhosphorIcon(
+            PhosphorIcon(
               PhosphorIconsRegular.cloudSlash,
               size: 32,
-              color: FlareColors.danger,
+              color: palette.danger,
             ),
             const SizedBox(height: 13),
             Text(

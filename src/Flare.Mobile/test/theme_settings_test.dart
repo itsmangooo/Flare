@@ -2,9 +2,11 @@ import 'package:flare_mobile/core/theme/flare_theme.dart';
 import 'package:flare_mobile/core/theme/theme_settings.dart';
 import 'package:flare_mobile/design/components/flare_controls.dart';
 import 'package:flare_mobile/design/components/flare_scaffold.dart';
+import 'package:flare_mobile/features/settings/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -95,5 +97,52 @@ void main() {
       palette.background,
     );
     expect((card.decoration as BoxDecoration).color, palette.surface);
+  });
+
+  testWidgets('settings exposes custom theme and accent selectors', (
+    tester,
+  ) async {
+    PackageInfo.setMockInitialValues(
+      appName: 'Flare',
+      packageName: 'io.github.itsmangooo.flare',
+      version: '1.2.0',
+      buildNumber: '6',
+      buildSignature: '',
+    );
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(themeSettingsProvider.future);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: buildFlareTheme(),
+          home: const SettingsPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 5));
+
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+    expect(find.text('Theme'), findsOneWidget);
+    await tester.tap(find.text('Light'));
+    await tester.pumpAndSettle();
+    expect(
+      container.read(themeSettingsProvider).value!.mode,
+      FlareThemeMode.light,
+    );
+
+    await tester.ensureVisible(find.text('Flare Blue'));
+    await tester.tap(find.text('Flare Blue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Accent'), findsOneWidget);
+    await tester.tap(find.text('Violet'));
+    await tester.pumpAndSettle();
+    expect(
+      container.read(themeSettingsProvider).value!.accent,
+      FlareAccent.violet,
+    );
   });
 }
