@@ -16,10 +16,12 @@ import (
 	"github.com/itsmangooo/flare/internal/cloudflare"
 	"github.com/itsmangooo/flare/internal/config"
 	"github.com/itsmangooo/flare/internal/containers"
+	"github.com/itsmangooo/flare/internal/coolify"
 	"github.com/itsmangooo/flare/internal/database"
 	"github.com/itsmangooo/flare/internal/httpapi"
 	"github.com/itsmangooo/flare/internal/monitoring"
 	"github.com/itsmangooo/flare/internal/overview"
+	"github.com/itsmangooo/flare/internal/systeminfo"
 	"github.com/itsmangooo/flare/internal/telemetry"
 	"github.com/itsmangooo/flare/internal/topology"
 )
@@ -62,11 +64,18 @@ func main() {
 		logger.Error("Cloudflare client configuration failed", "error", err)
 		os.Exit(1)
 	}
+	coolifyClient, err := coolify.NewClient(cfg.CoolifyBaseURL, cfg.CoolifyToken, logger)
+	if err != nil {
+		logger.Error("Coolify client configuration failed", "error", err)
+		os.Exit(1)
+	}
 	authHandler := auth.NewHandler(cfg, db, logger)
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
 	domainHandler := authHandler.Authenticate(cloudflare.NewHandler(cloudflareClient, logger))
 	topologyHandler := authHandler.Authenticate(topology.NewHandler(docker, cfg.HostName, logger))
+	coolifyHandler := authHandler.Authenticate(coolify.NewHandler(coolifyClient, db, logger))
+	systemHandler := authHandler.Authenticate(systeminfo.NewHandler(version, time.Now))
 	activityReader := activity.NewReader(db)
 	hostMetrics := telemetry.NewCollector(cfg.HostName, cfg.HostProcPath, cfg.HostRootFSPath, logger)
 	metricSampler := telemetry.NewSampler(hostMetrics, db, logger)
@@ -75,6 +84,7 @@ func main() {
 	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
 		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
 		Domains: domainHandler, Topology: topologyHandler,
+		Domains: domainHandler, Coolify: coolifyHandler, System: systemHandler,
 	})
 	errCh := make(chan error, 1)
 	go func() {
