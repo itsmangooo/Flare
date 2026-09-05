@@ -17,6 +17,7 @@ import (
 	"github.com/itsmangooo/flare/internal/containers"
 	"github.com/itsmangooo/flare/internal/database"
 	"github.com/itsmangooo/flare/internal/httpapi"
+	"github.com/itsmangooo/flare/internal/monitoring"
 )
 
 var version = "dev"
@@ -51,6 +52,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer docker.Close()
+	go monitoring.NewDockerMonitor(docker, db, logger).Run(ctx)
 	authHandler := auth.NewHandler(cfg, db, logger)
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
