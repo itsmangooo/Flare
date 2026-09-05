@@ -77,6 +77,11 @@ type DeploymentPage struct {
 	HasMore  bool         `json:"hasMore"`
 }
 
+type ActionResponse struct {
+	Message     string  `json:"message"`
+	OperationID *string `json:"operationId"`
+}
+
 type Client struct {
 	baseURL *url.URL
 	token   string
@@ -299,6 +304,41 @@ func (client *Client) Deployment(ctx context.Context, deploymentUUID string) (De
 	return mapDeployment(raw, ""), nil
 }
 
+func (client *Client) StartApplication(ctx context.Context, applicationUUID string) (ActionResponse, error) {
+	return client.applicationAction(ctx, applicationUUID, "start")
+}
+
+func (client *Client) StopApplication(ctx context.Context, applicationUUID string) (ActionResponse, error) {
+	return client.applicationAction(ctx, applicationUUID, "stop")
+}
+
+func (client *Client) RestartApplication(ctx context.Context, applicationUUID string) (ActionResponse, error) {
+	return client.applicationAction(ctx, applicationUUID, "restart")
+}
+
+func (client *Client) RestartService(ctx context.Context, serviceUUID string) (ActionResponse, error) {
+	if !identifier.MatchString(serviceUUID) {
+		return ActionResponse{}, ErrInvalidIdentifier
+	}
+	query := url.Values{"latest": {"false"}}
+	return client.post(ctx, "services/"+url.PathEscape(serviceUUID)+"/restart", query)
+}
+
+func (client *Client) RedeployApplication(ctx context.Context, applicationUUID string) (ActionResponse, error) {
+	if !identifier.MatchString(applicationUUID) {
+		return ActionResponse{}, ErrInvalidIdentifier
+	}
+	query := url.Values{"uuid": {applicationUUID}, "force": {"false"}}
+	return client.post(ctx, "deploy", query)
+}
+
+func (client *Client) applicationAction(ctx context.Context, applicationUUID, action string) (ActionResponse, error) {
+	if !identifier.MatchString(applicationUUID) {
+		return ActionResponse{}, ErrInvalidIdentifier
+	}
+	return client.post(ctx, "applications/"+url.PathEscape(applicationUUID)+"/"+action, nil)
+}
+
 type rawDeployment struct {
 	DeploymentUUID  string  `json:"deployment_uuid"`
 	UUID            string  `json:"uuid"`
@@ -380,6 +420,60 @@ func (client *Client) getQuery(ctx context.Context, path string, query url.Value
 		return ErrUnavailable
 	}
 	return nil
+}
+
+func (client *Client) post(ctx context.Context, path string, query url.Values) (ActionResponse, error) {
+	if !client.Configured() {
+		return ActionResponse{}, ErrNotConfigured
+	}
+	endpoint := *client.baseURL
+	endpoint.Path = strings.TrimSuffix(client.baseURL.Path, "/") + "/" + path
+	endpoint.RawQuery = query.Encode()
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), nil)
+	if err != nil {
+		return ActionResponse{}, fmt.Errorf("%w: request could not be created", ErrUnavailable)
+	}
+	request.Header.Set("Accept", "application/json")
+	request.Header.Set("Authorization", "Bearer "+client.token)
+	response, err := client.http.Do(request)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return ActionResponse{}, context.Canceled
+		}
+		client.logger.Warn("Coolify API action failed", "path", path)
+		return ActionResponse{}, ErrUnavailable
+	}
+	defer response.Body.Close()
+	if response.StatusCode == http.StatusNotFound {
+		return ActionResponse{}, ErrNotFound
+	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		client.logger.Warn("Coolify API rejected action", "path", path, "status", response.StatusCode)
+		return ActionResponse{}, ErrUnavailable
+	}
+	payload, err := io.ReadAll(io.LimitReader(response.Body, maximumResponseBytes+1))
+	if err != nil || len(payload) > maximumResponseBytes {
+		return ActionResponse{}, ErrUnavailable
+	}
+	if len(strings.TrimSpace(string(payload))) == 0 {
+		return ActionResponse{Message: "Operation queued."}, nil
+	}
+	var raw struct {
+		Message        string  `json:"message"`
+		DeploymentUUID *string `json:"deployment_uuid"`
+		Deployments    []struct {
+			DeploymentUUID *string `json:"deployment_uuid"`
+		} `json:"deployments"`
+	}
+	if err := json.Unmarshal(payload, &raw); err != nil {
+		client.logger.Warn("Coolify API action returned invalid JSON", "path", path)
+		return ActionResponse{}, ErrUnavailable
+	}
+	operationID := raw.DeploymentUUID
+	if operationID == nil && len(raw.Deployments) > 0 {
+		operationID = raw.Deployments[0].DeploymentUUID
+	}
+	return ActionResponse{Message: fallback(raw.Message, "Operation queued."), OperationID: operationID}, nil
 }
 
 func first(values ...*string) *string {
