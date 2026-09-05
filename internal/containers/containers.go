@@ -1,11 +1,13 @@
 package containers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"regexp"
 	"sort"
@@ -17,6 +19,10 @@ import (
 	"github.com/containerd/errdefs"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
+	"github.com/itsmangooo/flare/internal/auth"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/moby/moby/api/pkg/stdcopy"
 	containertypes "github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 )
@@ -25,11 +31,31 @@ type dockerAPI interface {
 	ContainerList(context.Context, client.ContainerListOptions) (client.ContainerListResult, error)
 	ContainerInspect(context.Context, string, client.ContainerInspectOptions) (client.ContainerInspectResult, error)
 	ContainerStats(context.Context, string, client.ContainerStatsOptions) (client.ContainerStatsResult, error)
+	ContainerLogs(context.Context, string, client.ContainerLogsOptions) (client.ContainerLogsResult, error)
+	ContainerStart(context.Context, string, client.ContainerStartOptions) (client.ContainerStartResult, error)
+	ContainerStop(context.Context, string, client.ContainerStopOptions) (client.ContainerStopResult, error)
+	ContainerRestart(context.Context, string, client.ContainerRestartOptions) (client.ContainerRestartResult, error)
+}
+
+type auditDatabase interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
 }
 
 type Handler struct {
-	docker dockerAPI
-	logger *slog.Logger
+	docker  dockerAPI
+	audits  auditDatabase
+	logger  *slog.Logger
+	limiter *operationLimiter
+}
+
+type operationWindow struct {
+	started  time.Time
+	requests int
+}
+
+type operationLimiter struct {
+	mu      sync.Mutex
+	windows map[string]operationWindow
 }
 
 type summaryResponse struct {
@@ -77,6 +103,26 @@ type statsResponse struct {
 	NetworkTransmitBytes int64
 }
 
+type logPageResponse struct {
+	Lines           []string   `json:"lines"`
+	RetrievedAt     time.Time  `json:"retrievedAt"`
+	Truncated       bool       `json:"truncated"`
+	RequestedTail   int        `json:"requestedTail"`
+	OldestTimestamp *time.Time `json:"oldestTimestamp"`
+	NewestTimestamp *time.Time `json:"newestTimestamp"`
+}
+
+type parsedLogLine struct {
+	text      string
+	timestamp *time.Time
+	index     int
+}
+
+type actionResponse struct {
+	Message     string  `json:"message"`
+	OperationID *string `json:"operationId"`
+}
+
 var containerIDPattern = regexp.MustCompile(`^[a-fA-F0-9]{12,64}$`)
 var sensitiveLabelPattern = regexp.MustCompile(`(?i)token|secret|pass(word|wd)?|credential|private[-_. ]?key|api[-_. ]?key`)
 
@@ -84,11 +130,15 @@ func NewDockerClient(host string) (*client.Client, error) {
 	return client.NewClientWithOpts(client.WithHost(host), client.WithAPIVersionNegotiation())
 }
 
-func NewHandler(docker dockerAPI, logger *slog.Logger) http.Handler {
-	h := &Handler{docker: docker, logger: logger}
+func NewHandler(docker dockerAPI, audits auditDatabase, logger *slog.Logger) http.Handler {
+	h := &Handler{docker: docker, audits: audits, logger: logger, limiter: &operationLimiter{windows: make(map[string]operationWindow)}}
 	router := chi.NewRouter()
 	router.Get("/", h.list)
 	router.Get("/{id}", h.detail)
+	router.Get("/{id}/logs", h.logs)
+	router.Post("/{id}/start", h.start)
+	router.Post("/{id}/stop", h.stop)
+	router.Post("/{id}/restart", h.restart)
 	return router
 }
 
@@ -169,6 +219,153 @@ func (h *Handler) detail(w http.ResponseWriter, r *http.Request) {
 	}
 	result.Ports = ports(value.NetworkSettings)
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) logs(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if !containerIDPattern.MatchString(id) {
+		writeProblem(w, http.StatusBadRequest, "Invalid request.", "Container identifier is invalid.")
+		return
+	}
+	tail, err := parseTail(r.URL.Query().Get("tail"))
+	if err != nil {
+		writeProblem(w, http.StatusBadRequest, "Invalid request.", "Tail must be an integer.")
+		return
+	}
+	until, err := parseBefore(r.URL.Query().Get("before"))
+	if err != nil {
+		writeProblem(w, http.StatusBadRequest, "Invalid request.", "Before must be an RFC 3339 timestamp.")
+		return
+	}
+	inspected, err := h.docker.ContainerInspect(r.Context(), id, client.ContainerInspectOptions{})
+	if err != nil {
+		h.dockerError(w, r, err)
+		return
+	}
+	tty := inspected.Container.Config != nil && inspected.Container.Config.Tty
+	stream, err := h.docker.ContainerLogs(r.Context(), id, client.ContainerLogsOptions{
+		ShowStdout: true, ShowStderr: true, Timestamps: true, Tail: strconv.Itoa(tail), Until: until,
+	})
+	if err != nil {
+		h.dockerError(w, r, err)
+		return
+	}
+	defer stream.Close()
+	output, byteTruncated, err := readLogOutput(stream, tty)
+	if err != nil {
+		h.unavailable(w, r, err)
+		return
+	}
+	lines := parseLogLines(output, tail)
+	response := logPageResponse{
+		Lines: make([]string, len(lines)), RetrievedAt: time.Now().UTC(),
+		Truncated: byteTruncated || len(lines) >= tail, RequestedTail: tail,
+	}
+	for index, line := range lines {
+		response.Lines[index] = line.text
+	}
+	if len(lines) > 0 {
+		response.OldestTimestamp = lines[0].timestamp
+		response.NewestTimestamp = lines[len(lines)-1].timestamp
+	}
+	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *Handler) start(w http.ResponseWriter, r *http.Request) {
+	h.perform(w, r, "container.start", func(ctx context.Context, id string) error {
+		_, err := h.docker.ContainerStart(ctx, id, client.ContainerStartOptions{})
+		return err
+	})
+}
+
+func (h *Handler) stop(w http.ResponseWriter, r *http.Request) {
+	h.perform(w, r, "container.stop", func(ctx context.Context, id string) error {
+		timeout := 20
+		_, err := h.docker.ContainerStop(ctx, id, client.ContainerStopOptions{Timeout: &timeout})
+		return err
+	})
+}
+
+func (h *Handler) restart(w http.ResponseWriter, r *http.Request) {
+	h.perform(w, r, "container.restart", func(ctx context.Context, id string) error {
+		timeout := 20
+		_, err := h.docker.ContainerRestart(ctx, id, client.ContainerRestartOptions{Timeout: &timeout})
+		return err
+	})
+}
+
+func (h *Handler) perform(w http.ResponseWriter, r *http.Request, action string, operation func(context.Context, string) error) {
+	user, authenticated := auth.UserFromContext(r.Context())
+	if !authenticated || !auth.HasRole(r.Context(), "Administrator") {
+		writeProblem(w, http.StatusForbidden, "Forbidden.", "Administrator access is required.")
+		return
+	}
+	if !h.limiter.allow(operationKey(user.ID, r.RemoteAddr), time.Now()) {
+		w.Header().Set("Retry-After", "60")
+		writeProblem(w, http.StatusTooManyRequests, "Too many requests.", "Try again later.")
+		return
+	}
+	id := chi.URLParam(r, "id")
+	if !containerIDPattern.MatchString(id) {
+		writeProblem(w, http.StatusBadRequest, "Invalid request.", "Container identifier is invalid.")
+		return
+	}
+	if err := operation(r.Context(), id); err != nil {
+		if errors.Is(err, context.Canceled) {
+			return
+		}
+		if auditErr := h.recordAudit(r.Context(), user, action, id, 1, "Docker operation failed."); auditErr != nil {
+			h.internalError(w, r, auditErr)
+			return
+		}
+		h.unavailable(w, r, err)
+		return
+	}
+	if err := h.recordAudit(r.Context(), user, action, id, 0, ""); err != nil {
+		h.internalError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, actionResponse{Message: "Container operation accepted."})
+}
+
+func (h *Handler) recordAudit(ctx context.Context, user auth.User, action, target string, result int, detail string) error {
+	var detailValue any
+	if detail != "" {
+		detailValue = detail
+	}
+	_, err := h.audits.Exec(ctx, `INSERT INTO "AuditEvents" ("Id","UserId","Actor","Action","Target","Timestamp","Result","CorrelationId","Detail") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+		uuid.New(), user.ID, user.Email, action, target, time.Now().UTC(), result, middleware.GetReqID(ctx), detailValue)
+	return err
+}
+
+func (limiter *operationLimiter) allow(key string, now time.Time) bool {
+	limiter.mu.Lock()
+	defer limiter.mu.Unlock()
+	window := limiter.windows[key]
+	if window.started.IsZero() || now.Sub(window.started) >= time.Minute {
+		window = operationWindow{started: now}
+	}
+	window.requests++
+	limiter.windows[key] = window
+	if len(limiter.windows) > 1024 {
+		for id, candidate := range limiter.windows {
+			if now.Sub(candidate.started) >= time.Minute {
+				delete(limiter.windows, id)
+			}
+		}
+	}
+	return window.requests <= 30
+}
+
+func operationKey(userID uuid.UUID, remoteAddress string) string {
+	host := remoteAddress
+	if parsed, _, err := net.SplitHostPort(remoteAddress); err == nil {
+		host = parsed
+	}
+	if len(host) > 64 {
+		host = host[:64]
+	}
+	return userID.String() + ":" + host
 }
 
 func (h *Handler) toSummary(ctx context.Context, item containertypes.Summary) summaryResponse {
@@ -308,6 +505,91 @@ func safeInt64(value uint64) int64 {
 	return int64(value)
 }
 
+func parseTail(value string) (int, error) {
+	if value == "" {
+		return 300, nil
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, err
+	}
+	return min(max(parsed, 1), 2000), nil
+}
+
+func parseBefore(value string) (string, error) {
+	if value == "" {
+		return "", nil
+	}
+	parsed, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		return "", err
+	}
+	return parsed.UTC().Format(time.RFC3339Nano), nil
+}
+
+func readLogOutput(stream io.Reader, tty bool) ([]byte, bool, error) {
+	const maximumReadBytes = 8 * 1024 * 1024
+	const maximumResponseBytes = 2 * 1024 * 1024
+	raw, err := io.ReadAll(io.LimitReader(stream, maximumReadBytes+1))
+	if err != nil {
+		return nil, false, err
+	}
+	truncated := len(raw) > maximumReadBytes
+	if truncated {
+		raw = raw[:maximumReadBytes]
+	}
+	output := raw
+	if !tty {
+		var decoded bytes.Buffer
+		_, decodeErr := stdcopy.StdCopy(&decoded, &decoded, bytes.NewReader(raw))
+		if decodeErr != nil && !truncated {
+			return nil, false, decodeErr
+		}
+		output = decoded.Bytes()
+	}
+	if len(output) > maximumResponseBytes {
+		truncated = true
+		output = output[len(output)-maximumResponseBytes:]
+		if newline := bytes.IndexByte(output, '\n'); newline >= 0 {
+			output = output[newline+1:]
+		}
+	}
+	return output, truncated, nil
+}
+
+func parseLogLines(output []byte, tail int) []parsedLogLine {
+	parts := strings.FieldsFunc(string(output), func(r rune) bool { return r == '\r' || r == '\n' })
+	lines := make([]parsedLogLine, len(parts))
+	for index, text := range parts {
+		lines[index] = parsedLogLine{text: text, timestamp: logTimestamp(text), index: index}
+	}
+	sort.SliceStable(lines, func(i, j int) bool {
+		left, right := lines[i].timestamp, lines[j].timestamp
+		if left == nil && right != nil {
+			return true
+		}
+		if left != nil && right == nil {
+			return false
+		}
+		if left != nil && right != nil && !left.Equal(*right) {
+			return left.Before(*right)
+		}
+		return lines[i].index < lines[j].index
+	})
+	if len(lines) > tail {
+		lines = lines[len(lines)-tail:]
+	}
+	return lines
+}
+
+func logTimestamp(line string) *time.Time {
+	value := line
+	if separator := strings.IndexByte(line, ' '); separator >= 0 {
+		value = line[:separator]
+	}
+	return timestamp(value)
+}
+
 func state(value containertypes.ContainerState) string {
 	switch strings.ToLower(string(value)) {
 	case "running":
@@ -377,6 +659,19 @@ func (h *Handler) unavailable(w http.ResponseWriter, r *http.Request, err error)
 	}
 	h.logger.Error("Docker operation failed", "request_id", middleware.GetReqID(r.Context()), "error", err)
 	writeProblem(w, http.StatusServiceUnavailable, "Infrastructure unavailable.", "Docker Engine is unavailable.")
+}
+
+func (h *Handler) dockerError(w http.ResponseWriter, r *http.Request, err error) {
+	if errdefs.IsNotFound(err) {
+		writeProblem(w, http.StatusNotFound, "Container not found.", "The requested container does not exist.")
+		return
+	}
+	h.unavailable(w, r, err)
+}
+
+func (h *Handler) internalError(w http.ResponseWriter, r *http.Request, err error) {
+	h.logger.Error("container request failed", "request_id", middleware.GetReqID(r.Context()), "error", err)
+	writeProblem(w, http.StatusInternalServerError, "Request failed.", "The server could not complete the request.")
 }
 
 func writeProblem(w http.ResponseWriter, status int, title, detail string) {
