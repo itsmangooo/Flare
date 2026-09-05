@@ -9,23 +9,29 @@ final class FlareLoading extends StatelessWidget {
   const FlareLoading({this.label = 'Loading', super.key});
   final String label;
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        const SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: FlareColors.accent,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: palette.accent,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Text(label, style: FlareType.metadata),
-      ],
-    ),
-  );
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: FlareType.metadata.copyWith(color: palette.textSecondary),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 final class FlareEmptyState extends StatelessWidget {
@@ -39,25 +45,32 @@ final class FlareEmptyState extends StatelessWidget {
   final String message;
   final PhosphorIconData icon;
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(FlareSpace.xl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          PhosphorIcon(icon, size: 30, color: FlareColors.muted),
-          const SizedBox(height: 13),
-          Text(title, style: FlareType.title, textAlign: TextAlign.center),
-          const SizedBox(height: 6),
-          Text(
-            message,
-            style: FlareType.body.copyWith(color: FlareColors.textSecondary),
-            textAlign: TextAlign.center,
-          ),
-        ],
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(FlareSpace.xl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            PhosphorIcon(icon, size: 30, color: palette.muted),
+            const SizedBox(height: 13),
+            Text(
+              title,
+              style: FlareType.title.copyWith(color: palette.text),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              style: FlareType.body.copyWith(color: palette.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 final class FlareErrorState extends StatelessWidget {
@@ -70,6 +83,7 @@ final class FlareErrorState extends StatelessWidget {
   final VoidCallback onRetry;
   @override
   Widget build(BuildContext context) {
+    final palette = context.flare;
     final message = error is FlareApiException
         ? (error as FlareApiException).message
         : 'Flare could not load this data.';
@@ -85,11 +99,14 @@ final class FlareErrorState extends StatelessWidget {
               color: FlareColors.danger,
             ),
             const SizedBox(height: 13),
-            Text('Data unavailable', style: FlareType.title),
+            Text(
+              'Data unavailable',
+              style: FlareType.title.copyWith(color: palette.text),
+            ),
             const SizedBox(height: 6),
             Text(
               message,
-              style: FlareType.body.copyWith(color: FlareColors.textSecondary),
+              style: FlareType.body.copyWith(color: palette.textSecondary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 18),

@@ -24,38 +24,33 @@ final class FlareScaffold extends StatelessWidget {
   final EdgeInsets bodyPadding;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.transparent,
-    resizeToAvoidBottomInset: true,
-    body: DecoratedBox(
-      decoration: const BoxDecoration(
-        color: FlareColors.background,
-        gradient: RadialGradient(
-          center: Alignment(1.15, -1.05),
-          radius: 1.05,
-          colors: <Color>[Color(0x162A1713), FlareColors.background],
-          stops: <double>[0, 0.76],
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: true,
+      body: DecoratedBox(
+        decoration: BoxDecoration(color: palette.background),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: <Widget>[
+              FlareTopBar(
+                eyebrow: eyebrow,
+                title: title,
+                actions: actions,
+                leading: leading,
+              ),
+              Expanded(
+                child: Padding(padding: bodyPadding, child: body),
+              ),
+            ],
+          ),
         ),
       ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
-          children: <Widget>[
-            FlareTopBar(
-              eyebrow: eyebrow,
-              title: title,
-              actions: actions,
-              leading: leading,
-            ),
-            Expanded(
-              child: Padding(padding: bodyPadding, child: body),
-            ),
-          ],
-        ),
-      ),
-    ),
-    bottomNavigationBar: bottomNavigation,
-  );
+      bottomNavigationBar: bottomNavigation,
+    );
+  }
 }
 
 final class FlareTopBar extends StatelessWidget {
@@ -73,45 +68,51 @@ final class FlareTopBar extends StatelessWidget {
   final Widget? leading;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(
-      FlareSpace.md,
-      FlareSpace.md,
-      FlareSpace.md,
-      FlareSpace.sm,
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: <Widget>[
-        if (leading != null) ...<Widget>[
-          leading!,
-          const SizedBox(width: FlareSpace.sm),
-        ],
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                eyebrow.toUpperCase(),
-                style: FlareType.label.copyWith(
-                  color: FlareColors.accent,
-                  letterSpacing: 2.1,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FlareSpace.md,
+        FlareSpace.md,
+        FlareSpace.md,
+        FlareSpace.sm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: <Widget>[
+          if (leading != null) ...<Widget>[
+            leading!,
+            const SizedBox(width: FlareSpace.sm),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  eyebrow.toUpperCase(),
+                  style: FlareType.label.copyWith(
+                    color: palette.accent,
+                    letterSpacing: 2.1,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 5),
-              Text(title, style: FlareType.display),
-            ],
+                const SizedBox(height: 5),
+                Text(
+                  title,
+                  style: FlareType.display.copyWith(color: palette.text),
+                ),
+              ],
+            ),
           ),
-        ),
-        ...actions.map(
-          (action) => Padding(
-            padding: const EdgeInsets.only(left: FlareSpace.xs),
-            child: action,
+          ...actions.map(
+            (action) => Padding(
+              padding: const EdgeInsets.only(left: FlareSpace.xs),
+              child: action,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 final class FlareBottomNav extends StatelessWidget {
@@ -149,125 +150,133 @@ final class FlareBottomNav extends StatelessWidget {
       ];
 
   @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: Colors.transparent,
-    child: SafeArea(
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-      child: Container(
-        height: 68,
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          color: const Color(0xF211151B),
-          borderRadius: BorderRadius.circular(FlareRadii.dock),
-          border: Border.all(color: FlareColors.borderStrong),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0xA6000000),
-              blurRadius: 24,
-              offset: Offset(0, 10),
-            ),
-          ],
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final itemWidth = constraints.maxWidth / _items.length;
-            return Stack(
-              children: <Widget>[
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 190),
-                  curve: Curves.easeOutCubic,
-                  left: itemWidth * index,
-                  top: 0,
-                  width: itemWidth,
-                  bottom: 0,
-                  child: Padding(
-                    padding: const EdgeInsets.all(2),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: FlareColors.accentSoft,
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(color: const Color(0x363F9CFF)),
-                      ),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: List<Widget>.generate(_items.length, (itemIndex) {
-                    final item = _items[itemIndex];
-                    final selected = index == itemIndex;
-                    return Expanded(
-                      child: Semantics(
-                        button: true,
-                        selected: selected,
-                        label: item.label,
-                        child: InkWell(
-                          customBorder: const StadiumBorder(),
-                          onTap: () => onSelected(itemIndex),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: <Widget>[
-                              AnimatedScale(
-                                scale: selected ? 1.05 : 1,
-                                duration: const Duration(milliseconds: 180),
-                                child: PhosphorIcon(
-                                  selected ? item.selectedIcon : item.icon,
-                                  size: 20,
-                                  color: selected
-                                      ? FlareColors.accent
-                                      : FlareColors.muted,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                item.label,
-                                maxLines: 1,
-                                style: FlareType.metadata.copyWith(
-                                  fontSize: 9.5,
-                                  color: selected
-                                      ? FlareColors.text
-                                      : FlareColors.muted,
-                                  fontWeight: selected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
-                                ),
-                              ),
-                            ],
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return ColoredBox(
+      color: Colors.transparent,
+      child: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+        child: Container(
+          height: 68,
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: palette.surface.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(FlareRadii.dock),
+            border: Border.all(color: palette.borderStrong),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0xA6000000),
+                blurRadius: 24,
+                offset: Offset(0, 10),
+              ),
+            ],
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = constraints.maxWidth / _items.length;
+              return Stack(
+                children: <Widget>[
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 190),
+                    curve: Curves.easeOutCubic,
+                    left: itemWidth * index,
+                    top: 0,
+                    width: itemWidth,
+                    bottom: 0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: palette.accentSoft,
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: palette.accent.withValues(alpha: 0.22),
                           ),
                         ),
                       ),
-                    );
-                  }),
-                ),
-              ],
-            );
-          },
+                    ),
+                  ),
+                  Row(
+                    children: List<Widget>.generate(_items.length, (itemIndex) {
+                      final item = _items[itemIndex];
+                      final selected = index == itemIndex;
+                      return Expanded(
+                        child: Semantics(
+                          button: true,
+                          selected: selected,
+                          label: item.label,
+                          child: InkWell(
+                            customBorder: const StadiumBorder(),
+                            onTap: () => onSelected(itemIndex),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                AnimatedScale(
+                                  scale: selected ? 1.05 : 1,
+                                  duration: const Duration(milliseconds: 180),
+                                  child: PhosphorIcon(
+                                    selected ? item.selectedIcon : item.icon,
+                                    size: 20,
+                                    color: selected
+                                        ? palette.accent
+                                        : palette.muted,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  item.label,
+                                  maxLines: 1,
+                                  style: FlareType.metadata.copyWith(
+                                    fontSize: 9.5,
+                                    color: selected
+                                        ? palette.text
+                                        : palette.muted,
+                                    fontWeight: selected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 final class FlareBackButton extends StatelessWidget {
   const FlareBackButton({this.onPressed, super.key});
   final VoidCallback? onPressed;
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: 'Back',
-    child: InkWell(
-      customBorder: const CircleBorder(),
-      onTap: onPressed ?? () => Navigator.of(context).maybePop(),
-      child: const SizedBox(
-        width: 40,
-        height: 40,
-        child: Center(
-          child: PhosphorIcon(
-            PhosphorIconsRegular.arrowLeft,
-            size: 20,
-            color: FlareColors.text,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Semantics(
+      button: true,
+      label: 'Back',
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed ?? () => Navigator.of(context).maybePop(),
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Center(
+            child: PhosphorIcon(
+              PhosphorIconsRegular.arrowLeft,
+              size: 20,
+              color: palette.text,
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

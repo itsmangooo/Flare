@@ -1,5 +1,7 @@
 import 'package:flare_mobile/core/theme/flare_theme.dart';
 import 'package:flare_mobile/core/theme/theme_settings.dart';
+import 'package:flare_mobile/design/components/flare_controls.dart';
+import 'package:flare_mobile/design/components/flare_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,5 +58,42 @@ void main() {
     expect(oled.accent, FlareAccent.amber.color);
     expect(FlareColors.success, isNot(light.accent));
     expect(FlareColors.danger, isNot(oled.accent));
+  });
+
+  testWidgets('custom surfaces consume the active light palette', (
+    tester,
+  ) async {
+    final theme = buildFlareTheme(
+      brightness: Brightness.light,
+      accent: FlareAccent.cyan,
+    );
+    final palette = theme.extension<FlarePalette>()!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: const FlareScaffold(
+          title: 'Theme test',
+          body: FlareCard(child: Text('Surface')),
+        ),
+      ),
+    );
+
+    final scaffoldSurface = tester.widget<DecoratedBox>(
+      find
+          .descendant(
+            of: find.byType(Scaffold),
+            matching: find.byType(DecoratedBox),
+          )
+          .first,
+    );
+    final card = tester.widget<AnimatedContainer>(
+      find.byType(AnimatedContainer).first,
+    );
+
+    expect(
+      (scaffoldSurface.decoration as BoxDecoration).color,
+      palette.background,
+    );
+    expect((card.decoration as BoxDecoration).color, palette.surface);
   });
 }

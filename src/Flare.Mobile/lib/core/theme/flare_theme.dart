@@ -156,6 +156,10 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
   }
 }
 
+extension FlareThemeContext on BuildContext {
+  FlarePalette get flare => FlarePalette.of(this);
+}
+
 abstract final class FlareSpace {
   static const xxs = 4.0;
   static const xs = 8.0;

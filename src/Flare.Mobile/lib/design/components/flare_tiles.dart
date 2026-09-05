@@ -31,6 +31,7 @@ final class FlareContainerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.flare;
     final tone = containerTone(container.state, container.health);
     final status = container.health == HealthState.unhealthy
         ? 'Unhealthy'
@@ -39,7 +40,7 @@ final class FlareContainerTile extends StatelessWidget {
       FlareStatusTone.success => FlareColors.success,
       FlareStatusTone.warning => FlareColors.warning,
       FlareStatusTone.danger => FlareColors.danger,
-      _ => FlareColors.muted,
+      _ => palette.muted,
     };
     return Semantics(
       button: true,
@@ -76,6 +77,7 @@ final class FlareContainerTile extends StatelessWidget {
                             style: FlareType.body.copyWith(
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
+                              color: palette.text,
                             ),
                           ),
                         ),
@@ -87,28 +89,30 @@ final class FlareContainerTile extends StatelessWidget {
                       container.image,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: FlareType.metadata.copyWith(
-                        color: FlareColors.muted,
-                      ),
+                      style: FlareType.metadata.copyWith(color: palette.muted),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: <Widget>[
                         Text(
                           'CPU ${formatPercent(container.cpuPercent, decimals: 1)}',
-                          style: FlareType.metadata,
+                          style: FlareType.metadata.copyWith(
+                            color: palette.textSecondary,
+                          ),
                         ),
                         const SizedBox(width: 18),
                         Text(
                           'RAM ${formatBytes(container.memoryBytes)}',
-                          style: FlareType.metadata,
+                          style: FlareType.metadata.copyWith(
+                            color: palette.textSecondary,
+                          ),
                         ),
                         const Spacer(),
                         if (container.startedAt != null)
                           Text(
                             formatRelative(container.startedAt),
                             style: FlareType.metadata.copyWith(
-                              color: FlareColors.muted,
+                              color: palette.muted,
                             ),
                           ),
                       ],
@@ -117,12 +121,12 @@ final class FlareContainerTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 5),
-              const Padding(
-                padding: EdgeInsets.only(top: 18),
+              Padding(
+                padding: const EdgeInsets.only(top: 18),
                 child: PhosphorIcon(
                   PhosphorIconsRegular.caretRight,
                   size: 16,
-                  color: FlareColors.muted,
+                  color: palette.muted,
                 ),
               ),
             ],
@@ -140,6 +144,7 @@ final class FlareActivityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.flare;
     final success = event.result == OperationResult.succeeded;
     final security = event.kind == ActivityKind.security;
     final color = success
@@ -169,7 +174,7 @@ final class FlareActivityTile extends StatelessWidget {
                 ),
                 if (!last)
                   Expanded(
-                    child: Container(width: 1, color: FlareColors.borderStrong),
+                    child: Container(width: 1, color: palette.borderStrong),
                   ),
               ],
             ),
@@ -188,13 +193,14 @@ final class FlareActivityTile extends StatelessWidget {
                           titleCaseAction(event.action),
                           style: FlareType.body.copyWith(
                             fontWeight: FontWeight.w600,
+                            color: palette.text,
                           ),
                         ),
                       ),
                       Text(
                         formatRelative(event.timestamp),
                         style: FlareType.metadata.copyWith(
-                          color: FlareColors.muted,
+                          color: palette.muted,
                         ),
                       ),
                     ],
@@ -204,15 +210,15 @@ final class FlareActivityTile extends StatelessWidget {
                     event.target,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: FlareType.metadata,
+                    style: FlareType.metadata.copyWith(
+                      color: palette.textSecondary,
+                    ),
                   ),
                   if (event.actor != null) ...<Widget>[
                     const SizedBox(height: 2),
                     Text(
                       event.actor!,
-                      style: FlareType.metadata.copyWith(
-                        color: FlareColors.muted,
-                      ),
+                      style: FlareType.metadata.copyWith(color: palette.muted),
                     ),
                   ],
                 ],
