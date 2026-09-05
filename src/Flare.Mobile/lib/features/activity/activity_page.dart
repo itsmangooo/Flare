@@ -39,6 +39,7 @@ final class _ActivityPageState extends ConsumerState<ActivityPage> {
   @override
   Widget build(BuildContext context) {
     final activity = ref.watch(activityProvider);
+    final palette = context.flare;
     return FlareScaffold(
       title: 'Activity',
       actions: <Widget>[
@@ -88,8 +89,8 @@ final class _ActivityPageState extends ConsumerState<ActivityPage> {
                         icon: PhosphorIconsRegular.pulse,
                       )
                     : RefreshIndicator(
-                        color: FlareColors.accent,
-                        backgroundColor: FlareColors.surfaceHigh,
+                        color: palette.accent,
+                        backgroundColor: palette.surfaceHigh,
                         onRefresh: () async =>
                             ref.refresh(activityProvider.future),
                         child: ListView.builder(
@@ -123,29 +124,34 @@ final class _FilterChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    selected: selected,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(FlareRadii.small),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 170),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? FlareColors.accentSoft : FlareColors.surface,
-          borderRadius: BorderRadius.circular(FlareRadii.small),
-          border: Border.all(
-            color: selected ? const Color(0x552F81F7) : FlareColors.border,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(FlareRadii.small),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 170),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? palette.accentSoft : palette.surface,
+            borderRadius: BorderRadius.circular(FlareRadii.small),
+            border: Border.all(
+              color: selected
+                  ? palette.accent.withValues(alpha: 0.33)
+                  : palette.border,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: FlareType.metadata.copyWith(
-            color: selected ? FlareColors.accent : FlareColors.textSecondary,
+          child: Text(
+            label,
+            style: FlareType.metadata.copyWith(
+              color: selected ? palette.accent : palette.textSecondary,
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

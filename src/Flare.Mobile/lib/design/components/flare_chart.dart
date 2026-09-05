@@ -11,7 +11,7 @@ final class FlareMetricCard extends StatelessWidget {
     required this.secondary,
     this.chart,
     this.usage,
-    this.accent = FlareColors.accent,
+    this.accent,
     super.key,
   });
 
@@ -20,53 +20,61 @@ final class FlareMetricCard extends StatelessWidget {
   final String secondary;
   final List<double?>? chart;
   final double? usage;
-  final Color accent;
+  final Color? accent;
 
   @override
-  Widget build(BuildContext context) => FlareCard(
-    padding: const EdgeInsets.all(14),
-    child: SizedBox(
-      height: 126,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(title.toUpperCase(), style: FlareType.label),
-          const SizedBox(height: 9),
-          Text(value, style: FlareType.metric),
-          const SizedBox(height: 5),
-          Text(
-            secondary,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: FlareType.metadata.copyWith(
-              fontSize: 10.5,
-              color: FlareColors.muted,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    final chartColor = accent ?? palette.accent;
+    return FlareCard(
+      padding: const EdgeInsets.all(14),
+      child: SizedBox(
+        height: 126,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              title.toUpperCase(),
+              style: FlareType.label.copyWith(color: palette.muted),
             ),
-          ),
-          const Spacer(),
-          if (chart != null)
-            FlareSparkline(values: chart!, color: accent, height: 38)
-          else
-            FlareUsageBar(value: usage, color: accent),
-        ],
+            const SizedBox(height: 9),
+            Text(value, style: FlareType.metric.copyWith(color: palette.text)),
+            const SizedBox(height: 5),
+            Text(
+              secondary,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: FlareType.metadata.copyWith(
+                fontSize: 10.5,
+                color: palette.muted,
+              ),
+            ),
+            const Spacer(),
+            if (chart != null)
+              FlareSparkline(values: chart!, color: chartColor, height: 38)
+            else
+              FlareUsageBar(value: usage, color: chartColor),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 final class FlareSparkline extends StatelessWidget {
   const FlareSparkline({
     required this.values,
-    this.color = FlareColors.accent,
+    this.color,
     this.height = 48,
     super.key,
   });
   final List<double?> values;
-  final Color color;
+  final Color? color;
   final double height;
 
   @override
   Widget build(BuildContext context) {
+    final lineColor = color ?? context.flare.accent;
     final spots = <FlSpot>[];
     for (var index = 0; index < values.length; index++) {
       final value = values[index];
@@ -77,7 +85,9 @@ final class FlareSparkline extends StatelessWidget {
     if (spots.length < 2) {
       return SizedBox(
         height: height,
-        child: CustomPaint(painter: _UnavailableChartPainter()),
+        child: CustomPaint(
+          painter: _UnavailableChartPainter(context.flare.borderStrong),
+        ),
       );
     }
     return SizedBox(
@@ -100,7 +110,7 @@ final class FlareSparkline extends StatelessWidget {
               spots: spots,
               isCurved: true,
               curveSmoothness: 0.28,
-              color: color,
+              color: lineColor,
               barWidth: 2,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
@@ -109,8 +119,8 @@ final class FlareSparkline extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: <Color>[
-                    color.withValues(alpha: 0.18),
-                    color.withValues(alpha: 0),
+                    lineColor.withValues(alpha: 0.18),
+                    lineColor.withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -123,10 +133,13 @@ final class FlareSparkline extends StatelessWidget {
 }
 
 final class _UnavailableChartPainter extends CustomPainter {
+  const _UnavailableChartPainter(this.color);
+  final Color color;
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = FlareColors.borderStrong
+      ..color = color
       ..strokeWidth = 1;
     canvas.drawLine(
       Offset(0, size.height * 0.72),
@@ -136,37 +149,37 @@ final class _UnavailableChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _UnavailableChartPainter oldDelegate) =>
+      color != oldDelegate.color;
 }
 
 final class FlareUsageBar extends StatelessWidget {
-  const FlareUsageBar({
-    required this.value,
-    this.color = FlareColors.accent,
-    super.key,
-  });
+  const FlareUsageBar({required this.value, this.color, super.key});
   final double? value;
-  final Color color;
+  final Color? color;
   @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(2),
-    child: SizedBox(
-      height: 3,
-      child: LayoutBuilder(
-        builder: (context, constraints) => Stack(
-          children: <Widget>[
-            Positioned.fill(child: ColoredBox(color: FlareColors.border)),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              width:
-                  constraints.maxWidth *
-                  ((value ?? 0).clamp(0, 100).toDouble() / 100),
-              color: color,
-            ),
-          ],
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(2),
+      child: SizedBox(
+        height: 3,
+        child: LayoutBuilder(
+          builder: (context, constraints) => Stack(
+            children: <Widget>[
+              Positioned.fill(child: ColoredBox(color: palette.border)),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                width:
+                    constraints.maxWidth *
+                    ((value ?? 0).clamp(0, 100).toDouble() / 100),
+                color: color ?? palette.accent,
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

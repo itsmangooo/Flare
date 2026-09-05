@@ -58,6 +58,14 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
     required this.muted,
     required this.accent,
     required this.accentSoft,
+    required this.success,
+    required this.successSoft,
+    required this.warning,
+    required this.warningSoft,
+    required this.danger,
+    required this.dangerSoft,
+    required this.info,
+    required this.infoSoft,
   });
 
   factory FlarePalette.dark(FlareAccent accent, {bool oled = false}) =>
@@ -75,6 +83,14 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
         muted: FlareColors.muted,
         accent: accent.color,
         accentSoft: accent.color.withAlpha(38),
+        success: FlareColors.success,
+        successSoft: FlareColors.successSoft,
+        warning: FlareColors.warning,
+        warningSoft: FlareColors.warningSoft,
+        danger: FlareColors.danger,
+        dangerSoft: FlareColors.dangerSoft,
+        info: FlareColors.info,
+        infoSoft: FlareColors.infoSoft,
       );
 
   factory FlarePalette.light(FlareAccent accent) => FlarePalette(
@@ -89,6 +105,14 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
     muted: const Color(0xFF87909C),
     accent: accent.color,
     accentSoft: accent.color.withAlpha(28),
+    success: const Color(0xFF197A55),
+    successSoft: const Color(0x18197A55),
+    warning: const Color(0xFF94600C),
+    warningSoft: const Color(0x1894600C),
+    danger: const Color(0xFFC43D49),
+    dangerSoft: const Color(0x18C43D49),
+    info: const Color(0xFF286FA8),
+    infoSoft: const Color(0x18286FA8),
   );
 
   final Color background;
@@ -102,6 +126,14 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
   final Color muted;
   final Color accent;
   final Color accentSoft;
+  final Color success;
+  final Color successSoft;
+  final Color warning;
+  final Color warningSoft;
+  final Color danger;
+  final Color dangerSoft;
+  final Color info;
+  final Color infoSoft;
 
   static FlarePalette of(BuildContext context) =>
       Theme.of(context).extension<FlarePalette>()!;
@@ -119,6 +151,14 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
     Color? muted,
     Color? accent,
     Color? accentSoft,
+    Color? success,
+    Color? successSoft,
+    Color? warning,
+    Color? warningSoft,
+    Color? danger,
+    Color? dangerSoft,
+    Color? info,
+    Color? infoSoft,
   }) => FlarePalette(
     background: background ?? this.background,
     backgroundSecondary: backgroundSecondary ?? this.backgroundSecondary,
@@ -131,6 +171,14 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
     muted: muted ?? this.muted,
     accent: accent ?? this.accent,
     accentSoft: accentSoft ?? this.accentSoft,
+    success: success ?? this.success,
+    successSoft: successSoft ?? this.successSoft,
+    warning: warning ?? this.warning,
+    warningSoft: warningSoft ?? this.warningSoft,
+    danger: danger ?? this.danger,
+    dangerSoft: dangerSoft ?? this.dangerSoft,
+    info: info ?? this.info,
+    infoSoft: infoSoft ?? this.infoSoft,
   );
 
   @override
@@ -152,8 +200,20 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
       muted: Color.lerp(muted, other.muted, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
       accentSoft: Color.lerp(accentSoft, other.accentSoft, t)!,
+      success: Color.lerp(success, other.success, t)!,
+      successSoft: Color.lerp(successSoft, other.successSoft, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      warningSoft: Color.lerp(warningSoft, other.warningSoft, t)!,
+      danger: Color.lerp(danger, other.danger, t)!,
+      dangerSoft: Color.lerp(dangerSoft, other.dangerSoft, t)!,
+      info: Color.lerp(info, other.info, t)!,
+      infoSoft: Color.lerp(infoSoft, other.infoSoft, t)!,
     );
   }
+}
+
+extension FlareThemeContext on BuildContext {
+  FlarePalette get flare => FlarePalette.of(this);
 }
 
 abstract final class FlareSpace {
@@ -179,47 +239,40 @@ abstract final class FlareType {
     height: 1.1,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.9,
-    color: FlareColors.text,
   );
   static const title = TextStyle(
     fontSize: 19,
     height: 1.25,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.25,
-    color: FlareColors.text,
   );
   static const metric = TextStyle(
     fontSize: 27,
     height: 1,
     fontWeight: FontWeight.w700,
     letterSpacing: -0.8,
-    color: FlareColors.text,
     fontFeatures: [FontFeature.tabularFigures()],
   );
   static const body = TextStyle(
     fontSize: 14,
     height: 1.45,
     fontWeight: FontWeight.w400,
-    color: FlareColors.text,
   );
   static const metadata = TextStyle(
     fontSize: 12,
     height: 1.35,
     fontWeight: FontWeight.w500,
-    color: FlareColors.textSecondary,
   );
   static const label = TextStyle(
     fontSize: 11,
     height: 1.2,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.8,
-    color: FlareColors.muted,
   );
   static const mono = TextStyle(
     fontFamily: 'monospace',
     fontSize: 12,
     height: 1.5,
-    color: FlareColors.textSecondary,
   );
 }
 
@@ -241,7 +294,7 @@ ThemeData buildFlareTheme({
       onPrimary: brightness == Brightness.light ? Colors.white : palette.text,
       secondary: palette.accent,
       onSecondary: brightness == Brightness.light ? Colors.white : palette.text,
-      error: FlareColors.danger,
+      error: palette.danger,
       onError: Colors.white,
       surface: palette.surface,
       onSurface: palette.text,

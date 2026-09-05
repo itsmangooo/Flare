@@ -58,6 +58,7 @@ final class _ContainersPageState extends ConsumerState<ContainersPage> {
   @override
   Widget build(BuildContext context) {
     final containers = ref.watch(containersProvider);
+    final palette = context.flare;
     return FlareScaffold(
       title: 'Containers',
       actions: <Widget>[
@@ -122,8 +123,8 @@ final class _ContainersPageState extends ConsumerState<ContainersPage> {
                   );
                 }
                 return RefreshIndicator(
-                  color: FlareColors.accent,
-                  backgroundColor: FlareColors.surfaceHigh,
+                  color: palette.accent,
+                  backgroundColor: palette.surfaceHigh,
                   onRefresh: () async => ref.refresh(containersProvider.future),
                   child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(),

@@ -39,6 +39,7 @@ final class OverviewPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final snapshot = ref.watch(overviewProvider);
+    final palette = context.flare;
     return FlareScaffold(
       title: 'Overview',
       actions: <Widget>[
@@ -55,8 +56,8 @@ final class OverviewPage extends ConsumerWidget {
           onRetry: () => ref.invalidate(overviewProvider),
         ),
         data: (data) => RefreshIndicator(
-          color: FlareColors.accent,
-          backgroundColor: FlareColors.surfaceHigh,
+          color: palette.accent,
+          backgroundColor: palette.surfaceHigh,
           onRefresh: () => _refresh(context, ref),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -75,12 +76,14 @@ final class OverviewPage extends ConsumerWidget {
                 ),
               ),
               if (data.recentActivity.isEmpty)
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 26),
+                    padding: const EdgeInsets.symmetric(vertical: 26),
                     child: Text(
                       'No recent activity.',
-                      style: FlareType.metadata,
+                      style: FlareType.metadata.copyWith(
+                        color: palette.textSecondary,
+                      ),
                     ),
                   ),
                 )
@@ -107,6 +110,7 @@ final class _HostHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.flare;
     final (label, tone) = switch (data.freshness) {
       DataFreshness.live => ('Online', FlareStatusTone.success),
       DataFreshness.reconnecting => ('Reconnecting', FlareStatusTone.warning),
@@ -124,12 +128,17 @@ final class _HostHeader extends StatelessWidget {
               children: <Widget>[
                 Text(
                   data.host.hostName,
-                  style: FlareType.title.copyWith(fontSize: 20),
+                  style: FlareType.title.copyWith(
+                    fontSize: 20,
+                    color: palette.text,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   'Uptime ${formatDuration(data.host.uptime)}',
-                  style: FlareType.metadata,
+                  style: FlareType.metadata.copyWith(
+                    color: palette.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -147,6 +156,7 @@ final class _MetricsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.flare;
     final memorySecondary =
         '${formatBytes(data.host.memoryUsedBytes)} / ${formatBytes(data.host.memoryTotalBytes)}';
     final diskSecondary =
@@ -180,7 +190,7 @@ final class _MetricsGrid extends StatelessWidget {
                 chart: data.history
                     .map((point) => point.memoryPercent)
                     .toList(growable: false),
-                accent: FlareColors.info,
+                accent: palette.info,
               ),
             ),
             SizedBox(
@@ -190,7 +200,7 @@ final class _MetricsGrid extends StatelessWidget {
                 value: formatPercent(data.host.diskPercent),
                 secondary: diskSecondary,
                 usage: data.host.diskPercent,
-                accent: FlareColors.warning,
+                accent: palette.warning,
               ),
             ),
             SizedBox(
@@ -212,33 +222,39 @@ final class _NetworkCard extends StatelessWidget {
   final double? receive;
   final double? transmit;
   @override
-  Widget build(BuildContext context) => FlareCard(
-    padding: const EdgeInsets.all(14),
-    child: SizedBox(
-      height: 126,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text('NETWORK', style: FlareType.label),
-          const Spacer(),
-          _NetworkLine(
-            icon: PhosphorIconsRegular.arrowDown,
-            label: 'Down',
-            value: formatBytes(receive, perSecond: true),
-            color: FlareColors.success,
-          ),
-          const SizedBox(height: 12),
-          _NetworkLine(
-            icon: PhosphorIconsRegular.arrowUp,
-            label: 'Up',
-            value: formatBytes(transmit, perSecond: true),
-            color: FlareColors.info,
-          ),
-          const Spacer(),
-        ],
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return FlareCard(
+      padding: const EdgeInsets.all(14),
+      child: SizedBox(
+        height: 126,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'NETWORK',
+              style: FlareType.label.copyWith(color: palette.muted),
+            ),
+            const Spacer(),
+            _NetworkLine(
+              icon: PhosphorIconsRegular.arrowDown,
+              label: 'Down',
+              value: formatBytes(receive, perSecond: true),
+              color: palette.success,
+            ),
+            const SizedBox(height: 12),
+            _NetworkLine(
+              icon: PhosphorIconsRegular.arrowUp,
+              label: 'Up',
+              value: formatBytes(transmit, perSecond: true),
+              color: palette.info,
+            ),
+            const Spacer(),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 final class _NetworkLine extends StatelessWidget {
@@ -253,65 +269,71 @@ final class _NetworkLine extends StatelessWidget {
   final String value;
   final Color color;
   @override
-  Widget build(BuildContext context) => Row(
-    children: <Widget>[
-      PhosphorIcon(icon, size: 15, color: color),
-      const SizedBox(width: 7),
-      Expanded(
-        child: Text(
-          label,
-          style: FlareType.metadata.copyWith(color: FlareColors.muted),
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Row(
+      children: <Widget>[
+        PhosphorIcon(icon, size: 15, color: color),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text(
+            label,
+            style: FlareType.metadata.copyWith(color: palette.muted),
+          ),
         ),
-      ),
-      Text(
-        value,
-        style: FlareType.metadata.copyWith(
-          color: FlareColors.text,
-          fontWeight: FontWeight.w600,
+        Text(
+          value,
+          style: FlareType.metadata.copyWith(
+            color: palette.text,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 final class _ContainerSummary extends StatelessWidget {
   const _ContainerSummary({required this.data});
   final OverviewModel data;
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: FlareSpace.lg),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const FlareSectionHeader(title: 'Containers'),
-        const SizedBox(height: 9),
-        FlareCard(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-          child: Row(
-            children: <Widget>[
-              _SummaryValue(
-                label: 'Running',
-                value: data.containers.running,
-                color: FlareColors.success,
-              ),
-              const _SummaryDivider(),
-              _SummaryValue(
-                label: 'Stopped',
-                value: data.containers.stopped,
-                color: FlareColors.textSecondary,
-              ),
-              const _SummaryDivider(),
-              _SummaryValue(
-                label: 'Unhealthy',
-                value: data.containers.unhealthy,
-                color: FlareColors.danger,
-              ),
-            ],
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Padding(
+      padding: const EdgeInsets.only(top: FlareSpace.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const FlareSectionHeader(title: 'Containers'),
+          const SizedBox(height: 9),
+          FlareCard(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+            child: Row(
+              children: <Widget>[
+                _SummaryValue(
+                  label: 'Running',
+                  value: data.containers.running,
+                  color: palette.success,
+                ),
+                const _SummaryDivider(),
+                _SummaryValue(
+                  label: 'Stopped',
+                  value: data.containers.stopped,
+                  color: palette.textSecondary,
+                ),
+                const _SummaryDivider(),
+                _SummaryValue(
+                  label: 'Unhealthy',
+                  value: data.containers.unhealthy,
+                  color: palette.danger,
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 final class _SummaryValue extends StatelessWidget {
@@ -335,7 +357,7 @@ final class _SummaryValue extends StatelessWidget {
         const SizedBox(height: 3),
         Text(
           label,
-          style: FlareType.metadata.copyWith(color: FlareColors.muted),
+          style: FlareType.metadata.copyWith(color: context.flare.muted),
         ),
       ],
     ),
@@ -349,6 +371,6 @@ final class _SummaryDivider extends StatelessWidget {
     width: 1,
     height: 34,
     margin: const EdgeInsets.symmetric(horizontal: 10),
-    color: FlareColors.border,
+    color: context.flare.border,
   );
 }

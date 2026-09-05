@@ -17,13 +17,14 @@ final class FlareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.flare;
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       padding: padding,
       decoration: BoxDecoration(
-        color: FlareColors.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(FlareRadii.normal),
-        border: Border.all(color: FlareColors.border),
+        border: Border.all(color: palette.border),
       ),
       child: child,
     );
@@ -70,22 +71,25 @@ final class _FlareButtonState extends State<FlareButton> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.flare;
     final enabled = widget.onPressed != null && !widget.loading;
     final (background, foreground, border) = switch (widget.tone) {
       FlareButtonTone.primary => (
-        FlareColors.accent,
-        const Color(0xFF04101E),
-        const Color(0xFF68B2FF),
+        palette.accent,
+        ThemeData.estimateBrightnessForColor(palette.accent) == Brightness.dark
+            ? Colors.white
+            : const Color(0xFF071018),
+        palette.accent.withValues(alpha: 0.72),
       ),
       FlareButtonTone.danger => (
-        FlareColors.dangerSoft,
-        const Color(0xFFFFC7C9),
-        const Color(0x55F16F75),
+        palette.dangerSoft,
+        palette.danger,
+        palette.danger.withValues(alpha: 0.33),
       ),
       FlareButtonTone.neutral => (
-        FlareColors.surfaceHigh,
-        FlareColors.text,
-        FlareColors.borderStrong,
+        palette.surfaceHigh,
+        palette.text,
+        palette.borderStrong,
       ),
     };
     final button = Semantics(
@@ -185,47 +189,48 @@ final class FlareIconButton extends StatefulWidget {
 final class _FlareIconButtonState extends State<FlareIconButton> {
   bool pressed = false;
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: widget.semanticLabel,
-    child: GestureDetector(
-      onTapDown: widget.onPressed == null
-          ? null
-          : (_) => setState(() => pressed = true),
-      onTapUp: widget.onPressed == null
-          ? null
-          : (_) => setState(() => pressed = false),
-      onTapCancel: widget.onPressed == null
-          ? null
-          : () => setState(() => pressed = false),
-      onTap: widget.onPressed,
-      child: AnimatedScale(
-        scale: pressed ? 0.94 : 1,
-        duration: const Duration(milliseconds: 120),
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: widget.accent ? FlareColors.accentSoft : FlareColors.surface,
-            borderRadius: BorderRadius.circular(FlareRadii.normal),
-            border: Border.all(
-              color: widget.accent
-                  ? const Color(0x442F81F7)
-                  : FlareColors.border,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Semantics(
+      button: true,
+      label: widget.semanticLabel,
+      child: GestureDetector(
+        onTapDown: widget.onPressed == null
+            ? null
+            : (_) => setState(() => pressed = true),
+        onTapUp: widget.onPressed == null
+            ? null
+            : (_) => setState(() => pressed = false),
+        onTapCancel: widget.onPressed == null
+            ? null
+            : () => setState(() => pressed = false),
+        onTap: widget.onPressed,
+        child: AnimatedScale(
+          scale: pressed ? 0.94 : 1,
+          duration: const Duration(milliseconds: 120),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: widget.accent ? palette.accentSoft : palette.surface,
+              borderRadius: BorderRadius.circular(FlareRadii.normal),
+              border: Border.all(
+                color: widget.accent
+                    ? palette.accent.withValues(alpha: 0.27)
+                    : palette.border,
+              ),
             ),
-          ),
-          alignment: Alignment.center,
-          child: PhosphorIcon(
-            widget.icon,
-            size: 20,
-            color: widget.accent
-                ? FlareColors.accent
-                : FlareColors.textSecondary,
+            alignment: Alignment.center,
+            child: PhosphorIcon(
+              widget.icon,
+              size: 20,
+              color: widget.accent ? palette.accent : palette.textSecondary,
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 final class FlareTextField extends StatefulWidget {
@@ -287,12 +292,13 @@ final class _FlareTextFieldState extends State<FlareTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.flare;
     final error = widget.error;
     final borderColor = error != null
-        ? FlareColors.danger
+        ? palette.danger
         : _focus.hasFocus
-        ? FlareColors.accent
-        : FlareColors.borderStrong;
+        ? palette.accent
+        : palette.borderStrong;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -301,7 +307,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
           child: Text(
             widget.label.toUpperCase(),
             style: FlareType.label.copyWith(
-              color: _focus.hasFocus ? FlareColors.accent : FlareColors.muted,
+              color: _focus.hasFocus ? palette.accent : palette.muted,
             ),
           ),
         ),
@@ -310,7 +316,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
           constraints: const BoxConstraints(minHeight: 52),
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: FlareColors.surface,
+            color: palette.surface,
             borderRadius: BorderRadius.circular(FlareRadii.normal),
             border: Border.all(
               color: borderColor,
@@ -323,9 +329,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
                 PhosphorIcon(
                   widget.leading!,
                   size: 19,
-                  color: _focus.hasFocus
-                      ? FlareColors.accent
-                      : FlareColors.muted,
+                  color: _focus.hasFocus ? palette.accent : palette.muted,
                 ),
                 const SizedBox(width: 10),
               ],
@@ -339,13 +343,14 @@ final class _FlareTextFieldState extends State<FlareTextField> {
                   textInputAction: widget.textInputAction,
                   onSubmitted: widget.onSubmitted,
                   autofillHints: widget.autofillHints,
-                  style: FlareType.body.copyWith(fontSize: 15),
-                  cursorColor: FlareColors.accent,
+                  style: FlareType.body.copyWith(
+                    fontSize: 15,
+                    color: palette.text,
+                  ),
+                  cursorColor: palette.accent,
                   decoration: InputDecoration.collapsed(
                     hintText: widget.hint,
-                    hintStyle: FlareType.body.copyWith(
-                      color: FlareColors.muted,
-                    ),
+                    hintStyle: FlareType.body.copyWith(color: palette.muted),
                   ),
                 ),
               ),
@@ -362,7 +367,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
                             ? PhosphorIconsRegular.eye
                             : PhosphorIconsRegular.eyeSlash,
                         size: 18,
-                        color: FlareColors.muted,
+                        color: palette.muted,
                       ),
                     ),
                   ),
@@ -379,9 +384,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
                   padding: const EdgeInsets.only(top: 6, left: 2),
                   child: Text(
                     error,
-                    style: FlareType.metadata.copyWith(
-                      color: FlareColors.danger,
-                    ),
+                    style: FlareType.metadata.copyWith(color: palette.danger),
                   ),
                 ),
         ),
@@ -401,51 +404,54 @@ final class FlareSearchField extends StatelessWidget {
   final ValueChanged<String> onChanged;
   final String hint;
   @override
-  Widget build(BuildContext context) => Container(
-    height: 44,
-    padding: const EdgeInsets.symmetric(horizontal: 13),
-    decoration: BoxDecoration(
-      color: FlareColors.surface,
-      borderRadius: BorderRadius.circular(FlareRadii.normal),
-      border: Border.all(color: FlareColors.border),
-    ),
-    child: Row(
-      children: <Widget>[
-        const PhosphorIcon(
-          PhosphorIconsRegular.magnifyingGlass,
-          size: 18,
-          color: FlareColors.muted,
-        ),
-        const SizedBox(width: 9),
-        Expanded(
-          child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            style: FlareType.body,
-            decoration: InputDecoration.collapsed(
-              hintText: hint,
-              hintStyle: FlareType.body.copyWith(color: FlareColors.muted),
-            ),
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 13),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(FlareRadii.normal),
+        border: Border.all(color: palette.border),
+      ),
+      child: Row(
+        children: <Widget>[
+          PhosphorIcon(
+            PhosphorIconsRegular.magnifyingGlass,
+            size: 18,
+            color: palette.muted,
           ),
-        ),
-        if (controller.text.isNotEmpty)
-          InkWell(
-            onTap: () {
-              controller.clear();
-              onChanged('');
-            },
-            child: const Padding(
-              padding: EdgeInsets.all(6),
-              child: PhosphorIcon(
-                PhosphorIconsRegular.x,
-                size: 16,
-                color: FlareColors.muted,
+          const SizedBox(width: 9),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onChanged,
+              style: FlareType.body.copyWith(color: palette.text),
+              decoration: InputDecoration.collapsed(
+                hintText: hint,
+                hintStyle: FlareType.body.copyWith(color: palette.muted),
               ),
             ),
           ),
-      ],
-    ),
-  );
+          if (controller.text.isNotEmpty)
+            InkWell(
+              onTap: () {
+                controller.clear();
+                onChanged('');
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: PhosphorIcon(
+                  PhosphorIconsRegular.x,
+                  size: 16,
+                  color: palette.muted,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 enum FlareStatusTone { success, warning, danger, info, neutral }
@@ -462,14 +468,15 @@ final class FlareStatusBadge extends StatelessWidget {
   final bool dot;
   @override
   Widget build(BuildContext context) {
+    final palette = context.flare;
     final (color, background) = switch (tone) {
-      FlareStatusTone.success => (FlareColors.success, FlareColors.successSoft),
-      FlareStatusTone.warning => (FlareColors.warning, FlareColors.warningSoft),
-      FlareStatusTone.danger => (FlareColors.danger, FlareColors.dangerSoft),
-      FlareStatusTone.info => (FlareColors.info, FlareColors.infoSoft),
+      FlareStatusTone.success => (palette.success, palette.successSoft),
+      FlareStatusTone.warning => (palette.warning, palette.warningSoft),
+      FlareStatusTone.danger => (palette.danger, palette.dangerSoft),
+      FlareStatusTone.info => (palette.info, palette.infoSoft),
       FlareStatusTone.neutral => (
-        FlareColors.textSecondary,
-        const Color(0x1467707C),
+        palette.textSecondary,
+        palette.muted.withValues(alpha: 0.08),
       ),
     };
     return Container(
@@ -515,25 +522,33 @@ final class FlareSectionHeader extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   @override
-  Widget build(BuildContext context) => Row(
-    children: <Widget>[
-      Expanded(child: Text(title, style: FlareType.title)),
-      if (actionLabel != null)
-        InkWell(
-          onTap: onAction,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text(
-              actionLabel!,
-              style: FlareType.metadata.copyWith(
-                color: FlareColors.accent,
-                fontWeight: FontWeight.w600,
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Text(
+            title,
+            style: FlareType.title.copyWith(color: palette.text),
+          ),
+        ),
+        if (actionLabel != null)
+          InkWell(
+            onTap: onAction,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                actionLabel!,
+                style: FlareType.metadata.copyWith(
+                  color: palette.accent,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
-        ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 final class FlareDivider extends StatelessWidget {
@@ -543,7 +558,7 @@ final class FlareDivider extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     height: 1,
     margin: EdgeInsets.only(left: indent),
-    color: FlareColors.border,
+    color: context.flare.border,
   );
 }
 
