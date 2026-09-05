@@ -119,3 +119,71 @@ final coolifyProvider = FutureProvider.autoDispose<CoolifyData>((ref) async {
         .toList(growable: false),
   );
 });
+
+typedef DomainsData = ({
+  CloudflareStatusModel status,
+  List<DomainZoneModel> zones,
+  List<CloudflareTunnelModel> tunnels,
+});
+
+final domainsProvider = FutureProvider.autoDispose<DomainsData>((ref) async {
+  final api = ref.watch(apiClientProvider);
+  final status = CloudflareStatusModel.fromJson(
+    await api.getJson('api/v1/domains/status'),
+  );
+  if (!status.configured) {
+    return (
+      status: status,
+      zones: const <DomainZoneModel>[],
+      tunnels: const <CloudflareTunnelModel>[],
+    );
+  }
+
+  Map<String, dynamic> convert(Object value) =>
+      (value as Map).map((key, item) => MapEntry(key.toString(), item));
+  final zones = (await api.getList('api/v1/domains/zones'))
+      .map((item) => DomainZoneModel.fromJson(convert(item)))
+      .toList(growable: false);
+  final tunnels = status.tunnelsConfigured
+      ? (await api.getList('api/v1/domains/tunnels'))
+            .map((item) => CloudflareTunnelModel.fromJson(convert(item)))
+            .toList(growable: false)
+      : const <CloudflareTunnelModel>[];
+  return (status: status, zones: zones, tunnels: tunnels);
+});
+
+final domainRecordsProvider = FutureProvider.autoDispose
+    .family<List<DNSRecordModel>, String>((ref, zoneId) async {
+      final items = await ref
+          .watch(apiClientProvider)
+          .getList(
+            'api/v1/domains/zones/${Uri.encodeComponent(zoneId)}/records',
+          );
+      return items
+          .map(
+            (item) => DNSRecordModel.fromJson(
+              (item as Map).map(
+                (key, value) => MapEntry(key.toString(), value),
+              ),
+            ),
+          )
+          .toList(growable: false);
+    });
+
+final tunnelRoutesProvider = FutureProvider.autoDispose
+    .family<List<TunnelRouteModel>, String>((ref, tunnelId) async {
+      final items = await ref
+          .watch(apiClientProvider)
+          .getList(
+            'api/v1/domains/tunnels/${Uri.encodeComponent(tunnelId)}/routes',
+          );
+      return items
+          .map(
+            (item) => TunnelRouteModel.fromJson(
+              (item as Map).map(
+                (key, value) => MapEntry(key.toString(), value),
+              ),
+            ),
+          )
+          .toList(growable: false);
+    });

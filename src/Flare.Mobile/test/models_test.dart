@@ -48,4 +48,34 @@ void main() {
     expect(model.state, ContainerState.unknown);
     expect(model.health, HealthState.unknown);
   });
+
+  test('parses Cloudflare domain models without private origin data', () {
+    final status = CloudflareStatusModel.fromJson(<String, dynamic>{
+      'configured': true,
+      'tunnelsConfigured': true,
+    });
+    final record = DNSRecordModel.fromJson(<String, dynamic>{
+      'id': 'record-1',
+      'zoneId': 'zone-1',
+      'name': 'flare.example.test',
+      'type': 'CNAME',
+      'target': 'tunnel.example.test',
+      'ttl': 1,
+      'proxied': true,
+      'proxiable': true,
+    });
+    final route = TunnelRouteModel.fromJson(<String, dynamic>{
+      'tunnelId': 'tunnel-1',
+      'hostname': 'flare.example.test',
+      'path': '/api/*',
+      'originKind': 'http',
+      'service': 'http://private-host:8080',
+    });
+
+    expect(status.configured, isTrue);
+    expect(record.proxied, isTrue);
+    expect(record.target, 'tunnel.example.test');
+    expect(route.hostname, 'flare.example.test');
+    expect(route.originKind, 'http');
+  });
 }
