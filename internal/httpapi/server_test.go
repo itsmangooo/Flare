@@ -57,10 +57,24 @@ func TestPublicPageIsUsefulAndSanitized(t *testing.T) {
 			t.Fatalf("page does not contain %q", expected)
 		}
 	}
-	for _, forbidden := range []string{"COOLIFY_API_TOKEN", "ConnectionStrings__Postgres", "DOCKER_HOST"} {
+	for _, forbidden := range []string{"COOLIFY_API_TOKEN", "CLOUDFLARE_API_TOKEN", "ConnectionStrings__Postgres", "DOCKER_HOST"} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("page leaked sensitive configuration name %q", forbidden)
 		}
+	}
+}
+
+func TestDomainsRoutesAreMountedUnderVersionedAPI(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	domains := http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writer.WriteHeader(http.StatusNoContent)
+	})
+	server := New(config.Config{HTTPAddress: ":0"}, "test", logger,
+		pingFunc(func(context.Context) error { return nil }), Routes{Domains: domains})
+	response := httptest.NewRecorder()
+	server.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/domains/status", nil))
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("response = %d %s", response.Code, response.Body.String())
 	}
 }
 
