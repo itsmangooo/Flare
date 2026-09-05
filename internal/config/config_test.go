@@ -13,6 +13,9 @@ func TestLoadAcceptsExistingNpgsqlConfiguration(t *testing.T) {
 	t.Setenv("COOLIFY_API_TOKEN", "secret")
 	t.Setenv("CLOUDFLARE_API_TOKEN", "cloudflare-secret")
 	t.Setenv("CLOUDFLARE_ACCOUNT_ID", "0123456789abcdef0123456789abcdef")
+	t.Setenv("NTFY_BASE_URL", "https://ntfy.example.test/")
+	t.Setenv("NTFY_TOPIC", "flare-alerts_01")
+	t.Setenv("NTFY_TOKEN", "ntfy-secret")
 
 	cfg, err := Load()
 	if err != nil {
@@ -23,6 +26,9 @@ func TestLoadAcceptsExistingNpgsqlConfiguration(t *testing.T) {
 	}
 	if cfg.CloudflareToken != "cloudflare-secret" || cfg.CloudflareAccountID != "0123456789abcdef0123456789abcdef" {
 		t.Fatalf("unexpected Cloudflare config: %#v", cfg)
+	}
+	if cfg.NtfyBaseURL != "https://ntfy.example.test" || cfg.NtfyTopic != "flare-alerts_01" || cfg.NtfyToken != "ntfy-secret" {
+		t.Fatalf("unexpected ntfy config: %#v", cfg)
 	}
 	if cfg.HostName != "homelab" || cfg.HostProcPath != "/host/proc" || cfg.HostRootFSPath != "/host/rootfs" {
 		t.Fatalf("unexpected host telemetry defaults: %#v", cfg)
@@ -93,5 +99,30 @@ func TestLoadRejectsWeakJWTKey(t *testing.T) {
 	t.Setenv("FLARE_JWT_SIGNING_KEY", "too-short")
 	if _, err := Load(); err == nil {
 		t.Fatal("Load() should reject a weak JWT signing key")
+	}
+}
+
+func TestLoadValidatesOptionalNtfyConfiguration(t *testing.T) {
+	t.Setenv("FLARE_JWT_SIGNING_KEY", "test-signing-key-with-at-least-32-bytes")
+	t.Setenv("ConnectionStrings__Postgres", "postgresql://app:test@db/flare")
+	for _, test := range []struct{ baseURL, topic, token string }{
+		{"http://ntfy.example.test", "alerts", ""},
+		{"https://ntfy.example.test", "bad/topic", ""},
+		{"https://user:pass@ntfy.example.test", "alerts", ""},
+		{"", "alerts", ""},
+		{"", "", "orphan-token"},
+	} {
+		t.Setenv("NTFY_BASE_URL", test.baseURL)
+		t.Setenv("NTFY_TOPIC", test.topic)
+		t.Setenv("NTFY_TOKEN", test.token)
+		if _, err := Load(); err == nil {
+			t.Fatalf("ntfy configuration %#v was accepted", test)
+		}
+	}
+	t.Setenv("NTFY_BASE_URL", "")
+	t.Setenv("NTFY_TOPIC", "")
+	t.Setenv("NTFY_TOKEN", "")
+	if _, err := Load(); err != nil {
+		t.Fatalf("disabled ntfy configuration was rejected: %v", err)
 	}
 }

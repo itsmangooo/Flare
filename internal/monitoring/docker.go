@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/itsmangooo/flare/internal/alerts"
 	"github.com/jackc/pgx/v5/pgconn"
 	eventtypes "github.com/moby/moby/api/types/events"
 	"github.com/moby/moby/client"
@@ -30,6 +31,10 @@ type eventDatabase interface {
 	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
 }
 
+type alertSink interface {
+	Notify(context.Context, alerts.Notification) error
+}
+
 type DockerMonitor struct {
 	docker      dockerEvents
 	database    eventDatabase
@@ -41,18 +46,23 @@ type DockerMonitor struct {
 	deaths      map[string][]time.Time
 	loopAlerted map[string]bool
 	seen        map[string]struct{}
+	alerts      alertSink
 }
 
-func NewDockerMonitor(docker dockerEvents, database eventDatabase, logger *slog.Logger) *DockerMonitor {
+func NewDockerMonitor(docker dockerEvents, database eventDatabase, logger *slog.Logger, sinks ...alertSink) *DockerMonitor {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &DockerMonitor{
+	monitor := &DockerMonitor{
 		docker: docker, database: database, logger: logger, now: time.Now,
 		retryDelay: time.Second, maxDelay: 30 * time.Second,
 		unhealthy: make(map[string]bool), deaths: make(map[string][]time.Time),
 		loopAlerted: make(map[string]bool), seen: make(map[string]struct{}),
 	}
+	if len(sinks) > 0 {
+		monitor.alerts = sinks[0]
+	}
+	return monitor
 }
 
 func (monitor *DockerMonitor) Run(ctx context.Context) {
@@ -223,11 +233,47 @@ func (monitor *DockerMonitor) record(ctx context.Context, event infrastructureEv
 	if detail != "" {
 		detailValue = detail
 	}
+	eventID := uuid.New()
 	_, err := monitor.database.Exec(ctx, `INSERT INTO "InfrastructureEvents" ("Id","Action","Target","Timestamp","Result","Detail") VALUES ($1,$2,$3,$4,$5,$6)`,
-		uuid.New(), event.action, target, event.timestamp.UTC(), result, detailValue)
+		eventID, event.action, target, event.timestamp.UTC(), result, detailValue)
 	if err != nil && !errors.Is(err, context.Canceled) {
 		monitor.logger.Error("Infrastructure event could not be recorded", "action", event.action, "error", err)
+		return
 	}
+	if err == nil && monitor.alerts != nil {
+		if notification, publish := alertNotification(eventID.String(), event, target, detail); publish {
+			if err := monitor.alerts.Notify(ctx, notification); err != nil && !errors.Is(err, context.Canceled) {
+				monitor.logger.Error("Infrastructure alert could not be queued", "action", event.action)
+			}
+		}
+	}
+}
+
+func alertNotification(id string, event infrastructureEvent, target, detail string) (alerts.Notification, bool) {
+	title, priority, tags := "", 4, []string{"warning", "flare"}
+	switch event.action {
+	case "container.unexpected_stop":
+		title, priority, tags = "Container stopped unexpectedly", 5, []string{"warning", "container"}
+	case "container.out_of_memory":
+		title, priority, tags = "Container ran out of memory", 5, []string{"warning", "container"}
+	case "container.unhealthy":
+		title, tags = "Container became unhealthy", []string{"warning", "container"}
+	case "container.restart_loop":
+		title, priority, tags = "Container restart loop", 5, []string{"warning", "container"}
+	case "server.disconnected":
+		title, priority, tags = "Docker unavailable", 5, []string{"warning", "server"}
+	case "container.recovered":
+		title, priority, tags = "Container recovered", 2, []string{"white_check_mark", "container"}
+	case "server.reconnected":
+		title, priority, tags = "Docker reconnected", 2, []string{"white_check_mark", "server"}
+	default:
+		return alerts.Notification{}, false
+	}
+	message := target
+	if detail != "" {
+		message += " — " + detail
+	}
+	return alerts.Notification{ID: id, Title: title, Message: message, Priority: priority, Tags: tags}, true
 }
 
 func wait(ctx context.Context, duration time.Duration) bool {
