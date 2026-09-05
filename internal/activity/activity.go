@@ -33,18 +33,22 @@ type database interface {
 }
 
 type Handler struct {
+	reader *Reader
+	logger *slog.Logger
+}
+
+type Reader struct {
 	database database
-	logger   *slog.Logger
 }
 
 type response struct {
-	Items    []event `json:"items"`
+	Items    []Event `json:"items"`
 	Page     int     `json:"page"`
 	PageSize int     `json:"pageSize"`
 	HasMore  bool    `json:"hasMore"`
 }
 
-type event struct {
+type Event struct {
 	ID        uuid.UUID `json:"id"`
 	Kind      string    `json:"kind"`
 	Action    string    `json:"action"`
@@ -58,7 +62,11 @@ func NewHandler(database database, logger *slog.Logger) http.Handler {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Handler{database: database, logger: logger}
+	return &Handler{reader: NewReader(database), logger: logger}
+}
+
+func NewReader(database database) *Reader {
+	return &Reader{database: database}
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -72,7 +80,7 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 		writeProblem(writer, http.StatusBadRequest, "Invalid request.", "Page and pageSize must be integers in the supported range.")
 		return
 	}
-	items, hasMore, err := handler.read(request.Context(), page, pageSize)
+	items, hasMore, err := handler.reader.Read(request.Context(), page, pageSize)
 	if errors.Is(err, context.Canceled) {
 		return
 	}
@@ -84,16 +92,16 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 	writeJSON(writer, http.StatusOK, response{Items: items, Page: page, PageSize: pageSize, HasMore: hasMore})
 }
 
-func (handler *Handler) read(ctx context.Context, page, pageSize int) ([]event, bool, error) {
+func (reader *Reader) Read(ctx context.Context, page, pageSize int) ([]Event, bool, error) {
 	offset := int64(page-1) * int64(pageSize)
-	rows, err := handler.database.Query(ctx, activityQuery, pageSize+1, offset)
+	rows, err := reader.database.Query(ctx, activityQuery, pageSize+1, offset)
 	if err != nil {
 		return nil, false, err
 	}
 	defer rows.Close()
-	items := make([]event, 0, pageSize)
+	items := make([]Event, 0, pageSize)
 	for rows.Next() {
-		var item event
+		var item Event
 		var rawAction string
 		var result int
 		var actor sql.NullString
