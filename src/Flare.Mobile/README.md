@@ -1,6 +1,6 @@
 # Flare Mobile
 
-Native Flutter/Dart Android client for Flare. The app talks only to the public Flare.Api HTTPS origin and never receives Docker, PostgreSQL, or Coolify credentials.
+Native Flutter/Dart Android client for Flare. The app talks only to the public Flare Go API HTTPS origin and never receives Docker, PostgreSQL, Coolify, Cloudflare, or notification credentials.
 
 ## Development
 

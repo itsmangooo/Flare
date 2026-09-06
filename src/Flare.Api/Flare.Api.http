@@ -1,6 +1,0 @@
-@Flare.Api_HostAddress = http://localhost:5226
-
-GET {{Flare.Api_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

@@ -1,7 +1,4 @@
-**/bin
-**/obj
 .android-sdk
-.dotnet
 .git
 .github
 .jdk

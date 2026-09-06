@@ -372,7 +372,7 @@ func mapDeployment(raw rawDeployment, fallbackResourceUUID string) Deployment {
 		CommitMessage: raw.CommitMessage, StartedAt: started, FinishedAt: finished, Logs: truncate(raw.Logs, 1_000_000),
 	}
 	if started != nil && finished != nil && !finished.Before(*started) {
-		value := dotNetDuration(finished.Sub(*started))
+		value := contractDuration(finished.Sub(*started))
 		result.Duration = &value
 	}
 	return result
@@ -514,7 +514,7 @@ func truncate(value *string, maximum int) *string {
 	return &result
 }
 
-func dotNetDuration(duration time.Duration) string {
+func contractDuration(duration time.Duration) string {
 	duration = duration.Round(time.Microsecond)
 	days := duration / (24 * time.Hour)
 	duration -= days * 24 * time.Hour

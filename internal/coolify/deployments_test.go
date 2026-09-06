@@ -110,11 +110,11 @@ func TestDeploymentValidationAndNotFound(t *testing.T) {
 	}
 }
 
-func TestDotNetDuration(t *testing.T) {
-	if value := dotNetDuration(26*time.Hour + 3*time.Minute + 4*time.Second + 500*time.Millisecond); value != "1.02:03:04.5000000" {
+func TestContractDuration(t *testing.T) {
+	if value := contractDuration(26*time.Hour + 3*time.Minute + 4*time.Second + 500*time.Millisecond); value != "1.02:03:04.5000000" {
 		t.Fatalf("duration = %s", value)
 	}
-	if value := dotNetDuration(4 * time.Second); value != "00:00:04" {
+	if value := contractDuration(4 * time.Second); value != "00:00:04" {
 		t.Fatalf("whole duration = %s", value)
 	}
 }

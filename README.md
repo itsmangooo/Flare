@@ -17,7 +17,6 @@ Flare is a self-hosted Android homelab administration app. The native Flutter cl
 cmd/flare/              Go API executable
 internal/               Go API packages and integrations
 src/Flare.Mobile/       Flutter/Dart Android client
-src/Flare.Api/          Legacy C# parity reference pending removal
 ```
 
 ## Local verification
