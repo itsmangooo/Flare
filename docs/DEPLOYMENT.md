@@ -23,6 +23,9 @@ Configure these production variables:
 | `FLARE_BOOTSTRAP_TOKEN` | first boot | High-entropy one-time first-admin token; clear it after bootstrap |
 | `DOCKER_HOST` | no | Defaults to `unix:///var/run/docker.sock` |
 | `FLARE_HOST_NAME` | no | Display name, default `homelab` |
+| `FLARE_ALERT_CPU_PERCENT` | no | Sustained host CPU alert threshold, 1-100; default 90 |
+| `FLARE_ALERT_MEMORY_PERCENT` | no | Sustained host memory alert threshold, 1-100; default 90 |
+| `FLARE_ALERT_SUSTAINED_SAMPLES` | no | Consecutive breach/recovery samples required, 2-20; default 5 |
 | `FLARE_ACCESS_TOKEN_MINUTES` | no | 5–60, default 15 |
 | `FLARE_REFRESH_TOKEN_DAYS` | no | 1–90, default 30 |
 | `FLARE_JWT_ISSUER` / `FLARE_JWT_AUDIENCE` | no | Token validation names |
@@ -51,6 +54,9 @@ COOLIFY_API_TOKEN=<least-privilege-read-and-deploy-token>
 DOCKER_SOCKET_GID=<numeric-gid>
 FLARE_BOOTSTRAP_TOKEN=<one-time-random-token>
 FLARE_HOST_NAME=<display-name>
+FLARE_ALERT_CPU_PERCENT=90
+FLARE_ALERT_MEMORY_PERCENT=90
+FLARE_ALERT_SUSTAINED_SAMPLES=5
 NTFY_BASE_URL=https://<your-ntfy-domain>
 NTFY_TOPIC=<private-random-alert-topic>
 NTFY_TOKEN=<optional-topic-write-token>
@@ -90,6 +96,8 @@ For root disk capacity, a separate read-only view is required:
 ```
 
 The second mount exposes host filenames to the container even though it is read-only. Omit it if that exposure is unacceptable; Flare returns disk as unavailable rather than reporting its own container filesystem. Never mount the host filesystem writable.
+
+CPU and memory alerts require the configured number of consecutive three-second samples. Recovery requires the same number of samples at least five percentage points below the alert threshold, which avoids flapping around the boundary. Missing host metrics never create or recover an alert.
 
 ## Docker access
 

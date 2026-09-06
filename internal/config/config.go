@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"os"
 	"regexp"
@@ -34,6 +35,9 @@ type Config struct {
 	JWTAudience         string
 	AccessTokenTTL      time.Duration
 	RefreshTokenTTL     time.Duration
+	HostCPUAlertPercent float64
+	HostRAMAlertPercent float64
+	HostAlertSamples    int
 }
 
 func Load() (Config, error) {
@@ -65,6 +69,18 @@ func Load() (Config, error) {
 	}
 	cfg.AccessTokenTTL = time.Duration(accessMinutes) * time.Minute
 	cfg.RefreshTokenTTL = time.Duration(refreshDays) * 24 * time.Hour
+	cfg.HostCPUAlertPercent, err = boundedFloat("FLARE_ALERT_CPU_PERCENT", 90, 1, 100)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.HostRAMAlertPercent, err = boundedFloat("FLARE_ALERT_MEMORY_PERCENT", 90, 1, 100)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.HostAlertSamples, err = boundedInt("FLARE_ALERT_SUSTAINED_SAMPLES", 5, 2, 20)
+	if err != nil {
+		return Config{}, err
+	}
 
 	databaseURL, err := postgresURL(strings.TrimSpace(os.Getenv("ConnectionStrings__Postgres")))
 	if err != nil {
@@ -116,6 +132,18 @@ func boundedInt(name string, fallback, minimum, maximum int) (int, error) {
 	result, err := strconv.Atoi(raw)
 	if err != nil || result < minimum || result > maximum {
 		return 0, fmt.Errorf("%s must be between %d and %d", name, minimum, maximum)
+	}
+	return result, nil
+}
+
+func boundedFloat(name string, fallback, minimum, maximum float64) (float64, error) {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return fallback, nil
+	}
+	result, err := strconv.ParseFloat(raw, 64)
+	if err != nil || math.IsNaN(result) || math.IsInf(result, 0) || result < minimum || result > maximum {
+		return 0, fmt.Errorf("%s must be between %g and %g", name, minimum, maximum)
 	}
 	return result, nil
 }
