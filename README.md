@@ -7,7 +7,7 @@ Flare is a self-hosted Android homelab administration app. The native Flutter cl
 - Compact native Android overview for host CPU, load, memory, disk, network, uptime, container state, metric history, and recent activity.
 - Dense container browsing, bounded logs, live following, and allowlisted start/stop/restart actions.
 - Coolify servers, resources, applications, services, deployments, deployment logs, and documented lifecycle/redeploy actions.
-- SignalR telemetry with reconnect, stale/offline state, and foreground/background lifecycle handling.
+- Authenticated SSE telemetry with reconnect, stale/offline state, and foreground/background lifecycle handling.
 - ASP.NET Core Identity, lockout, short-lived JWT access tokens, hashed rotating refresh tokens, reuse-family revocation, administrator policies, rate limiting, Problem Details, and correlation IDs.
 - PostgreSQL EF Core migrations, audit/infrastructure events, liveness/readiness checks, multi-stage non-root container image, and CI for backend/tests/Android/container builds.
 

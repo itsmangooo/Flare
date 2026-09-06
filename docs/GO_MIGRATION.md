@@ -29,7 +29,7 @@ Authenticated infrastructure endpoints:
 - allowlisted Coolify application start/stop/restart/redeploy and service restart
 - paginated unified activity/audit feed
 - `GET /api/v1/system/info`
-- live overview updates currently published through `/hubs/telemetry`
+- live overview updates published by Go through authenticated `/api/v1/telemetry` server-sent events
 
 The Flutter client expects camel-case JSON, ISO-8601 timestamps, string enum values, Problem Details errors, bearer authentication, and status codes including 202, 401, 403, 404, 423, 429, and 503.
 
