@@ -92,6 +92,20 @@ func TestTopologyRouteIsMountedUnderVersionedAPI(t *testing.T) {
 	}
 }
 
+func TestTelemetryRouteIsMountedOutsideBoundedRequests(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	telemetry := http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writer.WriteHeader(http.StatusNoContent)
+	})
+	server := New(config.Config{HTTPAddress: ":0"}, "test", logger,
+		pingFunc(func(context.Context) error { return nil }), Routes{Telemetry: telemetry})
+	response := httptest.NewRecorder()
+	server.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/telemetry", nil))
+	if response.Code != http.StatusNoContent {
+		t.Fatalf("response = %d %s", response.Code, response.Body.String())
+	}
+}
+
 func TestPublicPageReportsUnavailableDatabase(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	server := New(config.Config{HTTPAddress: ":0"}, "test", logger, pingFunc(func(context.Context) error { return errors.New("offline") }), Routes{})

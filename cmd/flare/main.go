@@ -22,6 +22,7 @@ import (
 	"github.com/itsmangooo/flare/internal/httpapi"
 	"github.com/itsmangooo/flare/internal/monitoring"
 	"github.com/itsmangooo/flare/internal/overview"
+	"github.com/itsmangooo/flare/internal/realtime"
 	"github.com/itsmangooo/flare/internal/systeminfo"
 	"github.com/itsmangooo/flare/internal/telemetry"
 	"github.com/itsmangooo/flare/internal/topology"
@@ -88,10 +89,13 @@ func main() {
 	hostMetrics := telemetry.NewCollector(cfg.HostName, cfg.HostProcPath, cfg.HostRootFSPath, logger)
 	metricSampler := telemetry.NewSampler(hostMetrics, db, logger)
 	go metricSampler.Run(ctx)
-	overviewHandler := authHandler.Authenticate(overview.NewHandler(docker, hostMetrics, db, activityReader, logger))
+	overviewSource := overview.NewHandler(docker, hostMetrics, db, activityReader, logger)
+	overviewHandler := authHandler.Authenticate(overviewSource)
+	realtimeHandler := authHandler.Authenticate(realtime.NewHandler(overviewSource, logger))
 	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
 		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
 		Domains: domainHandler, Topology: topologyHandler, Coolify: coolifyHandler, System: systemHandler,
+		Telemetry: realtimeHandler,
 	})
 	errCh := make(chan error, 1)
 	go func() {

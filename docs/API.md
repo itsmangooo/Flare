@@ -23,6 +23,6 @@ All application endpoints use `/api/v1`; destructive endpoints require the `Admi
 | POST | `/api/v1/coolify/services/{uuid}/restart` | Documented service restart |
 | GET | `/api/v1/activity` | Unified audit/infrastructure events |
 | GET | `/api/v1/system/info` | API/server version |
-| SignalR | `/hubs/telemetry` | Authenticated 3-second snapshots |
+| SSE | `/api/v1/telemetry` | Authenticated 3-second `snapshot` events using the overview JSON contract |
 
 Errors use RFC Problem Details and include the response `X-Correlation-ID`. The API never includes credentials or internal production exception details.

@@ -34,6 +34,7 @@ type Routes struct {
 	Topology   http.Handler
 	Coolify    http.Handler
 	System     http.Handler
+	Telemetry  http.Handler
 }
 
 func New(cfg config.Config, version string, logger *slog.Logger, database databasePinger, routes Routes) *http.Server {
@@ -41,9 +42,48 @@ func New(cfg config.Config, version string, logger *slog.Logger, database databa
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
 	router.Use(middleware.Recoverer)
-	router.Use(middleware.Timeout(30 * time.Second))
 	router.Use(requestLogger(logger))
-	registerPublicRoutes(router, version, database, time.Now())
+
+	// Streaming routes must not inherit the request timeout used by bounded API
+	// calls. Authentication still wraps the handler before it reaches this mux.
+	if routes.Telemetry != nil {
+		router.Mount("/api/v1/telemetry", routes.Telemetry)
+	}
+	router.Group(func(bounded chi.Router) {
+		bounded.Use(middleware.Timeout(30 * time.Second))
+		registerPublicRoutes(bounded, version, database, time.Now())
+		mountRoutes(bounded, routes)
+		bounded.Get("/health/live", func(w http.ResponseWriter, _ *http.Request) {
+			writeJSON(w, http.StatusOK, healthResponse{Status: "healthy", Checks: map[string]healthCheck{}})
+		})
+		bounded.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+			defer cancel()
+			if err := database.Ping(ctx); err != nil {
+				writeJSON(w, http.StatusServiceUnavailable, healthResponse{
+					Status: "unhealthy",
+					Checks: map[string]healthCheck{"postgres": {Status: "unhealthy"}},
+				})
+				return
+			}
+			writeJSON(w, http.StatusOK, healthResponse{
+				Status: "healthy",
+				Checks: map[string]healthCheck{"postgres": {Status: "healthy"}},
+			})
+		})
+	})
+
+	return &http.Server{
+		Addr:              cfg.HTTPAddress,
+		Handler:           router,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      0,
+		IdleTimeout:       60 * time.Second,
+	}
+}
+
+func mountRoutes(router chi.Router, routes Routes) {
 	if routes.Auth != nil {
 		router.Mount("/api/v1/auth", routes.Auth)
 	}
@@ -67,33 +107,6 @@ func New(cfg config.Config, version string, logger *slog.Logger, database databa
 	}
 	if routes.System != nil {
 		router.Mount("/api/v1/system", routes.System)
-	}
-	router.Get("/health/live", func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusOK, healthResponse{Status: "healthy", Checks: map[string]healthCheck{}})
-	})
-	router.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
-		defer cancel()
-		if err := database.Ping(ctx); err != nil {
-			writeJSON(w, http.StatusServiceUnavailable, healthResponse{
-				Status: "unhealthy",
-				Checks: map[string]healthCheck{"postgres": {Status: "unhealthy"}},
-			})
-			return
-		}
-		writeJSON(w, http.StatusOK, healthResponse{
-			Status: "healthy",
-			Checks: map[string]healthCheck{"postgres": {Status: "healthy"}},
-		})
-	})
-
-	return &http.Server{
-		Addr:              cfg.HTTPAddress,
-		Handler:           router,
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      35 * time.Second,
-		IdleTimeout:       60 * time.Second,
 	}
 }
 

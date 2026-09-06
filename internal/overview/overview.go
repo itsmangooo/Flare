@@ -45,7 +45,9 @@ type Handler struct {
 	now      func() time.Time
 }
 
-type response struct {
+// Snapshot is the Flutter-compatible overview payload shared by the REST and
+// realtime endpoints.
+type Snapshot struct {
 	GeneratedAt    time.Time         `json:"generatedAt"`
 	Freshness      string            `json:"freshness"`
 	Host           telemetry.Metrics `json:"host"`
@@ -66,11 +68,11 @@ type metricPoint struct {
 	MemoryPercent *float64  `json:"memoryPercent"`
 }
 
-func NewHandler(docker dockerAPI, metrics metricsCollector, database database, activityReader *activity.Reader, logger *slog.Logger) http.Handler {
+func NewHandler(docker dockerAPI, metrics metricsCollector, database database, activityReader *activity.Reader, logger *slog.Logger) *Handler {
 	return newHandler(docker, metrics, database, activityReader, logger, time.Now)
 }
 
-func newHandler(docker dockerAPI, metrics metricsCollector, database database, activityReader *activity.Reader, logger *slog.Logger, now func() time.Time) http.Handler {
+func newHandler(docker dockerAPI, metrics metricsCollector, database database, activityReader *activity.Reader, logger *slog.Logger, now func() time.Time) *Handler {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -83,33 +85,38 @@ func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Requ
 		writeProblem(writer, http.StatusMethodNotAllowed, "Method not allowed.", "")
 		return
 	}
+	snapshot, err := handler.Snapshot(request.Context())
+	if errors.Is(err, context.Canceled) {
+		return
+	}
+	if err != nil {
+		handler.internalError(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, snapshot)
+}
+
+// Snapshot reads a current overview without coupling consumers to HTTP.
+func (handler *Handler) Snapshot(ctx context.Context) (Snapshot, error) {
 	now := handler.now().UTC()
-	host := handler.metrics.Collect(request.Context())
-	containers, dockerAvailable := handler.containerTotals(request.Context())
-	history, err := handler.history(request.Context(), now.Add(-time.Hour))
-	if errors.Is(err, context.Canceled) {
-		return
-	}
+	host := handler.metrics.Collect(ctx)
+	containers, dockerAvailable := handler.containerTotals(ctx)
+	history, err := handler.history(ctx, now.Add(-time.Hour))
 	if err != nil {
-		handler.internalError(writer, request, err)
-		return
+		return Snapshot{}, err
 	}
-	recent, _, err := handler.activity.Read(request.Context(), 1, 5)
-	if errors.Is(err, context.Canceled) {
-		return
-	}
+	recent, _, err := handler.activity.Read(ctx, 1, 5)
 	if err != nil {
-		handler.internalError(writer, request, err)
-		return
+		return Snapshot{}, err
 	}
 	freshness := "Offline"
 	if dockerAvailable || hostAvailable(host) {
 		freshness = "Live"
 	}
-	writeJSON(writer, http.StatusOK, response{
+	return Snapshot{
 		GeneratedAt: now, Freshness: freshness, Host: host, Containers: containers,
 		History: history, RecentActivity: recent,
-	})
+	}, nil
 }
 
 func (handler *Handler) containerTotals(ctx context.Context) (containerTotals, bool) {
