@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        FLARE_VERSION: "${FLARE_VERSION:-dev}"
 
     command: ["--migrate"]
 
@@ -15,7 +17,6 @@ services:
     exclude_from_hc: true
 
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
       ConnectionStrings__Postgres: "${ConnectionStrings__Postgres:?}"
       FLARE_JWT_SIGNING_KEY: "${FLARE_JWT_SIGNING_KEY:?}"
 
@@ -23,6 +24,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        FLARE_VERSION: "${FLARE_VERSION:-dev}"
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -30,8 +33,6 @@ services:
     expose:
       - "8080"
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Postgres: "${ConnectionStrings__Postgres:?}"
       FLARE_JWT_SIGNING_KEY: "${FLARE_JWT_SIGNING_KEY:?}"
       FLARE_BOOTSTRAP_TOKEN: "${FLARE_BOOTSTRAP_TOKEN:-}"
@@ -40,9 +41,13 @@ services:
       FLARE_ACCESS_TOKEN_MINUTES: "${FLARE_ACCESS_TOKEN_MINUTES:-15}"
       FLARE_REFRESH_TOKEN_DAYS: "${FLARE_REFRESH_TOKEN_DAYS:-30}"
       FLARE_HOST_NAME: "${FLARE_HOST_NAME:-homelab}"
-      FLARE_TRUST_ALL_FORWARDERS: "true"
-      COOLIFY_BASE_URL: "${COOLIFY_BASE_URL:?}"
-      COOLIFY_API_TOKEN: "${COOLIFY_API_TOKEN:?}"
+      COOLIFY_BASE_URL: "${COOLIFY_BASE_URL:-}"
+      COOLIFY_API_TOKEN: "${COOLIFY_API_TOKEN:-}"
+      CLOUDFLARE_API_TOKEN: "${CLOUDFLARE_API_TOKEN:-}"
+      CLOUDFLARE_ACCOUNT_ID: "${CLOUDFLARE_ACCOUNT_ID:-}"
+      NTFY_BASE_URL: "${NTFY_BASE_URL:-}"
+      NTFY_TOPIC: "${NTFY_TOPIC:-}"
+      NTFY_TOKEN: "${NTFY_TOKEN:-}"
       DOCKER_HOST: "${DOCKER_HOST:-unix:///var/run/docker.sock}"
       HOST_PROC_PATH: /host/proc
       HOST_ROOTFS_PATH: /host/rootfs
@@ -69,7 +74,7 @@ services:
       - no-new-privileges:true
     stop_grace_period: 30s
     healthcheck:
-      test: ["CMD", "dotnet", "Flare.Api.dll", "--healthcheck"]
+      test: ["CMD", "/app/flare", "--healthcheck"]
       interval: 30s
       timeout: 5s
       start_period: 15s

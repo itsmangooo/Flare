@@ -1,38 +1,29 @@
 # syntax=docker/dockerfile:1.7
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0.300 AS build
+FROM golang:1.26.0-bookworm AS build
 
+ARG FLARE_VERSION=dev
 WORKDIR /source
 
-COPY global.json Directory.Build.props ./
+COPY go.mod go.sum ./
+RUN go mod download
 
-COPY src/Flare.Contracts/Flare.Contracts.csproj src/Flare.Contracts/
-COPY src/Flare.Api/Flare.Api.csproj src/Flare.Api/
+COPY cmd/ cmd/
+COPY internal/ internal/
 
-RUN dotnet restore src/Flare.Api/Flare.Api.csproj
-
-COPY src/Flare.Contracts/ src/Flare.Contracts/
-COPY src/Flare.Api/ src/Flare.Api/
-
-RUN dotnet publish src/Flare.Api/Flare.Api.csproj \
-    --configuration Release \
-    --no-restore \
-    --output /app/publish \
-    /p:UseAppHost=false
+RUN CGO_ENABLED=0 go build \
+    -trimpath \
+    -ldflags="-s -w -X main.version=${FLARE_VERSION}" \
+    -o /out/flare \
+    ./cmd/flare
 
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.8-noble AS runtime
+FROM gcr.io/distroless/static-debian12:nonroot AS runtime
 
 WORKDIR /app
+COPY --from=build --chown=nonroot:nonroot /out/flare /app/flare
 
-ENV ASPNETCORE_URLS=http://+:8080 \
-    ASPNETCORE_HTTP_PORTS=8080 \
-    DOTNET_EnableDiagnostics=0
-
-COPY --from=build --chown=$APP_UID:$APP_UID /app/publish ./
-
-USER $APP_UID
-
+USER nonroot:nonroot
 EXPOSE 8080
 
 HEALTHCHECK \
@@ -40,6 +31,6 @@ HEALTHCHECK \
     --timeout=5s \
     --start-period=10s \
     --retries=3 \
-    CMD ["dotnet", "Flare.Api.dll", "--healthcheck"]
+    CMD ["/app/flare", "--healthcheck"]
 
-ENTRYPOINT ["dotnet", "Flare.Api.dll"]
+ENTRYPOINT ["/app/flare"]

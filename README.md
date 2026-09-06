@@ -1,6 +1,6 @@
 # Flare
 
-Flare is a self-hosted Android homelab administration app. The native Flutter client talks only to the ASP.NET Core API; Docker and Coolify credentials never leave the homelab.
+Flare is a self-hosted Android homelab administration app. The native Flutter client talks only to the Go API; Docker, Coolify, and integration credentials never leave the homelab.
 
 ## What is included
 
@@ -8,28 +8,26 @@ Flare is a self-hosted Android homelab administration app. The native Flutter cl
 - Dense container browsing, bounded logs, live following, and allowlisted start/stop/restart actions.
 - Coolify servers, resources, applications, services, deployments, deployment logs, and documented lifecycle/redeploy actions.
 - Authenticated SSE telemetry with reconnect, stale/offline state, and foreground/background lifecycle handling.
-- ASP.NET Core Identity, lockout, short-lived JWT access tokens, hashed rotating refresh tokens, reuse-family revocation, administrator policies, rate limiting, Problem Details, and correlation IDs.
-- PostgreSQL EF Core migrations, audit/infrastructure events, liveness/readiness checks, multi-stage non-root container image, and CI for backend/tests/Android/container builds.
+- Go authentication compatible with existing password hashes, lockout, short-lived JWT access tokens, hashed rotating refresh tokens, reuse-family revocation, administrator policies, rate limiting, Problem Details, and correlation IDs.
+- Forward-only PostgreSQL migrations, audit/infrastructure events, liveness/readiness checks, a minimal non-root Go container image, and CI for backend/tests/Android/container builds.
 
 ## Repository layout
 
 ```text
-Flare.sln
+cmd/flare/              Go API executable
+internal/               Go API packages and integrations
 src/Flare.Mobile/       Flutter/Dart Android client
-src/Flare.Api/          ASP.NET Core API
-src/Flare.Contracts/    Shared wire contracts
-tests/Flare.Api.Tests/  Security, metrics, and integration-contract tests
+src/Flare.Api/          Legacy C# parity reference pending removal
 ```
 
 ## Local verification
 
-Install .NET SDK 10.0.300, Flutter 3.47.2, Java 17, and the Android SDK, then run:
+Install Go 1.26, Flutter 3.47.2, Java 17, and the Android SDK, then run:
 
 ```powershell
-dotnet tool restore
-dotnet restore Flare.sln
-dotnet build src/Flare.Api/Flare.Api.csproj -c Release
-dotnet test tests/Flare.Api.Tests/Flare.Api.Tests.csproj -c Release
+go test ./...
+go vet ./...
+go build -trimpath ./cmd/flare
 cd src/Flare.Mobile
 flutter pub get
 flutter analyze --fatal-infos
@@ -41,7 +39,7 @@ Debug builds use Android debug signing. Distributable Release builds require the
 
 ## Production deployment
 
-The root [`compose.yml`](compose.yml) is the production entry point for a Coolify Docker Compose deployment. It builds only `Flare.Api`, applies pending migrations through a one-shot service, and starts the API only after migration succeeds. See [Production deployment](docs/DEPLOYMENT.md) for the required Coolify variables, PostgreSQL networking, public HTTPS domain, mounts, and Android signing. See [Security](docs/SECURITY.md) before granting Docker access.
+The root [`compose.yml`](compose.yml) is the production entry point for a Coolify Docker Compose deployment. It builds the Go API, applies pending forward-only migrations through a one-shot service, and starts the API only after migration succeeds. See [Production deployment](docs/DEPLOYMENT.md) for the required Coolify variables, PostgreSQL networking, public HTTPS domain, mounts, and Android signing. See [Security](docs/SECURITY.md) before granting Docker access.
 
 The first administrator is created once with `POST /api/v1/auth/bootstrap`. There are no default credentials and no public registration. After any user exists, bootstrap permanently returns a conflict regardless of the token supplied.
 
