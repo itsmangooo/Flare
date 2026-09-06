@@ -32,6 +32,7 @@ var version = "dev"
 
 func main() {
 	healthcheck := flag.Bool("healthcheck", false, "probe the local liveness endpoint")
+	migrate := flag.Bool("migrate", false, "apply pending PostgreSQL migrations and exit")
 	flag.Parse()
 	if *healthcheck {
 		os.Exit(runHealthcheck())
@@ -53,6 +54,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
+	if *migrate {
+		if err = database.Migrate(ctx, db); err != nil {
+			logger.Error("database migration failed", "error", err)
+			os.Exit(1)
+		}
+		logger.Info("database migrations complete")
+		return
+	}
 
 	docker, err := containers.NewDockerClient(cfg.DockerHost)
 	if err != nil {
@@ -81,6 +90,7 @@ func main() {
 	authHandler := auth.NewHandler(cfg, db, logger)
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
+	alertHistoryHandler := authHandler.Authenticate(alerts.NewHistoryHandler(db, logger))
 	domainHandler := authHandler.Authenticate(cloudflare.NewHandler(cloudflareClient, logger))
 	topologyHandler := authHandler.Authenticate(topology.NewHandler(docker, cfg.HostName, logger))
 	coolifyHandler := authHandler.Authenticate(coolify.NewHandler(coolifyClient, db, logger))
@@ -93,7 +103,7 @@ func main() {
 	overviewHandler := authHandler.Authenticate(overviewSource)
 	realtimeHandler := authHandler.Authenticate(realtime.NewHandler(overviewSource, logger))
 	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
-		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
+		Auth: authHandler, Alerts: alertHistoryHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
 		Domains: domainHandler, Topology: topologyHandler, Coolify: coolifyHandler, System: systemHandler,
 		Telemetry: realtimeHandler,
 	})

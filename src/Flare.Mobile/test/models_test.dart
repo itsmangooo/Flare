@@ -2,9 +2,9 @@ import 'package:flare_mobile/core/api/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('parses .NET duration with days and fractional seconds', () {
+  test('parses API duration with days and fractional seconds', () {
     expect(
-      parseDotNetDuration('18.04:03:02.5000000'),
+      parseContractDuration('18.04:03:02.5000000'),
       const Duration(days: 18, hours: 4, minutes: 3, seconds: 3),
     );
   });

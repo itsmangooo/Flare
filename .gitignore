@@ -1,11 +1,9 @@
-# Build output
-**/bin/
-**/obj/
 artifacts/
+/flare
+/flare*.exe
 
 # Local SDKs and tools
 .android-sdk/
-.dotnet/
 .jdk/
 .tools/
 
@@ -39,7 +37,3 @@ src/Flare.Mobile/android/local.properties
 # OS files
 .DS_Store
 Thumbs.db
-
-# Unused MAUI template binary assets (Flare uses system fonts and SVG artwork)
-src/Flare.Mobile/Resources/Fonts/
-src/Flare.Mobile/Resources/Images/dotnet_bot.png

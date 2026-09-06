@@ -31,7 +31,7 @@ final class DomainsPage extends ConsumerWidget {
             return const FlareEmptyState(
               title: 'Cloudflare not configured',
               message:
-                  'Configure CLOUDFLARE_API_TOKEN on Flare.Api to inspect domains and DNS.',
+                  'Configure CLOUDFLARE_API_TOKEN on the Flare server to inspect domains and DNS.',
               icon: PhosphorIconsRegular.cloudSlash,
             );
           }

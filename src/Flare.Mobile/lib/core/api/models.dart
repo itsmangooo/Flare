@@ -23,7 +23,7 @@ double? _double(Object? value) => value is num ? value.toDouble() : null;
 
 int? _int(Object? value) => value is num ? value.toInt() : null;
 
-Duration? parseDotNetDuration(Object? raw) {
+Duration? parseContractDuration(Object? raw) {
   if (raw is! String || raw.isEmpty) return null;
   final parts = raw.split(':');
   if (parts.length != 3) return null;
@@ -116,7 +116,7 @@ final class HostMetricsModel {
         networkTransmitBytesPerSecond: _double(
           json['networkTransmitBytesPerSecond'],
         ),
-        uptime: parseDotNetDuration(json['uptime']),
+        uptime: parseContractDuration(json['uptime']),
       );
   final String hostName;
   final DateTime observedAt;
@@ -420,7 +420,7 @@ final class DeploymentModel {
         commitMessage: json['commitMessage']?.toString(),
         startedAt: _date(json['startedAt']),
         finishedAt: _date(json['finishedAt']),
-        duration: parseDotNetDuration(json['duration']),
+        duration: parseContractDuration(json['duration']),
         logs: json['logs']?.toString(),
       );
   final String uuid;

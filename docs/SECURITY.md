@@ -8,7 +8,7 @@ Flare reduces exposure at its HTTP boundary: only list/inspect/log/start/stop/re
 
 ## Credentials
 
-- Coolify and Docker credentials exist only in `Flare.Api` environment configuration.
+- Coolify, Docker, Cloudflare, and notification credentials exist only in the Go API environment.
 - The Android client stores access and refresh tokens with Android secure storage. Passwords are never retained.
 - Refresh tokens use 512 bits of entropy, are SHA-256 hashed in PostgreSQL, rotate on use, and revoke their token family when reuse is detected.
 - `FLARE_JWT_SIGNING_KEY`, `FLARE_BOOTSTRAP_TOKEN`, database credentials, `COOLIFY_API_TOKEN`, Cloudflare credentials, and `NTFY_TOKEN` must be supplied by the deployment secret store.
