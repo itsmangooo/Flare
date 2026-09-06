@@ -27,6 +27,7 @@ type healthCheck struct {
 
 type Routes struct {
 	Auth       http.Handler
+	Alerts     http.Handler
 	Containers http.Handler
 	Activity   http.Handler
 	Overview   http.Handler
@@ -86,6 +87,9 @@ func New(cfg config.Config, version string, logger *slog.Logger, database databa
 func mountRoutes(router chi.Router, routes Routes) {
 	if routes.Auth != nil {
 		router.Mount("/api/v1/auth", routes.Auth)
+	}
+	if routes.Alerts != nil {
+		router.Mount("/api/v1/alerts", routes.Alerts)
 	}
 	if routes.Containers != nil {
 		router.Mount("/api/v1/containers", routes.Containers)
