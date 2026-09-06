@@ -31,6 +31,10 @@ type notificationSink interface {
 	Notify(context.Context, Notification) error
 }
 
+type DeliveryPolicy interface {
+	Allow(context.Context, Signal) (bool, error)
+}
+
 type transactionDatabase interface {
 	BeginTx(context.Context, pgx.TxOptions) (pgx.Tx, error)
 }
@@ -39,15 +43,20 @@ type Engine struct {
 	database transactionDatabase
 	sink     notificationSink
 	logger   *slog.Logger
+	policy   DeliveryPolicy
 	now      func() time.Time
 	cooldown time.Duration
 }
 
-func NewEngine(database transactionDatabase, sink notificationSink, logger *slog.Logger) *Engine {
+func NewEngine(database transactionDatabase, sink notificationSink, logger *slog.Logger, policies ...DeliveryPolicy) *Engine {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Engine{database: database, sink: sink, logger: logger, now: time.Now, cooldown: defaultCooldown}
+	engine := &Engine{database: database, sink: sink, logger: logger, now: time.Now, cooldown: defaultCooldown}
+	if len(policies) > 0 {
+		engine.policy = policies[0]
+	}
+	return engine
 }
 
 func (engine *Engine) Record(ctx context.Context, signal Signal) error {
@@ -57,11 +66,23 @@ func (engine *Engine) Record(ctx context.Context, signal Signal) error {
 	if err := validateSignal(&signal); err != nil {
 		return err
 	}
+	deliveryAllowed := true
+	if engine.policy != nil {
+		var err error
+		deliveryAllowed, err = engine.policy.Allow(ctx, signal)
+		if err != nil {
+			return fmt.Errorf("read notification preferences: %w", err)
+		}
+	}
 	observedAt := signal.OccurredAt.UTC()
 	if observedAt.IsZero() {
 		observedAt = engine.now().UTC()
 	}
 	notificationAt := engine.now().UTC()
+	var notificationValue any
+	if deliveryAllowed {
+		notificationValue = notificationAt
+	}
 	tx, err := engine.database.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("begin alert transaction: %w", err)
@@ -73,10 +94,10 @@ func (engine *Engine) Record(ctx context.Context, signal Signal) error {
 	if signal.Recovery {
 		err = tx.QueryRow(ctx, `UPDATE "Alerts" SET
     "Severity"=$2,"Title"=$3,"Message"=$4,"LastSeenAt"=GREATEST("LastSeenAt",$5),
-    "RecoveredAt"=$5,"Status"='recovered',"OccurrenceCount"="OccurrenceCount"+1,"LastNotifiedAt"=$6
+    "RecoveredAt"=$5,"Status"='recovered',"OccurrenceCount"="OccurrenceCount"+1,
+    "LastNotifiedAt"=CASE WHEN $7 THEN $6 ELSE "LastNotifiedAt" END
 WHERE "Fingerprint"=$1 AND "Status"='active' AND "LastSeenAt" <= $5
-RETURNING "Id"`, signal.Fingerprint, signal.Severity, signal.Title, signal.Message, observedAt, notificationAt).Scan(&alertID)
-		shouldNotify = err == nil
+RETURNING "Id",$7`, signal.Fingerprint, signal.Severity, signal.Title, signal.Message, observedAt, notificationAt, deliveryAllowed).Scan(&alertID, &shouldNotify)
 	} else {
 		err = tx.QueryRow(ctx, `INSERT INTO "Alerts"
     ("Id","Fingerprint","Kind","Severity","Title","Message","Source","ResourceType","ResourceId",
@@ -87,11 +108,11 @@ ON CONFLICT ("Fingerprint") WHERE "Status"='active' DO UPDATE SET
     "Message"=EXCLUDED."Message","Source"=EXCLUDED."Source","ResourceType"=EXCLUDED."ResourceType",
     "ResourceId"=EXCLUDED."ResourceId","LastSeenAt"=GREATEST("Alerts"."LastSeenAt",EXCLUDED."LastSeenAt"),
     "OccurrenceCount"="Alerts"."OccurrenceCount"+1,
-    "LastNotifiedAt"=CASE WHEN "Alerts"."LastNotifiedAt" IS NULL OR "Alerts"."LastNotifiedAt" <= $12
+    "LastNotifiedAt"=CASE WHEN $13 AND ("Alerts"."LastNotifiedAt" IS NULL OR "Alerts"."LastNotifiedAt" <= $12)
         THEN $11 ELSE "Alerts"."LastNotifiedAt" END
-RETURNING "Id",("LastNotifiedAt"=$11)`, uuid.New(), signal.Fingerprint, signal.Kind, signal.Severity,
+RETURNING "Id",COALESCE("LastNotifiedAt"=$11,FALSE)`, uuid.New(), signal.Fingerprint, signal.Kind, signal.Severity,
 			signal.Title, signal.Message, signal.Source, nullableSignal(signal.ResourceType), nullableSignal(signal.ResourceID),
-			observedAt, notificationAt, notificationAt.Add(-engine.cooldown)).Scan(&alertID, &shouldNotify)
+			observedAt, notificationValue, notificationAt.Add(-engine.cooldown), deliveryAllowed).Scan(&alertID, &shouldNotify)
 	}
 	if errors.Is(err, pgx.ErrNoRows) && signal.Recovery {
 		return tx.Rollback(ctx)
