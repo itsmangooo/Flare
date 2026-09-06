@@ -286,7 +286,7 @@ ThemeData buildFlareTheme({
       : FlarePalette.dark(accent, oled: oled);
   return ThemeData(
     brightness: brightness,
-    fontFamily: 'Inter',
+    fontFamily: 'Poppins',
     scaffoldBackgroundColor: palette.background,
     colorScheme: ColorScheme(
       brightness: brightness,
@@ -308,6 +308,49 @@ ThemeData buildFlareTheme({
       cursorColor: palette.accent,
       selectionColor: palette.accentSoft,
       selectionHandleColor: palette.accent,
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: palette.surface.withValues(alpha: 0.68),
+      selectedColor: palette.accent.withValues(alpha: 0.14),
+      disabledColor: palette.surface.withValues(alpha: 0.36),
+      side: BorderSide(color: palette.borderStrong),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(FlareRadii.normal),
+      ),
+      labelStyle: FlareType.metadata.copyWith(color: palette.textSecondary),
+      secondaryLabelStyle: FlareType.metadata.copyWith(
+        color: palette.accent,
+        fontWeight: FontWeight.w600,
+      ),
+      showCheckmark: false,
+      pressElevation: 0,
+      elevation: 0,
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return palette.accent.withValues(alpha: 0.14);
+          }
+          return palette.surface.withValues(alpha: 0.62);
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          return states.contains(WidgetState.selected)
+              ? palette.accent
+              : palette.textSecondary;
+        }),
+        side: WidgetStatePropertyAll(BorderSide(color: palette.borderStrong)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(FlareRadii.normal),
+          ),
+        ),
+        textStyle: WidgetStatePropertyAll(
+          FlareType.metadata.copyWith(fontWeight: FontWeight.w600),
+        ),
+        elevation: const WidgetStatePropertyAll(0),
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+      ),
     ),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: <TargetPlatform, PageTransitionsBuilder>{

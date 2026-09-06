@@ -138,7 +138,7 @@ final class FlareBottomSheet {
     context: context,
     barrierDismissible: true,
     barrierLabel: barrierLabel,
-    barrierColor: const Color(0xB8000000),
+    barrierColor: const Color(0x99000000),
     transitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (context, primary, secondary) {
       final palette = context.flare;
@@ -149,36 +149,31 @@ final class FlareBottomSheet {
             padding: const EdgeInsets.all(12),
             child: Material(
               color: Colors.transparent,
-              child: Container(
-                width: double.infinity,
+              child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                decoration: BoxDecoration(
-                  color: palette.surfaceHigh,
+                child: FlareGlassSurface(
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: palette.borderStrong),
-                  boxShadow: const <BoxShadow>[
-                    BoxShadow(
-                      color: Color(0xCC000000),
-                      blurRadius: 30,
-                      offset: Offset(0, 12),
+                  blurSigma: 12,
+                  backgroundColor: palette.surfaceHigh.withValues(alpha: 0.86),
+                  borderColor: palette.text.withValues(alpha: 0.09),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Container(
+                          width: 34,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: palette.textSecondary.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        child,
+                      ],
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Container(
-                      width: 34,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: palette.muted,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    child,
-                  ],
+                  ),
                 ),
               ),
             ),

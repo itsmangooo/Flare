@@ -62,6 +62,48 @@ void main() {
     expect(FlareColors.danger, isNot(oled.accent));
   });
 
+  test('theme uses the bundled Poppins family', () {
+    final theme = buildFlareTheme();
+
+    expect(theme.textTheme.bodyMedium?.fontFamily, 'Poppins');
+  });
+
+  testWidgets('bottom navigation is one clipped glass component', (
+    tester,
+  ) async {
+    var selected = -1;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildFlareTheme(),
+        home: Scaffold(
+          bottomNavigationBar: FlareBottomNav(
+            index: 1,
+            onSelected: (value) => selected = value,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(FlareGlassSurface), findsOneWidget);
+    expect(find.byType(BackdropFilter), findsOneWidget);
+    final decorations = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(
+            of: find.byType(FlareBottomNav),
+            matching: find.byType(DecoratedBox),
+          ),
+        )
+        .map((widget) => widget.decoration)
+        .whereType<BoxDecoration>();
+    expect(
+      decorations.every((decoration) => decoration.boxShadow?.isEmpty ?? true),
+      isTrue,
+    );
+
+    await tester.tap(find.text('Activity'));
+    expect(selected, 3);
+  });
+
   testWidgets('custom surfaces consume the active light palette', (
     tester,
   ) async {

@@ -1,8 +1,57 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../core/theme/flare_theme.dart';
+
+final class FlareGlassSurface extends StatelessWidget {
+  const FlareGlassSurface({
+    required this.child,
+    required this.borderRadius,
+    this.blurSigma = 10,
+    this.backgroundColor,
+    this.borderColor,
+    super.key,
+  });
+
+  final Widget child;
+  final BorderRadius borderRadius;
+  final double blurSigma;
+  final Color? backgroundColor;
+  final Color? borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return RepaintBoundary(
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color:
+                  backgroundColor ??
+                  palette.surfaceHigh.withValues(alpha: dark ? 0.72 : 0.78),
+              borderRadius: borderRadius,
+              border: Border.all(
+                color:
+                    borderColor ??
+                    (dark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.07)),
+              ),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 final class FlareCard extends StatelessWidget {
   const FlareCard({
@@ -208,23 +257,25 @@ final class _FlareIconButtonState extends State<FlareIconButton> {
         child: AnimatedScale(
           scale: pressed ? 0.94 : 1,
           duration: const Duration(milliseconds: 120),
-          child: Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: widget.accent ? palette.accentSoft : palette.surface,
-              borderRadius: BorderRadius.circular(FlareRadii.normal),
-              border: Border.all(
-                color: widget.accent
-                    ? palette.accent.withValues(alpha: 0.27)
-                    : palette.border,
+          child: FlareGlassSurface(
+            borderRadius: BorderRadius.circular(FlareRadii.normal),
+            blurSigma: 7,
+            backgroundColor: widget.accent
+                ? palette.accent.withValues(alpha: 0.11)
+                : palette.surface.withValues(alpha: 0.68),
+            borderColor: widget.accent
+                ? palette.accent.withValues(alpha: 0.24)
+                : palette.text.withValues(alpha: 0.07),
+            child: SizedBox(
+              width: 42,
+              height: 42,
+              child: Center(
+                child: PhosphorIcon(
+                  widget.icon,
+                  size: 20,
+                  color: widget.accent ? palette.accent : palette.textSecondary,
+                ),
               ),
-            ),
-            alignment: Alignment.center,
-            child: PhosphorIcon(
-              widget.icon,
-              size: 20,
-              color: widget.accent ? palette.accent : palette.textSecondary,
             ),
           ),
         ),
