@@ -25,4 +25,6 @@ The host telemetry sampler also feeds a small threshold evaluator. CPU and memor
 
 When Coolify is configured, a bounded background poll records integration availability transitions and new terminal deployments. Existing history is seeded without replaying stale failures, while recent failures and later successful deployments produce deduplicated alert/recovery pairs associated with the Coolify resource.
 
+Cloudflare monitoring is also optional. Zone access supplies the integration-availability signal; when an account ID enables tunnel access, only documented tunnel health states produce unavailable/recovery transitions. Unknown states remain unknown, and neither credentials nor private tunnel origins enter activity or alert records.
+
 The production image contains one static Go binary in a non-root distroless runtime. A one-shot invocation of the same image applies embedded, forward-only PostgreSQL migrations before the API starts.

@@ -83,6 +83,7 @@ func main() {
 		logger.Error("Cloudflare client configuration failed", "error", err)
 		os.Exit(1)
 	}
+	go monitoring.NewCloudflareMonitor(cloudflareClient, db, logger, alertEngine).Run(ctx)
 	coolifyClient, err := coolify.NewClient(cfg.CoolifyBaseURL, cfg.CoolifyToken, logger)
 	if err != nil {
 		logger.Error("Coolify client configuration failed", "error", err)
