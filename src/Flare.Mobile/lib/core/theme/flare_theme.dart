@@ -220,31 +220,31 @@ abstract final class FlareSpace {
   static const xxs = 4.0;
   static const xs = 8.0;
   static const sm = 12.0;
-  static const md = 16.0;
+  static const md = 18.0;
   static const lg = 24.0;
-  static const xl = 32.0;
+  static const xl = 36.0;
   static const xxl = 48.0;
 }
 
 abstract final class FlareRadii {
-  static const small = 7.0;
-  static const normal = 11.0;
-  static const large = 18.0;
-  static const dock = 28.0;
+  static const small = 10.0;
+  static const normal = 14.0;
+  static const large = 21.0;
+  static const dock = 30.0;
 }
 
 abstract final class FlareType {
   static const display = TextStyle(
-    fontSize: 30,
-    height: 1.1,
+    fontSize: 34,
+    height: 1.08,
     fontWeight: FontWeight.w700,
-    letterSpacing: -0.9,
+    letterSpacing: -1.15,
   );
   static const title = TextStyle(
-    fontSize: 19,
+    fontSize: 20,
     height: 1.25,
     fontWeight: FontWeight.w600,
-    letterSpacing: -0.25,
+    letterSpacing: -0.35,
   );
   static const metric = TextStyle(
     fontSize: 27,
@@ -254,8 +254,8 @@ abstract final class FlareType {
     fontFeatures: [FontFeature.tabularFigures()],
   );
   static const body = TextStyle(
-    fontSize: 14,
-    height: 1.45,
+    fontSize: 14.5,
+    height: 1.48,
     fontWeight: FontWeight.w400,
   );
   static const metadata = TextStyle(
@@ -354,8 +354,43 @@ ThemeData buildFlareTheme({
     ),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: <TargetPlatform, PageTransitionsBuilder>{
-        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+        TargetPlatform.android: FlarePageTransitionsBuilder(),
       },
     ),
   );
+}
+
+final class FlarePageTransitionsBuilder extends PageTransitionsBuilder {
+  const FlarePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.025, 0),
+          end: Offset.zero,
+        ).animate(curved),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 220);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 190);
 }

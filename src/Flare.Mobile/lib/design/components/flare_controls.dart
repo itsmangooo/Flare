@@ -71,9 +71,9 @@ final class FlareCard extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: padding,
       decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(FlareRadii.normal),
-        border: Border.all(color: palette.border),
+        color: palette.surface.withValues(alpha: 0.86),
+        borderRadius: BorderRadius.circular(FlareRadii.large),
+        border: Border.all(color: palette.text.withValues(alpha: 0.045)),
       ),
       child: child,
     );
@@ -82,7 +82,7 @@ final class FlareCard extends StatelessWidget {
         : Semantics(
             button: true,
             child: InkWell(
-              borderRadius: BorderRadius.circular(FlareRadii.normal),
+              borderRadius: BorderRadius.circular(FlareRadii.large),
               onTap: onTap,
               child: content,
             ),
@@ -133,12 +133,12 @@ final class _FlareButtonState extends State<FlareButton> {
       FlareButtonTone.danger => (
         palette.dangerSoft,
         palette.danger,
-        palette.danger.withValues(alpha: 0.33),
+        Colors.transparent,
       ),
       FlareButtonTone.neutral => (
-        palette.surfaceHigh,
+        palette.surfaceHigh.withValues(alpha: 0.9),
         palette.text,
-        palette.borderStrong,
+        Colors.transparent,
       ),
     };
     final button = Semantics(
@@ -166,10 +166,10 @@ final class _FlareButtonState extends State<FlareButton> {
               ),
               decoration: BoxDecoration(
                 color: background,
-                borderRadius: BorderRadius.circular(
-                  widget.compact ? FlareRadii.small : FlareRadii.normal,
-                ),
-                border: Border.all(color: border),
+                borderRadius: BorderRadius.circular(widget.compact ? 12 : 15),
+                border: border == Colors.transparent
+                    ? null
+                    : Border.all(color: border),
               ),
               child: Row(
                 mainAxisSize: widget.expand
@@ -364,11 +364,11 @@ final class _FlareTextFieldState extends State<FlareTextField> {
         ),
         AnimatedContainer(
           duration: const Duration(milliseconds: 170),
-          constraints: const BoxConstraints(minHeight: 52),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          constraints: const BoxConstraints(minHeight: 54),
+          padding: const EdgeInsets.symmetric(horizontal: 15),
           decoration: BoxDecoration(
-            color: palette.surface,
-            borderRadius: BorderRadius.circular(FlareRadii.normal),
+            color: palette.surface.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(15),
             border: Border.all(
               color: borderColor,
               width: _focus.hasFocus ? 1.2 : 1,
@@ -458,12 +458,12 @@ final class FlareSearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.flare;
     return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 13),
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(FlareRadii.normal),
-        border: Border.all(color: palette.border),
+        color: palette.surfaceHigh.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: palette.text.withValues(alpha: 0.045)),
       ),
       child: Row(
         children: <Widget>[
@@ -531,11 +531,10 @@ final class FlareStatusBadge extends StatelessWidget {
       ),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5.5),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -549,11 +548,11 @@ final class FlareStatusBadge extends StatelessWidget {
             const SizedBox(width: 6),
           ],
           Text(
-            label.toUpperCase(),
+            label,
             style: FlareType.label.copyWith(
-              fontSize: 9.5,
+              fontSize: 10,
               color: color,
-              letterSpacing: 0.65,
+              letterSpacing: 0.15,
             ),
           ),
         ],
@@ -609,8 +608,186 @@ final class FlareDivider extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     height: 1,
     margin: EdgeInsets.only(left: indent),
-    color: context.flare.border,
+    color: context.flare.text.withValues(alpha: 0.055),
   );
+}
+
+final class FlareGroupedSurface extends StatelessWidget {
+  const FlareGroupedSurface({
+    required this.child,
+    this.padding = EdgeInsets.zero,
+    this.margin = EdgeInsets.zero,
+    super.key,
+  });
+
+  final Widget child;
+  final EdgeInsets padding;
+  final EdgeInsets margin;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: margin,
+    padding: padding,
+    decoration: BoxDecoration(
+      color: context.flare.surface.withValues(alpha: 0.86),
+      borderRadius: BorderRadius.circular(FlareRadii.large),
+      border: Border.all(color: context.flare.text.withValues(alpha: 0.045)),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: child,
+  );
+}
+
+final class FlareSegmentedControl<T> extends StatelessWidget {
+  const FlareSegmentedControl({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    super.key,
+  });
+
+  final T value;
+  final List<(T, String)> items;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: palette.surfaceHigh.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: palette.text.withValues(alpha: 0.04)),
+      ),
+      child: Row(
+        children: items
+            .map((item) {
+              final selected = item.$1 == value;
+              return Expanded(
+                child: Semantics(
+                  button: true,
+                  selected: selected,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      if (!selected) {
+                        safeSelectionHaptic();
+                        onChanged(item.$1);
+                      }
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 190),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? palette.surfaceHigh.withValues(alpha: 0.94)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: selected
+                            ? Border.all(
+                                color: palette.text.withValues(alpha: 0.065),
+                              )
+                            : null,
+                      ),
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 190),
+                        style: FlareType.metadata.copyWith(
+                          color: selected ? palette.text : palette.muted,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                        ),
+                        child: Text(
+                          item.$2,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            })
+            .toList(growable: false),
+      ),
+    );
+  }
+}
+
+final class FlareSwitch extends StatelessWidget {
+  const FlareSwitch({
+    required this.value,
+    required this.onChanged,
+    this.semanticLabel,
+    super.key,
+  });
+
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  final String? semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    final enabled = onChanged != null;
+    return Semantics(
+      toggled: value,
+      enabled: enabled,
+      label: semanticLabel,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled
+            ? () {
+                safeSelectionHaptic();
+                onChanged!(!value);
+              }
+            : null,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 180),
+          opacity: enabled ? 1 : 0.45,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 210),
+            curve: Curves.easeOutCubic,
+            width: 48,
+            height: 28,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: value
+                  ? palette.accent
+                  : palette.muted.withValues(alpha: 0.28),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 210),
+              curve: Curves.easeOutCubic,
+              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 3,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> safeHaptic() async {
@@ -618,5 +795,13 @@ Future<void> safeHaptic() async {
     await HapticFeedback.mediumImpact();
   } on Object {
     // Haptics are optional and must never affect an administrative action.
+  }
+}
+
+Future<void> safeSelectionHaptic() async {
+  try {
+    await HapticFeedback.selectionClick();
+  } on Object {
+    // Selection haptics are a progressive enhancement.
   }
 }

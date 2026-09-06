@@ -47,21 +47,45 @@ final class FlareContainerTile extends StatelessWidget {
       label: '${container.name}, $status',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(FlareRadii.small),
+        borderRadius: BorderRadius.circular(FlareRadii.normal),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 3),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.only(top: 7),
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: dotColor,
-                    shape: BoxShape.circle,
-                  ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: dotColor.withValues(alpha: 0.11),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: <Widget>[
+                    PhosphorIcon(
+                      PhosphorIconsRegular.cube,
+                      size: 19,
+                      color: dotColor,
+                    ),
+                    Positioned(
+                      right: -4,
+                      bottom: -4,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: dotColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: palette.surface,
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
@@ -69,65 +93,54 @@ final class FlareContainerTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: Text(
-                            container.name,
-                            style: FlareType.body.copyWith(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                              color: palette.text,
-                            ),
-                          ),
-                        ),
-                        FlareStatusBadge(label: status, tone: tone, dot: false),
-                      ],
+                    Text(
+                      container.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: FlareType.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: palette.text,
+                      ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Text(
                       container.image,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: FlareType.metadata.copyWith(color: palette.muted),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: <Widget>[
-                        Text(
-                          'CPU ${formatPercent(container.cpuPercent, decimals: 1)}',
-                          style: FlareType.metadata.copyWith(
-                            color: palette.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 18),
-                        Text(
-                          'RAM ${formatBytes(container.memoryBytes)}',
-                          style: FlareType.metadata.copyWith(
-                            color: palette.textSecondary,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (container.startedAt != null)
-                          Text(
-                            formatRelative(container.startedAt),
-                            style: FlareType.metadata.copyWith(
-                              color: palette.muted,
-                            ),
-                          ),
-                      ],
+                    const SizedBox(height: 5),
+                    Text(
+                      'CPU ${formatPercent(container.cpuPercent, decimals: 1)}  ·  RAM ${formatBytes(container.memoryBytes)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: FlareType.metadata.copyWith(
+                        fontSize: 10.5,
+                        color: palette.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 5),
-              Padding(
-                padding: const EdgeInsets.only(top: 18),
-                child: PhosphorIcon(
-                  PhosphorIconsRegular.caretRight,
-                  size: 16,
-                  color: palette.muted,
-                ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: <Widget>[
+                  Text(
+                    status,
+                    style: FlareType.metadata.copyWith(
+                      color: dotColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  PhosphorIcon(
+                    PhosphorIconsRegular.caretRight,
+                    size: 15,
+                    color: palette.muted,
+                  ),
+                ],
               ),
             ],
           ),

@@ -112,7 +112,7 @@ final class _FlareNavigationShell extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: context.flare.background,
     extendBody: true,
-    body: shell,
+    body: Padding(padding: const EdgeInsets.only(bottom: 68), child: shell),
     bottomNavigationBar: FlareBottomNav(
       index: shell.currentIndex,
       onSelected: (index) =>

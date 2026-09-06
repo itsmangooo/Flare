@@ -67,34 +67,28 @@ final class _ToastSurface extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-          decoration: BoxDecoration(
-            color: palette.surfaceHigh.withValues(alpha: 0.98),
-            borderRadius: BorderRadius.circular(FlareRadii.normal),
-            border: Border.all(color: color.withValues(alpha: 0.3)),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0xAA000000),
-                blurRadius: 18,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: <Widget>[
-              PhosphorIcon(icon, size: 19, color: color),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Text(
-                  message,
-                  style: FlareType.body.copyWith(
-                    fontSize: 13,
-                    color: palette.text,
+        child: FlareGlassSurface(
+          borderRadius: BorderRadius.circular(16),
+          blurSigma: 10,
+          backgroundColor: palette.surfaceHigh.withValues(alpha: 0.86),
+          borderColor: color.withValues(alpha: 0.18),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+            child: Row(
+              children: <Widget>[
+                PhosphorIcon(icon, size: 19, color: color),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: FlareType.body.copyWith(
+                      fontSize: 13,
+                      color: palette.text,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -139,7 +133,7 @@ final class FlareBottomSheet {
     barrierDismissible: true,
     barrierLabel: barrierLabel,
     barrierColor: const Color(0x99000000),
-    transitionDuration: const Duration(milliseconds: 220),
+    transitionDuration: const Duration(milliseconds: 250),
     pageBuilder: (context, primary, secondary) {
       final palette = context.flare;
       return SafeArea(
@@ -152,10 +146,10 @@ final class FlareBottomSheet {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: FlareGlassSurface(
-                  borderRadius: BorderRadius.circular(22),
-                  blurSigma: 12,
-                  backgroundColor: palette.surfaceHigh.withValues(alpha: 0.86),
-                  borderColor: palette.text.withValues(alpha: 0.09),
+                  borderRadius: BorderRadius.circular(28),
+                  blurSigma: 15,
+                  backgroundColor: palette.surfaceHigh.withValues(alpha: 0.84),
+                  borderColor: palette.text.withValues(alpha: 0.075),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
                     child: Column(

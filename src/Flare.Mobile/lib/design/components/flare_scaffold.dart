@@ -9,6 +9,7 @@ final class FlareScaffold extends StatelessWidget {
     required this.title,
     required this.body,
     this.eyebrow = 'FLARE',
+    this.subtitle,
     this.actions = const <Widget>[],
     this.bottomNavigation,
     this.leading,
@@ -18,6 +19,7 @@ final class FlareScaffold extends StatelessWidget {
 
   final String eyebrow;
   final String title;
+  final String? subtitle;
   final Widget body;
   final List<Widget> actions;
   final Widget? bottomNavigation;
@@ -31,13 +33,23 @@ final class FlareScaffold extends StatelessWidget {
       backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: true,
       body: DecoratedBox(
-        decoration: BoxDecoration(color: palette.background),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: const Alignment(0, -0.15),
+            colors: <Color>[
+              palette.backgroundSecondary.withValues(alpha: 0.68),
+              palette.background,
+            ],
+          ),
+        ),
         child: SafeArea(
           child: Column(
             children: <Widget>[
               FlareTopBar(
                 eyebrow: eyebrow,
                 title: title,
+                subtitle: subtitle,
                 actions: actions,
                 leading: leading,
               ),
@@ -57,6 +69,7 @@ final class FlareTopBar extends StatelessWidget {
   const FlareTopBar({
     required this.eyebrow,
     required this.title,
+    this.subtitle,
     required this.actions,
     this.leading,
     super.key,
@@ -64,6 +77,7 @@ final class FlareTopBar extends StatelessWidget {
 
   final String eyebrow;
   final String title;
+  final String? subtitle;
   final List<Widget> actions;
   final Widget? leading;
 
@@ -71,14 +85,9 @@ final class FlareTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.flare;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        FlareSpace.md,
-        FlareSpace.md,
-        FlareSpace.md,
-        FlareSpace.sm,
-      ),
+      padding: const EdgeInsets.fromLTRB(FlareSpace.md, 20, FlareSpace.md, 16),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           if (leading != null) ...<Widget>[
             leading!,
@@ -100,6 +109,17 @@ final class FlareTopBar extends StatelessWidget {
                   title,
                   style: FlareType.display.copyWith(color: palette.text),
                 ),
+                if (subtitle != null) ...<Widget>[
+                  const SizedBox(height: 5),
+                  Text(
+                    subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: FlareType.metadata.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -154,109 +174,89 @@ final class FlareBottomNav extends StatelessWidget {
     final palette = context.flare;
     final dockRadius = BorderRadius.circular(FlareRadii.dock);
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      minimum: const EdgeInsets.fromLTRB(14, 0, 14, 10),
       child: SizedBox(
-        height: 68,
+        height: 66,
         child: FlareGlassSurface(
           borderRadius: dockRadius,
-          blurSigma: 11,
-          backgroundColor: palette.surfaceHigh.withValues(alpha: 0.72),
-          borderColor: palette.text.withValues(alpha: 0.08),
+          blurSigma: 12,
+          backgroundColor: palette.surfaceHigh.withValues(alpha: 0.7),
+          borderColor: palette.text.withValues(alpha: 0.07),
           child: Padding(
             padding: const EdgeInsets.all(5),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final itemWidth = constraints.maxWidth / _items.length;
-                return Stack(
-                  children: <Widget>[
-                    AnimatedPositioned(
-                      duration: const Duration(milliseconds: 210),
-                      curve: Curves.easeOutCubic,
-                      left: itemWidth * index,
-                      top: 0,
-                      width: itemWidth,
-                      bottom: 0,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 2,
-                          vertical: 3,
-                        ),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: palette.accent.withValues(alpha: 0.13),
-                            borderRadius: BorderRadius.circular(22),
-                            border: Border.all(
-                              color: palette.accent.withValues(alpha: 0.18),
+                return Material(
+                  color: Colors.transparent,
+                  child: Row(
+                    children: List<Widget>.generate(_items.length, (itemIndex) {
+                      final item = _items[itemIndex];
+                      final selected = index == itemIndex;
+                      return Expanded(
+                        child: Semantics(
+                          button: true,
+                          selected: selected,
+                          label: item.label,
+                          child: InkWell(
+                            customBorder: const StadiumBorder(),
+                            onTap: () {
+                              if (!selected) safeSelectionHaptic();
+                              onSelected(itemIndex);
+                            },
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 190),
+                                  curve: Curves.easeOutCubic,
+                                  width: 34,
+                                  height: 31,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: selected
+                                        ? palette.accent.withValues(alpha: 0.13)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(11),
+                                  ),
+                                  child: AnimatedScale(
+                                    scale: selected ? 1.06 : 1,
+                                    duration: const Duration(milliseconds: 190),
+                                    curve: Curves.easeOutCubic,
+                                    child: PhosphorIcon(
+                                      selected ? item.selectedIcon : item.icon,
+                                      size: selected ? 20.5 : 19,
+                                      color: selected
+                                          ? palette.accent
+                                          : palette.textSecondary.withValues(
+                                              alpha: 0.68,
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 190),
+                                  curve: Curves.easeOutCubic,
+                                  style: FlareType.metadata.copyWith(
+                                    fontSize: 9.2,
+                                    color: selected
+                                        ? palette.text
+                                        : palette.textSecondary.withValues(
+                                            alpha: 0.68,
+                                          ),
+                                    fontWeight: selected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                  ),
+                                  child: Text(item.label, maxLines: 1),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    Material(
-                      color: Colors.transparent,
-                      child: Row(
-                        children: List<Widget>.generate(_items.length, (
-                          itemIndex,
-                        ) {
-                          final item = _items[itemIndex];
-                          final selected = index == itemIndex;
-                          return Expanded(
-                            child: Semantics(
-                              button: true,
-                              selected: selected,
-                              label: item.label,
-                              child: InkWell(
-                                customBorder: const StadiumBorder(),
-                                onTap: () => onSelected(itemIndex),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: <Widget>[
-                                    AnimatedScale(
-                                      scale: selected ? 1.08 : 1,
-                                      duration: const Duration(
-                                        milliseconds: 190,
-                                      ),
-                                      curve: Curves.easeOutCubic,
-                                      child: PhosphorIcon(
-                                        selected
-                                            ? item.selectedIcon
-                                            : item.icon,
-                                        size: selected ? 21 : 19.5,
-                                        color: selected
-                                            ? palette.accent
-                                            : palette.textSecondary.withValues(
-                                                alpha: 0.7,
-                                              ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 3),
-                                    AnimatedDefaultTextStyle(
-                                      duration: const Duration(
-                                        milliseconds: 190,
-                                      ),
-                                      curve: Curves.easeOutCubic,
-                                      style: FlareType.metadata.copyWith(
-                                        fontSize: 9.5,
-                                        color: selected
-                                            ? palette.text
-                                            : palette.textSecondary.withValues(
-                                                alpha: 0.68,
-                                              ),
-                                        fontWeight: selected
-                                            ? FontWeight.w600
-                                            : FontWeight.w500,
-                                      ),
-                                      child: Text(item.label, maxLines: 1),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                  ],
+                      );
+                    }),
+                  ),
                 );
               },
             ),
