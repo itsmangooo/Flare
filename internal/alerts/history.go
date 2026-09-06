@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -43,6 +45,8 @@ type HistoryHandler struct {
 	logger      *slog.Logger
 	now         func() time.Time
 	currentUser func(context.Context) (auth.User, bool)
+	hasRole     func(context.Context, string) bool
+	preferences *PreferenceStore
 	router      http.Handler
 }
 
@@ -75,13 +79,74 @@ func NewHistoryHandler(database historyDatabase, logger *slog.Logger) *HistoryHa
 	if logger == nil {
 		logger = slog.Default()
 	}
-	handler := &HistoryHandler{database: database, logger: logger, now: time.Now, currentUser: auth.UserFromContext}
+	handler := &HistoryHandler{
+		database: database, logger: logger, now: time.Now, currentUser: auth.UserFromContext,
+		hasRole: auth.HasRole, preferences: NewPreferenceStore(database),
+	}
 	router := chi.NewRouter()
 	router.Get("/", handler.list)
+	router.Get("/preferences", handler.getPreferences)
+	router.Put("/preferences", handler.putPreferences)
 	router.Put("/{id}/read", handler.markRead)
 	router.Delete("/{id}/read", handler.markUnread)
 	handler.router = router
 	return handler
+}
+
+func (handler *HistoryHandler) getPreferences(writer http.ResponseWriter, request *http.Request) {
+	if _, ok := handler.currentUser(request.Context()); !ok {
+		writeHistoryProblem(writer, http.StatusUnauthorized, "Unauthorized.", "")
+		return
+	}
+	preferences, err := handler.preferences.Get(request.Context())
+	if err != nil {
+		handler.failure(writer, request, "Notification preferences query failed", err)
+		return
+	}
+	writeHistoryJSON(writer, http.StatusOK, preferences)
+}
+
+func (handler *HistoryHandler) putPreferences(writer http.ResponseWriter, request *http.Request) {
+	user, ok := handler.currentUser(request.Context())
+	if !ok {
+		writeHistoryProblem(writer, http.StatusUnauthorized, "Unauthorized.", "")
+		return
+	}
+	if !handler.hasRole(request.Context(), "Administrator") {
+		writeHistoryProblem(writer, http.StatusForbidden, "Forbidden.", "Administrator access is required.")
+		return
+	}
+	request.Body = http.MaxBytesReader(writer, request.Body, 8<<10)
+	decoder := json.NewDecoder(request.Body)
+	decoder.DisallowUnknownFields()
+	var preferences Preferences
+	if err := decoder.Decode(&preferences); err != nil {
+		writeHistoryProblem(writer, http.StatusBadRequest, "Invalid request.", "Notification preferences are invalid.")
+		return
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		writeHistoryProblem(writer, http.StatusBadRequest, "Invalid request.", "Only one JSON object is allowed.")
+		return
+	}
+	preferences.MinimumSeverity = strings.ToLower(strings.TrimSpace(preferences.MinimumSeverity))
+	if err := validatePreferences(preferences); err != nil {
+		writeHistoryProblem(writer, http.StatusBadRequest, "Invalid request.", err.Error())
+		return
+	}
+	_, err := handler.database.Exec(request.Context(), `INSERT INTO "NotificationPreferences"
+    ("Id","Enabled","MinimumSeverity","RecoveryEnabled","DockerEnabled","CoolifyEnabled","CloudflareEnabled","HostEnabled","UpdatedAt","UpdatedBy")
+VALUES (1,$1,$2,$3,$4,$5,$6,$7,$8,$9)
+ON CONFLICT ("Id") DO UPDATE SET "Enabled"=EXCLUDED."Enabled","MinimumSeverity"=EXCLUDED."MinimumSeverity",
+    "RecoveryEnabled"=EXCLUDED."RecoveryEnabled","DockerEnabled"=EXCLUDED."DockerEnabled",
+    "CoolifyEnabled"=EXCLUDED."CoolifyEnabled","CloudflareEnabled"=EXCLUDED."CloudflareEnabled",
+    "HostEnabled"=EXCLUDED."HostEnabled","UpdatedAt"=EXCLUDED."UpdatedAt","UpdatedBy"=EXCLUDED."UpdatedBy"`,
+		preferences.Enabled, preferences.MinimumSeverity, preferences.RecoveryEnabled, preferences.DockerEnabled,
+		preferences.CoolifyEnabled, preferences.CloudflareEnabled, preferences.HostEnabled, handler.now().UTC(), user.ID)
+	if err != nil {
+		handler.failure(writer, request, "Notification preferences update failed", err)
+		return
+	}
+	writeHistoryJSON(writer, http.StatusOK, preferences)
 }
 
 func (handler *HistoryHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
