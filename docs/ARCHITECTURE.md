@@ -17,6 +17,8 @@ The Go API publishes authenticated server-sent events at three-second intervals.
 
 Alert history is stored in PostgreSQL with severity, source/resource association, active or recovered state, occurrence count, and timestamps. A partial unique fingerprint deduplicates active conditions atomically; repeated findings update the same alert and external delivery is limited to once per 15-minute cooldown. Recovery closes only the matching active condition. Server notification preferences can disable delivery, require a minimum severity, disable recoveries, or disable a source without suppressing persisted history. Read state is stored separately per authenticated user. The history API never exposes notification-provider credentials.
 
+The Flutter Alerts screen reads only the authenticated alert-history API. It exposes status, severity, source, occurrence count, unread filtering, and per-user read toggles; provider credentials and internal fingerprints stay server-side.
+
 The host telemetry sampler also feeds a small threshold evaluator. CPU and memory conditions require sustained samples and use recovery hysteresis; unavailable metrics remain unknown instead of being treated as healthy.
 
 The production image contains one static Go binary in a non-root distroless runtime. A one-shot invocation of the same image applies embedded, forward-only PostgreSQL migrations before the API starts.

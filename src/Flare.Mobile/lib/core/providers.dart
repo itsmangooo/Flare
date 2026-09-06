@@ -92,6 +92,35 @@ final activityProvider = FutureProvider.autoDispose<List<ActivityEventModel>>((
   ).items;
 });
 
+typedef AlertsData = ({List<AlertModel> items, int unreadCount});
+
+final alertsProvider = FutureProvider.autoDispose.family<AlertsData, bool>((
+  ref,
+  unreadOnly,
+) async {
+  final json = await ref
+      .watch(apiClientProvider)
+      .getJson(
+        'api/v1/alerts',
+        query: <String, Object>{
+          'page': 1,
+          'pageSize': 100,
+          'unreadOnly': unreadOnly,
+        },
+      );
+  final items = (json['items'] as List<dynamic>? ?? const <dynamic>[])
+      .whereType<Map>()
+      .map(
+        (item) => AlertModel.fromJson(
+          item.map((key, value) => MapEntry(key.toString(), value)),
+        ),
+      )
+      .toList(growable: false);
+  return (items: items, unreadCount: _providerInt(json['unreadCount']));
+});
+
+int _providerInt(Object? value) => value is num ? value.toInt() : 0;
+
 typedef CoolifyData = ({
   List<CoolifyServerModel> servers,
   List<CoolifyApplicationModel> applications,

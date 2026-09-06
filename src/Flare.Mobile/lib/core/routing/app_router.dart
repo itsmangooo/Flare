@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../design/components/flare_scaffold.dart';
 import '../../features/activity/activity_page.dart';
+import '../../features/alerts/alerts_page.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/connect/connect_page.dart';
 import '../../features/connect/startup_page.dart';
@@ -60,6 +61,11 @@ final GoRouter flareRouter = GoRouter(
           ],
         ),
       ],
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/alerts',
+      builder: (context, state) => const AlertsPage(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

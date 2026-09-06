@@ -173,6 +173,13 @@ final class ApiClient {
     return _asMap(value);
   }
 
+  Future<void> setAlertRead(String id, {required bool read}) async {
+    await _request<dynamic>(
+      read ? 'PUT' : 'DELETE',
+      'api/v1/alerts/${Uri.encodeComponent(id)}/read',
+    );
+  }
+
   Future<String> getValidAccessToken() async {
     final access = await _session.accessToken;
     final expiry = await _session.accessExpiry;

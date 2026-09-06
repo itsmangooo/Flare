@@ -44,6 +44,11 @@ final class OverviewPage extends ConsumerWidget {
       title: 'Overview',
       actions: <Widget>[
         FlareIconButton(
+          icon: PhosphorIconsRegular.bell,
+          semanticLabel: 'Alerts',
+          onPressed: () => context.push('/alerts'),
+        ),
+        FlareIconButton(
           icon: PhosphorIconsRegular.globeHemisphereWest,
           semanticLabel: 'Domains',
           onPressed: () => context.push('/domains'),

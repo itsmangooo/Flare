@@ -2,6 +2,30 @@ import 'package:flare_mobile/core/api/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('parses persisted alert history and read state', () {
+    final alert = AlertModel.fromJson(<String, dynamic>{
+      'id': 'alert-1',
+      'kind': 'container.unhealthy',
+      'severity': 'critical',
+      'title': 'Container unhealthy',
+      'message': 'Health check failed.',
+      'source': 'docker',
+      'resourceType': 'container',
+      'resourceId': 'abc',
+      'status': 'recovered',
+      'firstSeenAt': '2026-09-06T10:00:00Z',
+      'lastSeenAt': '2026-09-06T10:05:00Z',
+      'recoveredAt': '2026-09-06T10:05:00Z',
+      'occurrenceCount': 3,
+      'readAt': '2026-09-06T10:06:00Z',
+    });
+    expect(alert.severity, AlertSeverity.critical);
+    expect(alert.status, AlertStatus.recovered);
+    expect(alert.occurrenceCount, 3);
+    expect(alert.isRead, isTrue);
+    expect(alert.resourceId, 'abc');
+  });
+
   test('parses API duration with days and fractional seconds', () {
     expect(
       parseContractDuration('18.04:03:02.5000000'),
