@@ -14,11 +14,6 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 10.0.300
-          cache: true
-          cache-dependency-path: '**/*.csproj'
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -31,12 +26,6 @@ jobs:
         run: go test ./...
       - name: Vet and build Go backend migration
         run: go vet ./... && go build -trimpath ./cmd/flare
-      - name: Restore
-        run: dotnet restore Flare.sln
-      - name: Build backend
-        run: dotnet build src/Flare.Api/Flare.Api.csproj --configuration Release --no-restore
-      - name: Test
-        run: dotnet test tests/Flare.Api.Tests/Flare.Api.Tests.csproj --configuration Release --no-restore
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.47.2
@@ -58,6 +47,20 @@ jobs:
   container:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: flare
+          POSTGRES_USER: flare
+          POSTGRES_PASSWORD: ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U flare -d flare"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - name: Validate Coolify Compose
@@ -70,3 +73,27 @@ jobs:
         run: sed 's/exclude_from_hc:/x-coolify-exclude-from-hc:/' compose.yml | docker compose --project-directory . -f - config --quiet
       - name: Build production image
         run: docker build --tag flare-api:ci .
+      - name: Rehearse forward-only migrations
+        run: |
+          docker run --rm --network host \
+            -e 'ConnectionStrings__Postgres=Host=127.0.0.1;Port=5432;Database=flare;Username=flare;Password=ci-only;SSL Mode=Disable' \
+            -e 'FLARE_JWT_SIGNING_KEY=ci-only-signing-key-at-least-32-bytes' \
+            flare-api:ci --migrate
+          docker run --rm --network host \
+            -e 'ConnectionStrings__Postgres=Host=127.0.0.1;Port=5432;Database=flare;Username=flare;Password=ci-only;SSL Mode=Disable' \
+            -e 'FLARE_JWT_SIGNING_KEY=ci-only-signing-key-at-least-32-bytes' \
+            flare-api:ci --migrate
+      - name: Smoke test Go production image
+        run: |
+          container_id=$(docker run --detach --network host \
+            -e 'ConnectionStrings__Postgres=Host=127.0.0.1;Port=5432;Database=flare;Username=flare;Password=ci-only;SSL Mode=Disable' \
+            -e 'FLARE_JWT_SIGNING_KEY=ci-only-signing-key-at-least-32-bytes' \
+            flare-api:ci)
+          trap 'docker logs "$container_id"; docker rm --force "$container_id"' EXIT
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8080/health/ready; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1

@@ -32,6 +32,7 @@ var version = "dev"
 
 func main() {
 	healthcheck := flag.Bool("healthcheck", false, "probe the local liveness endpoint")
+	migrate := flag.Bool("migrate", false, "apply pending PostgreSQL migrations and exit")
 	flag.Parse()
 	if *healthcheck {
 		os.Exit(runHealthcheck())
@@ -53,6 +54,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer db.Close()
+	if *migrate {
+		if err = database.Migrate(ctx, db); err != nil {
+			logger.Error("database migration failed", "error", err)
+			os.Exit(1)
+		}
+		logger.Info("database migrations complete")
+		return
+	}
 
 	docker, err := containers.NewDockerClient(cfg.DockerHost)
 	if err != nil {
