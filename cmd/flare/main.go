@@ -88,6 +88,7 @@ func main() {
 		logger.Error("Coolify client configuration failed", "error", err)
 		os.Exit(1)
 	}
+	go monitoring.NewCoolifyMonitor(coolifyClient, db, logger, alertEngine).Run(ctx)
 	authHandler := auth.NewHandler(cfg, db, logger)
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))

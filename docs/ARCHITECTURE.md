@@ -23,4 +23,6 @@ Administrators can edit the global delivery threshold, recovery behavior, and so
 
 The host telemetry sampler also feeds a small threshold evaluator. CPU and memory conditions require sustained samples and use recovery hysteresis; unavailable metrics remain unknown instead of being treated as healthy.
 
+When Coolify is configured, a bounded background poll records integration availability transitions and new terminal deployments. Existing history is seeded without replaying stale failures, while recent failures and later successful deployments produce deduplicated alert/recovery pairs associated with the Coolify resource.
+
 The production image contains one static Go binary in a non-root distroless runtime. A one-shot invocation of the same image applies embedded, forward-only PostgreSQL migrations before the API starts.
