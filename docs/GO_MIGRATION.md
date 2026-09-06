@@ -1,6 +1,6 @@
 # Go backend migration
 
-The Go service is being built alongside `Flare.Api`. The production Dockerfile and Coolify deployment continue to run the C# service until parity is tested. No migration step may delete or recreate existing data.
+The production Dockerfile and Coolify deployment run the Go service. The legacy C# projects remain temporarily as a parity reference and are not built or deployed. No migration step may delete or recreate existing data.
 
 ## Compatibility inventory
 
@@ -29,14 +29,14 @@ Authenticated infrastructure endpoints:
 - allowlisted Coolify application start/stop/restart/redeploy and service restart
 - paginated unified activity/audit feed
 - `GET /api/v1/system/info`
-- live overview updates currently published through `/hubs/telemetry`
+- live overview updates published by Go through authenticated `/api/v1/telemetry` server-sent events
 
 The Flutter client expects camel-case JSON, ISO-8601 timestamps, string enum values, Problem Details errors, bearer authentication, and status codes including 202, 401, 403, 404, 423, 429, and 503.
 
 ## Existing database
 
-The Go implementation reads the current EF Core schema in place, including `Users`, `Roles`, `UserRoles`, `RefreshTokens`, `AuditEvents`, `InfrastructureEvents`, and `MetricSamples`. `flare --migrate` uses the separate `FlareSchemaMigrations` version table and embedded, forward-only SQL. Its idempotent baseline adopts an existing EF-created database without deleting or recreating data and initializes the tables required by a fresh Go-only installation. EF migrations remain authoritative until the deployment switch.
+The Go implementation reads the existing schema in place, including `Users`, `Roles`, `UserRoles`, `RefreshTokens`, `AuditEvents`, `InfrastructureEvents`, and `MetricSamples`. `flare --migrate` uses the separate `FlareSchemaMigrations` version table and embedded, forward-only SQL. Its idempotent baseline adopts an existing EF-created database without deleting or recreating data and initializes the tables required by a fresh Go-only installation. Go migrations are authoritative after the deployment switch.
 
 ## Cutover gate
 
-The root Dockerfile and `compose.yml` must not switch to Go until contract tests, Flutter integration tests, migration rehearsal, container/Coolify tests, telemetry reconnection tests, and a production-like deployment all pass. Rollback keeps the same PostgreSQL schema and returns traffic to the C# container.
+CI tests the Go and Flutter contracts, builds the production image, applies migrations twice to verify idempotency, and probes PostgreSQL readiness from the running image. Rollback keeps the same PostgreSQL schema and returns traffic to the preceding Go image.
