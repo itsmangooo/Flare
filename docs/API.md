@@ -22,6 +22,8 @@ All application endpoints use `/api/v1`; destructive endpoints require the `Admi
 | POST | `/api/v1/coolify/applications/{uuid}/start|stop|restart|redeploy` | Documented application lifecycle |
 | POST | `/api/v1/coolify/services/{uuid}/restart` | Documented service restart |
 | GET | `/api/v1/activity` | Unified audit/infrastructure events |
+| GET | `/api/v1/alerts?page=1&pageSize=30&unreadOnly=false` | Paginated alert history and per-user unread count |
+| PUT/DELETE | `/api/v1/alerts/{id}/read` | Mark an alert read or unread for the authenticated user |
 | GET | `/api/v1/system/info` | API/server version |
 | SSE | `/api/v1/telemetry` | Authenticated 3-second `snapshot` events using the overview JSON contract |
 

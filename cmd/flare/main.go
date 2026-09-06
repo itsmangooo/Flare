@@ -90,6 +90,7 @@ func main() {
 	authHandler := auth.NewHandler(cfg, db, logger)
 	containerHandler := authHandler.Authenticate(containers.NewHandler(docker, db, logger))
 	activityHandler := authHandler.Authenticate(activity.NewHandler(db, logger))
+	alertHistoryHandler := authHandler.Authenticate(alerts.NewHistoryHandler(db, logger))
 	domainHandler := authHandler.Authenticate(cloudflare.NewHandler(cloudflareClient, logger))
 	topologyHandler := authHandler.Authenticate(topology.NewHandler(docker, cfg.HostName, logger))
 	coolifyHandler := authHandler.Authenticate(coolify.NewHandler(coolifyClient, db, logger))
@@ -102,7 +103,7 @@ func main() {
 	overviewHandler := authHandler.Authenticate(overviewSource)
 	realtimeHandler := authHandler.Authenticate(realtime.NewHandler(overviewSource, logger))
 	server := httpapi.New(cfg, version, logger, db, httpapi.Routes{
-		Auth: authHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
+		Auth: authHandler, Alerts: alertHistoryHandler, Containers: containerHandler, Activity: activityHandler, Overview: overviewHandler,
 		Domains: domainHandler, Topology: topologyHandler, Coolify: coolifyHandler, System: systemHandler,
 		Telemetry: realtimeHandler,
 	})
