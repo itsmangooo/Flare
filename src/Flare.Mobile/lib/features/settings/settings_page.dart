@@ -291,6 +291,19 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
             onTap: () => _chooseAccent(settings),
           ),
           const FlareDividerBlock(),
+          const _SettingsHeader('NOTIFICATIONS'),
+          _SettingsRow(
+            icon: PhosphorIconsRegular.bellRinging,
+            title: 'Alert delivery',
+            subtitle: 'Severity, recoveries and infrastructure sources',
+            trailing: PhosphorIcon(
+              PhosphorIconsRegular.caretRight,
+              size: 16,
+              color: palette.muted,
+            ),
+            onTap: () => context.push('/settings/notifications'),
+          ),
+          const FlareDividerBlock(),
           const _SettingsHeader('ABOUT'),
           _ValueRow(label: 'Mobile version', value: _mobileVersion),
           _ValueRow(

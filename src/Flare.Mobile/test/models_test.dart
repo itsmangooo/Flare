@@ -2,6 +2,29 @@ import 'package:flare_mobile/core/api/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('round-trips notification preferences contract', () {
+    final preferences = NotificationPreferencesModel.fromJson(<String, dynamic>{
+      'enabled': true,
+      'minimumSeverity': 'critical',
+      'recoveryEnabled': false,
+      'dockerEnabled': true,
+      'coolifyEnabled': false,
+      'cloudflareEnabled': true,
+      'hostEnabled': true,
+    });
+    expect(preferences.minimumSeverity, AlertSeverity.critical);
+    expect(preferences.recoveryEnabled, isFalse);
+    expect(preferences.toJson(), <String, dynamic>{
+      'enabled': true,
+      'minimumSeverity': 'critical',
+      'recoveryEnabled': false,
+      'dockerEnabled': true,
+      'coolifyEnabled': false,
+      'cloudflareEnabled': true,
+      'hostEnabled': true,
+    });
+  });
+
   test('parses persisted alert history and read state', () {
     final alert = AlertModel.fromJson(<String, dynamic>{
       'id': 'alert-1',

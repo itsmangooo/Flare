@@ -121,6 +121,14 @@ final alertsProvider = FutureProvider.autoDispose.family<AlertsData, bool>((
 
 int _providerInt(Object? value) => value is num ? value.toInt() : 0;
 
+final notificationPreferencesProvider =
+    FutureProvider.autoDispose<NotificationPreferencesModel>((ref) async {
+      final json = await ref
+          .watch(apiClientProvider)
+          .getJson('api/v1/alerts/preferences');
+      return NotificationPreferencesModel.fromJson(json);
+    });
+
 typedef CoolifyData = ({
   List<CoolifyServerModel> servers,
   List<CoolifyApplicationModel> applications,

@@ -268,6 +268,51 @@ final class AlertModel {
   bool get isRead => readAt != null;
 }
 
+final class NotificationPreferencesModel {
+  const NotificationPreferencesModel({
+    required this.enabled,
+    required this.minimumSeverity,
+    required this.recoveryEnabled,
+    required this.dockerEnabled,
+    required this.coolifyEnabled,
+    required this.cloudflareEnabled,
+    required this.hostEnabled,
+  });
+
+  factory NotificationPreferencesModel.fromJson(Map<String, dynamic> json) =>
+      NotificationPreferencesModel(
+        enabled: json['enabled'] == true,
+        minimumSeverity: _enumValue(
+          AlertSeverity.values,
+          json['minimumSeverity'],
+          AlertSeverity.warning,
+        ),
+        recoveryEnabled: json['recoveryEnabled'] == true,
+        dockerEnabled: json['dockerEnabled'] == true,
+        coolifyEnabled: json['coolifyEnabled'] == true,
+        cloudflareEnabled: json['cloudflareEnabled'] == true,
+        hostEnabled: json['hostEnabled'] == true,
+      );
+
+  final bool enabled;
+  final AlertSeverity minimumSeverity;
+  final bool recoveryEnabled;
+  final bool dockerEnabled;
+  final bool coolifyEnabled;
+  final bool cloudflareEnabled;
+  final bool hostEnabled;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'enabled': enabled,
+    'minimumSeverity': minimumSeverity.name,
+    'recoveryEnabled': recoveryEnabled,
+    'dockerEnabled': dockerEnabled,
+    'coolifyEnabled': coolifyEnabled,
+    'cloudflareEnabled': cloudflareEnabled,
+    'hostEnabled': hostEnabled,
+  };
+}
+
 final class OverviewModel {
   const OverviewModel({
     required this.generatedAt,

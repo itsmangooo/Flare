@@ -173,6 +173,12 @@ final class ApiClient {
     return _asMap(value);
   }
 
+  Future<Map<String, dynamic>> putJson(String path, {Object? data}) async {
+    final value = await _request<dynamic>('PUT', path, data: data);
+    if (value == null || value == '') return <String, dynamic>{};
+    return _asMap(value);
+  }
+
   Future<void> setAlertRead(String id, {required bool read}) async {
     await _request<dynamic>(
       read ? 'PUT' : 'DELETE',

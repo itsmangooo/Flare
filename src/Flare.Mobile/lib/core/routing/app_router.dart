@@ -14,6 +14,7 @@ import '../../features/deployments/deployment_detail_page.dart';
 import '../../features/deployments/deployments_page.dart';
 import '../../features/domains/domains_page.dart';
 import '../../features/overview/overview_page.dart';
+import '../../features/settings/notification_preferences_page.dart';
 import '../../features/settings/settings_page.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -93,6 +94,11 @@ final GoRouter flareRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/settings',
       builder: (context, state) => const SettingsPage(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/settings/notifications',
+      builder: (context, state) => const NotificationPreferencesPage(),
     ),
   ],
 );
