@@ -35,7 +35,7 @@ The Flutter client expects camel-case JSON, ISO-8601 timestamps, string enum val
 
 ## Existing database
 
-The initial Go implementation reads the current EF Core schema in place, including `Users`, `Roles`, `UserRoles`, `RefreshTokens`, `AuditEvents`, `InfrastructureEvents`, and `MetricSamples`. Go migrations will use a separate version table and must be forward-only. EF migrations remain authoritative until the deployment switch.
+The Go implementation reads the current EF Core schema in place, including `Users`, `Roles`, `UserRoles`, `RefreshTokens`, `AuditEvents`, `InfrastructureEvents`, and `MetricSamples`. `flare --migrate` uses the separate `FlareSchemaMigrations` version table and embedded, forward-only SQL. Its idempotent baseline adopts an existing EF-created database without deleting or recreating data and initializes the tables required by a fresh Go-only installation. EF migrations remain authoritative until the deployment switch.
 
 ## Cutover gate
 
