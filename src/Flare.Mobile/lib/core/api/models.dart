@@ -8,6 +8,10 @@ enum OperationResult { succeeded, failed }
 
 enum ActivityKind { infrastructure, security }
 
+enum AlertSeverity { info, warning, critical }
+
+enum AlertStatus { active, recovered }
+
 T _enumValue<T extends Enum>(List<T> values, Object? raw, T fallback) {
   final value = raw?.toString().toLowerCase();
   return values.firstWhere(
@@ -206,6 +210,62 @@ final class ActivityEventModel {
   final DateTime timestamp;
   final OperationResult result;
   final String? actor;
+}
+
+final class AlertModel {
+  const AlertModel({
+    required this.id,
+    required this.kind,
+    required this.severity,
+    required this.title,
+    required this.message,
+    required this.source,
+    required this.status,
+    required this.firstSeenAt,
+    required this.lastSeenAt,
+    required this.occurrenceCount,
+    this.resourceType,
+    this.resourceId,
+    this.recoveredAt,
+    this.readAt,
+  });
+
+  factory AlertModel.fromJson(Map<String, dynamic> json) => AlertModel(
+    id: json['id']?.toString() ?? '',
+    kind: json['kind']?.toString() ?? 'alert',
+    severity: _enumValue(
+      AlertSeverity.values,
+      json['severity'],
+      AlertSeverity.warning,
+    ),
+    title: json['title']?.toString() ?? 'Infrastructure alert',
+    message: json['message']?.toString() ?? '',
+    source: json['source']?.toString() ?? 'flare',
+    resourceType: json['resourceType']?.toString(),
+    resourceId: json['resourceId']?.toString(),
+    status: _enumValue(AlertStatus.values, json['status'], AlertStatus.active),
+    firstSeenAt: _date(json['firstSeenAt']) ?? DateTime.now(),
+    lastSeenAt: _date(json['lastSeenAt']) ?? DateTime.now(),
+    recoveredAt: _date(json['recoveredAt']),
+    occurrenceCount: _int(json['occurrenceCount']) ?? 1,
+    readAt: _date(json['readAt']),
+  );
+
+  final String id;
+  final String kind;
+  final AlertSeverity severity;
+  final String title;
+  final String message;
+  final String source;
+  final String? resourceType;
+  final String? resourceId;
+  final AlertStatus status;
+  final DateTime firstSeenAt;
+  final DateTime lastSeenAt;
+  final DateTime? recoveredAt;
+  final int occurrenceCount;
+  final DateTime? readAt;
+  bool get isRead => readAt != null;
 }
 
 final class OverviewModel {
