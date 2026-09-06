@@ -126,6 +126,56 @@ func TestAlertHistoryRequiresAuthenticatedContext(t *testing.T) {
 	}
 }
 
+func TestNotificationPreferencesDefaultAndAdministratorUpdate(t *testing.T) {
+	database, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	userID := uuid.New()
+	database.ExpectQuery(regexp.QuoteMeta(preferenceQuery)).WillReturnRows(pgxmock.NewRows([]string{
+		"Enabled", "MinimumSeverity", "RecoveryEnabled", "DockerEnabled", "CoolifyEnabled", "CloudflareEnabled", "HostEnabled",
+	}))
+	handler := NewHistoryHandler(database, alertTestLogger())
+	handler.currentUser = func(context.Context) (auth.User, bool) { return auth.User{ID: userID}, true }
+	handler.hasRole = func(context.Context, string) bool { return true }
+	handler.now = func() time.Time { return time.Date(2026, time.September, 6, 13, 0, 0, 0, time.UTC) }
+
+	getResponse := httptest.NewRecorder()
+	handler.ServeHTTP(getResponse, httptest.NewRequest(http.MethodGet, "/preferences", nil))
+	if getResponse.Code != http.StatusOK || !strings.Contains(getResponse.Body.String(), `"minimumSeverity":"warning"`) || !strings.Contains(getResponse.Body.String(), `"dockerEnabled":true`) {
+		t.Fatalf("default preferences = %d %s", getResponse.Code, getResponse.Body.String())
+	}
+	database.ExpectExec(`INSERT INTO "NotificationPreferences"`).WithArgs(
+		true, "critical", false, true, false, false, true, handler.now(), userID,
+	).WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	putResponse := httptest.NewRecorder()
+	body := `{"enabled":true,"minimumSeverity":" CRITICAL ","recoveryEnabled":false,"dockerEnabled":true,"coolifyEnabled":false,"cloudflareEnabled":false,"hostEnabled":true}`
+	handler.ServeHTTP(putResponse, httptest.NewRequest(http.MethodPut, "/preferences", strings.NewReader(body)))
+	if putResponse.Code != http.StatusOK || !strings.Contains(putResponse.Body.String(), `"minimumSeverity":"critical"`) {
+		t.Fatalf("updated preferences = %d %s", putResponse.Code, putResponse.Body.String())
+	}
+	if err = database.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNotificationPreferencesRequireAdministrator(t *testing.T) {
+	database, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	handler := NewHistoryHandler(database, alertTestLogger())
+	handler.currentUser = func(context.Context) (auth.User, bool) { return auth.User{ID: uuid.New()}, true }
+	handler.hasRole = func(context.Context, string) bool { return false }
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodPut, "/preferences", strings.NewReader(`{}`)))
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("response = %d %s", response.Code, response.Body.String())
+	}
+}
+
 func alertTestLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }

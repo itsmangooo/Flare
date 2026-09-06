@@ -32,7 +32,7 @@ type eventDatabase interface {
 }
 
 type alertSink interface {
-	Notify(context.Context, alerts.Notification) error
+	Record(context.Context, alerts.Signal) error
 }
 
 type DockerMonitor struct {
@@ -148,21 +148,25 @@ func (monitor *DockerMonitor) process(ctx context.Context, message eventtypes.Me
 			return
 		}
 		monitor.record(ctx, infrastructureEvent{action: "container.unexpected_stop", target: target, failed: true,
-			detail: fmt.Sprintf("Container exited with code %d.", exitCode), timestamp: timestamp})
+			detail: fmt.Sprintf("Container exited with code %d.", exitCode), timestamp: timestamp,
+			resourceType: "container", resourceID: id})
 		monitor.recordDeath(ctx, id, target, timestamp)
 	case eventtypes.ActionOOM:
 		monitor.record(ctx, infrastructureEvent{action: "container.out_of_memory", target: target, failed: true,
-			detail: "Container was terminated by the out-of-memory killer.", timestamp: timestamp})
+			detail: "Container was terminated by the out-of-memory killer.", timestamp: timestamp,
+			resourceType: "container", resourceID: id})
 	case eventtypes.ActionHealthStatusUnhealthy:
 		if !monitor.unhealthy[id] {
 			monitor.record(ctx, infrastructureEvent{action: "container.unhealthy", target: target, failed: true,
-				detail: "Docker health check reported unhealthy.", timestamp: timestamp})
+				detail: "Docker health check reported unhealthy.", timestamp: timestamp,
+				resourceType: "container", resourceID: id})
 			monitor.unhealthy[id] = true
 		}
 	case eventtypes.ActionHealthStatusHealthy:
 		if monitor.unhealthy[id] {
 			monitor.record(ctx, infrastructureEvent{action: "container.recovered", target: target,
-				detail: "Docker health check recovered.", timestamp: timestamp})
+				detail: "Docker health check recovered.", timestamp: timestamp,
+				resourceType: "container", resourceID: id})
 			delete(monitor.unhealthy, id)
 		}
 	case eventtypes.ActionDestroy:
@@ -184,7 +188,8 @@ func (monitor *DockerMonitor) recordDeath(ctx context.Context, id, target string
 	monitor.deaths[id] = values
 	if len(values) >= restartThreshold && !monitor.loopAlerted[id] {
 		monitor.record(ctx, infrastructureEvent{action: "container.restart_loop", target: target, failed: true,
-			detail: "Container exited repeatedly within five minutes.", timestamp: timestamp})
+			detail: "Container exited repeatedly within five minutes.", timestamp: timestamp,
+			resourceType: "container", resourceID: id})
 		monitor.loopAlerted[id] = true
 	}
 	if len(values) < restartThreshold {
@@ -215,11 +220,13 @@ func (monitor *DockerMonitor) eventTime(message eventtypes.Message) time.Time {
 }
 
 type infrastructureEvent struct {
-	action    string
-	target    string
-	detail    string
-	timestamp time.Time
-	failed    bool
+	action       string
+	target       string
+	detail       string
+	timestamp    time.Time
+	failed       bool
+	resourceType string
+	resourceID   string
 }
 
 func (monitor *DockerMonitor) record(ctx context.Context, event infrastructureEvent) {
@@ -241,39 +248,43 @@ func (monitor *DockerMonitor) record(ctx context.Context, event infrastructureEv
 		return
 	}
 	if err == nil && monitor.alerts != nil {
-		if notification, publish := alertNotification(eventID.String(), event, target, detail); publish {
-			if err := monitor.alerts.Notify(ctx, notification); err != nil && !errors.Is(err, context.Canceled) {
-				monitor.logger.Error("Infrastructure alert could not be queued", "action", event.action)
+		if signal, publish := alertSignal(event, target, detail); publish {
+			if err := monitor.alerts.Record(ctx, signal); err != nil && !errors.Is(err, context.Canceled) {
+				monitor.logger.Error("Infrastructure alert could not be recorded", "action", event.action)
 			}
 		}
 	}
 }
 
-func alertNotification(id string, event infrastructureEvent, target, detail string) (alerts.Notification, bool) {
-	title, priority, tags := "", 4, []string{"warning", "flare"}
+func alertSignal(event infrastructureEvent, target, detail string) (alerts.Signal, bool) {
+	title, severity, fingerprint, kind, recovery := "", "warning", "", event.action, false
 	switch event.action {
 	case "container.unexpected_stop":
-		title, priority, tags = "Container stopped unexpectedly", 5, []string{"warning", "container"}
+		title, severity, fingerprint = "Container stopped unexpectedly", "critical", "container.stop:"+event.resourceID
 	case "container.out_of_memory":
-		title, priority, tags = "Container ran out of memory", 5, []string{"warning", "container"}
+		title, severity, fingerprint = "Container ran out of memory", "critical", "container.oom:"+event.resourceID
 	case "container.unhealthy":
-		title, tags = "Container became unhealthy", []string{"warning", "container"}
+		title, fingerprint = "Container became unhealthy", "container.health:"+event.resourceID
 	case "container.restart_loop":
-		title, priority, tags = "Container restart loop", 5, []string{"warning", "container"}
+		title, severity, fingerprint = "Container restart loop", "critical", "container.restart_loop:"+event.resourceID
 	case "server.disconnected":
-		title, priority, tags = "Docker unavailable", 5, []string{"warning", "server"}
+		title, severity, fingerprint, kind = "Docker unavailable", "critical", "docker.availability", "docker.unavailable"
 	case "container.recovered":
-		title, priority, tags = "Container recovered", 2, []string{"white_check_mark", "container"}
+		title, severity, fingerprint, kind, recovery = "Container recovered", "info", "container.health:"+event.resourceID, "container.unhealthy", true
 	case "server.reconnected":
-		title, priority, tags = "Docker reconnected", 2, []string{"white_check_mark", "server"}
+		title, severity, fingerprint, kind, recovery = "Docker reconnected", "info", "docker.availability", "docker.unavailable", true
 	default:
-		return alerts.Notification{}, false
+		return alerts.Signal{}, false
 	}
 	message := target
 	if detail != "" {
 		message += " — " + detail
 	}
-	return alerts.Notification{ID: id, Title: title, Message: message, Priority: priority, Tags: tags}, true
+	return alerts.Signal{
+		Fingerprint: fingerprint, Kind: kind, Severity: severity, Title: title, Message: message,
+		Source: "docker", ResourceType: event.resourceType, ResourceID: event.resourceID,
+		OccurredAt: event.timestamp, Recovery: recovery,
+	}, true
 }
 
 func wait(ctx context.Context, duration time.Duration) bool {

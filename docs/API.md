@@ -24,6 +24,7 @@ All application endpoints use `/api/v1`; destructive endpoints require the `Admi
 | GET | `/api/v1/activity` | Unified audit/infrastructure events |
 | GET | `/api/v1/alerts?page=1&pageSize=30&unreadOnly=false` | Paginated alert history and per-user unread count |
 | PUT/DELETE | `/api/v1/alerts/{id}/read` | Mark an alert read or unread for the authenticated user |
+| GET/PUT | `/api/v1/alerts/preferences` | Read or administratively update server notification preferences |
 | GET | `/api/v1/system/info` | API/server version |
 | SSE | `/api/v1/telemetry` | Authenticated 3-second `snapshot` events using the overview JSON contract |
 

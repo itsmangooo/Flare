@@ -15,6 +15,6 @@ The mobile app never connects to Docker, Coolify, Cloudflare, PostgreSQL, or hos
 
 The Go API publishes authenticated server-sent events at three-second intervals. The Flutter client stops the connection when Android backgrounds the app, reconnects with bounded delays, and requests a fresh snapshot after resuming. Container metrics refresh without visually reordering rows.
 
-Alert history is stored in PostgreSQL with severity, source/resource association, active or recovered state, occurrence count, and timestamps. Read state is stored separately per authenticated user. The history API never exposes notification-provider credentials.
+Alert history is stored in PostgreSQL with severity, source/resource association, active or recovered state, occurrence count, and timestamps. A partial unique fingerprint deduplicates active conditions atomically; repeated findings update the same alert and external delivery is limited to once per 15-minute cooldown. Recovery closes only the matching active condition. Server notification preferences can disable delivery, require a minimum severity, disable recoveries, or disable a source without suppressing persisted history. Read state is stored separately per authenticated user. The history API never exposes notification-provider credentials.
 
 The production image contains one static Go binary in a non-root distroless runtime. A one-shot invocation of the same image applies embedded, forward-only PostgreSQL migrations before the API starts.
