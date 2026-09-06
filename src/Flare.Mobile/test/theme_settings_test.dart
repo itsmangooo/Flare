@@ -134,11 +134,53 @@ void main() {
       find.byType(AnimatedContainer).first,
     );
 
+    final scaffoldDecoration = scaffoldSurface.decoration as BoxDecoration;
+    expect(scaffoldDecoration.gradient, isA<LinearGradient>());
     expect(
-      (scaffoldSurface.decoration as BoxDecoration).color,
+      (scaffoldDecoration.gradient! as LinearGradient).colors.last,
       palette.background,
     );
-    expect((card.decoration as BoxDecoration).color, palette.surface);
+    expect(
+      (card.decoration as BoxDecoration).color,
+      palette.surface.withValues(alpha: 0.86),
+    );
+  });
+
+  testWidgets('custom segmented control and switch update selection', (
+    tester,
+  ) async {
+    var segment = 0;
+    var enabled = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildFlareTheme(),
+        home: StatefulBuilder(
+          builder: (context, setState) => Scaffold(
+            body: Column(
+              children: <Widget>[
+                FlareSegmentedControl<int>(
+                  value: segment,
+                  items: const <(int, String)>[(0, 'All'), (1, 'Unread')],
+                  onChanged: (value) => setState(() => segment = value),
+                ),
+                FlareSwitch(
+                  value: enabled,
+                  semanticLabel: 'Delivery',
+                  onChanged: (value) => setState(() => enabled = value),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Unread'));
+    await tester.tap(find.bySemanticsLabel('Delivery'));
+    await tester.pumpAndSettle();
+
+    expect(segment, 1);
+    expect(enabled, isTrue);
   });
 
   testWidgets('settings exposes custom theme and accent selectors', (
@@ -166,7 +208,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 5));
 
-    await tester.tap(find.text('Dark'));
+    await tester.tap(find.text('Appearance'));
     await tester.pumpAndSettle();
     expect(find.text('Theme'), findsOneWidget);
     await tester.tap(find.text('Light'));
@@ -179,7 +221,7 @@ void main() {
     await tester.ensureVisible(find.text('Flare Blue'));
     await tester.tap(find.text('Flare Blue'));
     await tester.pumpAndSettle();
-    expect(find.text('Accent'), findsOneWidget);
+    expect(find.text('Violet'), findsOneWidget);
     await tester.tap(find.text('Violet'));
     await tester.pumpAndSettle();
     expect(

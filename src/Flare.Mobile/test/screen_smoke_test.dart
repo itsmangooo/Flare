@@ -128,7 +128,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('flare-api'), findsOneWidget);
-    expect(find.text('SUCCESSFUL'), findsOneWidget);
+    expect(find.text('Successful'), findsOneWidget);
     expect(find.text('a92bd310'), findsOneWidget);
   });
 
@@ -188,6 +188,6 @@ void main() {
     expect(find.text('Cloudflare'), findsOneWidget);
     expect(find.text('example.test'), findsOneWidget);
     expect(find.text('homelab'), findsOneWidget);
-    expect(find.text('CONNECTED'), findsOneWidget);
+    expect(find.text('Connected'), findsOneWidget);
   });
 }
