@@ -25,6 +25,10 @@ type sampleDatabase interface {
 	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
 }
 
+type sampleObserver interface {
+	Observe(context.Context, Metrics) error
+}
+
 type Sampler struct {
 	collector     sampleCollector
 	database      sampleDatabase
@@ -32,13 +36,14 @@ type Sampler struct {
 	now           func() time.Time
 	lastPersisted time.Time
 	lastPruned    time.Time
+	observers     []sampleObserver
 }
 
-func NewSampler(collector sampleCollector, database sampleDatabase, logger *slog.Logger) *Sampler {
+func NewSampler(collector sampleCollector, database sampleDatabase, logger *slog.Logger, observers ...sampleObserver) *Sampler {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Sampler{collector: collector, database: database, logger: logger, now: time.Now}
+	return &Sampler{collector: collector, database: database, logger: logger, now: time.Now, observers: observers}
 }
 
 // Run samples at a restrained cadence until the application context is
@@ -54,7 +59,7 @@ func (sampler *Sampler) Run(ctx context.Context) {
 			}
 			now := sampler.now().UTC()
 			if lastWarning.IsZero() || now.Sub(lastWarning) >= time.Minute {
-				sampler.logger.Warn("Host metric persistence failed; sampling will retry", "error", err)
+				sampler.logger.Warn("Host metric sampling failed; sampling will retry", "error", err)
 				lastWarning = now
 			}
 		}
@@ -89,6 +94,13 @@ func (sampler *Sampler) sampleOnce(ctx context.Context) error {
 			return err
 		}
 		sampler.lastPruned = now
+	}
+	for _, observer := range sampler.observers {
+		if observer != nil {
+			if err := observer.Observe(ctx, metrics); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

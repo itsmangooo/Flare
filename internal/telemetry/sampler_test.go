@@ -18,6 +18,16 @@ type fixedCollector struct {
 	calls   int
 }
 
+type recordingObserver struct {
+	calls int
+	err   error
+}
+
+func (observer *recordingObserver) Observe(context.Context, Metrics) error {
+	observer.calls++
+	return observer.err
+}
+
 func (collector *fixedCollector) Collect(context.Context) Metrics {
 	collector.calls++
 	return collector.metrics
@@ -119,6 +129,33 @@ func TestPercentageValidation(t *testing.T) {
 	notANumber := math.NaN()
 	if boundedPercentage(&notANumber) != nil {
 		t.Fatal("NaN percentage must be unavailable")
+	}
+}
+
+func TestSamplerFeedsObserversAfterPersistingMetrics(t *testing.T) {
+	database, err := pgxmock.NewPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer database.Close()
+	now := time.Date(2026, time.September, 6, 14, 0, 0, 0, time.UTC)
+	cpu := 95.0
+	collector := &fixedCollector{metrics: Metrics{ObservedAt: now, CPUPercent: &cpu}}
+	observer := &recordingObserver{err: errors.New("alert database unavailable")}
+	sampler := NewSampler(collector, database, discardSamplerLogger(), observer)
+	sampler.now = func() time.Time { return now }
+	database.ExpectExec(regexp.QuoteMeta(`INSERT INTO "MetricSamples" ("Timestamp","CpuPercent","MemoryPercent") VALUES ($1,$2,$3)`)).
+		WithArgs(now, cpu, nil).WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	database.ExpectExec(regexp.QuoteMeta(`DELETE FROM "MetricSamples" WHERE "Timestamp" < $1`)).
+		WithArgs(now.Add(-24 * time.Hour)).WillReturnResult(pgxmock.NewResult("DELETE", 0))
+	if err := sampler.sampleOnce(context.Background()); err == nil {
+		t.Fatal("observer failure was not returned")
+	}
+	if observer.calls != 1 || sampler.lastPersisted != now {
+		t.Fatalf("observer calls = %d, last persisted = %s", observer.calls, sampler.lastPersisted)
+	}
+	if err := database.ExpectationsWereMet(); err != nil {
+		t.Fatal(err)
 	}
 }
 

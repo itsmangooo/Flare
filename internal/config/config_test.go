@@ -33,10 +33,30 @@ func TestLoadAcceptsExistingNpgsqlConfiguration(t *testing.T) {
 	if cfg.HostName != "homelab" || cfg.HostProcPath != "/host/proc" || cfg.HostRootFSPath != "/host/rootfs" {
 		t.Fatalf("unexpected host telemetry defaults: %#v", cfg)
 	}
+	if cfg.HostCPUAlertPercent != 90 || cfg.HostRAMAlertPercent != 90 || cfg.HostAlertSamples != 5 {
+		t.Fatalf("unexpected host alert defaults: %#v", cfg)
+	}
 	for _, expected := range []string{"postgresql://app:p%40ss%20word@db:5433/flare", "sslmode=require"} {
 		if !strings.Contains(cfg.DatabaseURL, expected) {
 			t.Fatalf("DatabaseURL %q does not contain %q", cfg.DatabaseURL, expected)
 		}
+	}
+}
+
+func TestLoadValidatesHostAlertThresholds(t *testing.T) {
+	t.Setenv("FLARE_JWT_SIGNING_KEY", "test-signing-key-with-at-least-32-bytes")
+	t.Setenv("ConnectionStrings__Postgres", "postgresql://app:test@db/flare")
+	for _, test := range []struct{ name, value string }{
+		{"FLARE_ALERT_CPU_PERCENT", "NaN"},
+		{"FLARE_ALERT_MEMORY_PERCENT", "101"},
+		{"FLARE_ALERT_SUSTAINED_SAMPLES", "1"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv(test.name, test.value)
+			if _, err := Load(); err == nil {
+				t.Fatalf("%s=%q was accepted", test.name, test.value)
+			}
+		})
 	}
 }
 
