@@ -19,6 +19,8 @@ Alert history is stored in PostgreSQL with severity, source/resource association
 
 The Flutter Alerts screen reads only the authenticated alert-history API. It exposes status, severity, source, occurrence count, unread filtering, and per-user read toggles; provider credentials and internal fingerprints stay server-side.
 
+Administrators can edit the global delivery threshold, recovery behavior, and source-specific delivery switches from Flutter. The Go API validates and persists the complete preference document; non-administrators may read the effective policy but receive `403 Forbidden` on updates.
+
 The host telemetry sampler also feeds a small threshold evaluator. CPU and memory conditions require sustained samples and use recovery hysteresis; unavailable metrics remain unknown instead of being treated as healthy.
 
 The production image contains one static Go binary in a non-root distroless runtime. A one-shot invocation of the same image applies embedded, forward-only PostgreSQL migrations before the API starts.
