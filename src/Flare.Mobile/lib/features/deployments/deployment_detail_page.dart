@@ -107,6 +107,7 @@ final class _DeploymentDetailPageState
     return FlareScaffold(
       eyebrow: 'DEPLOYMENT',
       title: deployment?.resourceName ?? 'Deployment',
+      subtitle: deployment?.commitMessage ?? 'Release details and output',
       leading: const FlareBackButton(),
       actions: <Widget>[
         if (deployment != null)

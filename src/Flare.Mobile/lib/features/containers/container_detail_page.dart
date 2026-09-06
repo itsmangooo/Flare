@@ -175,6 +175,7 @@ final class _ContainerDetailPageState
     return FlareScaffold(
       eyebrow: 'CONTAINER',
       title: detail?.name ?? 'Container',
+      subtitle: detail?.image ?? 'Docker runtime details',
       leading: const FlareBackButton(),
       actions: <Widget>[
         if (detail != null)
@@ -200,9 +201,12 @@ final class _ContainerDetailPageState
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(top: 6, bottom: 26),
                 children: <Widget>[
-                  _ActionBar(action: _action, onAction: _runAction),
+                  FlareGroupedSurface(
+                    padding: const EdgeInsets.all(8),
+                    child: _ActionBar(action: _action, onAction: _runAction),
+                  ),
                   const SizedBox(height: 24),
-                  const FlareSectionHeader(title: 'Overview'),
+                  const FlareSectionHeader(title: 'Status & metrics'),
                   const SizedBox(height: 10),
                   _Metrics(detail: detail),
                   const SizedBox(height: 10),

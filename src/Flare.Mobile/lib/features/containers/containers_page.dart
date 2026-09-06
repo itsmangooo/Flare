@@ -30,11 +30,6 @@ final class _ContainersPageState extends ConsumerState<ContainersPage> {
     super.dispose();
   }
 
-  void _nextFilter() => setState(() {
-    _filter = _ContainerFilter
-        .values[(_filter.index + 1) % _ContainerFilter.values.length];
-  });
-
   List<ContainerSummaryModel> _filtered(
     List<ContainerSummaryModel> source,
   ) => source
@@ -61,6 +56,7 @@ final class _ContainersPageState extends ConsumerState<ContainersPage> {
     final palette = context.flare;
     return FlareScaffold(
       title: 'Containers',
+      subtitle: 'Docker services and runtime health',
       actions: <Widget>[
         FlareIconButton(
           icon: PhosphorIconsRegular.userCircle,
@@ -71,39 +67,24 @@ final class _ContainersPageState extends ConsumerState<ContainersPage> {
       body: Column(
         children: <Widget>[
           const SizedBox(height: 4),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: FlareSearchField(
-                  controller: _search,
-                  hint: 'Search containers',
-                  onChanged: (value) =>
-                      setState(() => _query = value.trim().toLowerCase()),
-                ),
-              ),
-              const SizedBox(width: 9),
-              FlareIconButton(
-                icon: _filter == _ContainerFilter.all
-                    ? PhosphorIconsRegular.funnel
-                    : PhosphorIconsFill.funnel,
-                semanticLabel: 'Filter: ${_filter.name}',
-                accent: _filter != _ContainerFilter.all,
-                onPressed: _nextFilter,
-              ),
-            ],
+          FlareSearchField(
+            controller: _search,
+            hint: 'Search containers',
+            onChanged: (value) =>
+                setState(() => _query = value.trim().toLowerCase()),
           ),
-          if (_filter != _ContainerFilter.all) ...<Widget>[
-            const SizedBox(height: 9),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: FlareStatusBadge(
-                label: _filter.name,
-                tone: FlareStatusTone.info,
-                dot: false,
-              ),
-            ),
-          ],
-          const SizedBox(height: 9),
+          const SizedBox(height: 10),
+          FlareSegmentedControl<_ContainerFilter>(
+            value: _filter,
+            items: const <(_ContainerFilter, String)>[
+              (_ContainerFilter.all, 'All'),
+              (_ContainerFilter.running, 'Running'),
+              (_ContainerFilter.stopped, 'Stopped'),
+              (_ContainerFilter.unhealthy, 'Issues'),
+            ],
+            onChanged: (value) => setState(() => _filter = value),
+          ),
+          const SizedBox(height: 14),
           Expanded(
             child: containers.when(
               loading: () => const FlareLoading(label: 'Reading Docker state'),
@@ -126,20 +107,32 @@ final class _ContainersPageState extends ConsumerState<ContainersPage> {
                   color: palette.accent,
                   backgroundColor: palette.surfaceHigh,
                   onRefresh: () async => ref.refresh(containersProvider.future),
-                  child: ListView.separated(
+                  child: ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const FlareDivider(indent: 20),
-                    itemBuilder: (context, index) {
-                      final container = filtered[index];
-                      return FlareContainerTile(
-                        key: ValueKey(container.id),
-                        container: container,
-                        onTap: () => context.push(
-                          '/containers/${Uri.encodeComponent(container.id)}',
+                    padding: const EdgeInsets.only(bottom: 24),
+                    children: <Widget>[
+                      FlareGroupedSurface(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Column(
+                          children: List<Widget>.generate(
+                            filtered.length * 2 - 1,
+                            (index) {
+                              if (index.isOdd) {
+                                return const FlareDivider(indent: 36);
+                              }
+                              final container = filtered[index ~/ 2];
+                              return FlareContainerTile(
+                                key: ValueKey(container.id),
+                                container: container,
+                                onTap: () => context.push(
+                                  '/containers/${Uri.encodeComponent(container.id)}',
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
                 );
               },

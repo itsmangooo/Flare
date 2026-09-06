@@ -20,6 +20,7 @@ final class NotificationPreferencesPage extends ConsumerWidget {
     return FlareScaffold(
       eyebrow: 'ALERTS',
       title: 'Notification delivery',
+      subtitle: 'Control severity, sources and recoveries',
       leading: const FlareBackButton(),
       body: preferences.when(
         loading: () => const FlareLoading(label: 'Reading preferences'),
@@ -116,7 +117,8 @@ final class _PreferencesEditorState extends ConsumerState<_PreferencesEditor> {
     return ListView(
       padding: const EdgeInsets.only(top: 8, bottom: 30),
       children: <Widget>[
-        FlareCard(
+        FlareGroupedSurface(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: _PreferenceSwitch(
             icon: PhosphorIconsRegular.bellRinging,
             title: 'External delivery',
@@ -131,19 +133,14 @@ final class _PreferencesEditorState extends ConsumerState<_PreferencesEditor> {
           style: FlareType.label.copyWith(color: palette.accent),
         ),
         const SizedBox(height: 9),
-        SegmentedButton<AlertSeverity>(
-          segments: const <ButtonSegment<AlertSeverity>>[
-            ButtonSegment(value: AlertSeverity.info, label: Text('Info')),
-            ButtonSegment(value: AlertSeverity.warning, label: Text('Warning')),
-            ButtonSegment(
-              value: AlertSeverity.critical,
-              label: Text('Critical'),
-            ),
+        FlareSegmentedControl<AlertSeverity>(
+          value: _minimumSeverity,
+          items: const <(AlertSeverity, String)>[
+            (AlertSeverity.info, 'Info'),
+            (AlertSeverity.warning, 'Warning'),
+            (AlertSeverity.critical, 'Critical'),
           ],
-          selected: <AlertSeverity>{_minimumSeverity},
-          showSelectedIcon: false,
-          onSelectionChanged: (selection) =>
-              setState(() => _minimumSeverity = selection.single),
+          onChanged: (value) => setState(() => _minimumSeverity = value),
         ),
         const SizedBox(height: 18),
         Text(
@@ -151,7 +148,8 @@ final class _PreferencesEditorState extends ConsumerState<_PreferencesEditor> {
           style: FlareType.label.copyWith(color: palette.accent),
         ),
         const SizedBox(height: 9),
-        FlareCard(
+        FlareGroupedSurface(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: _PreferenceSwitch(
             icon: PhosphorIconsRegular.checkCircle,
             title: 'Recovery notifications',
@@ -163,7 +161,7 @@ final class _PreferencesEditorState extends ConsumerState<_PreferencesEditor> {
         const SizedBox(height: 18),
         Text('SOURCES', style: FlareType.label.copyWith(color: palette.accent)),
         const SizedBox(height: 9),
-        FlareCard(
+        FlareGroupedSurface(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Column(
             children: <Widget>[
@@ -265,11 +263,7 @@ final class _PreferenceSwitch extends StatelessWidget {
               ],
             ),
           ),
-          Switch.adaptive(
-            value: value,
-            activeThumbColor: palette.accent,
-            onChanged: onChanged,
-          ),
+          FlareSwitch(value: value, semanticLabel: title, onChanged: onChanged),
         ],
       ),
     );

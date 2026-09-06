@@ -42,6 +42,7 @@ final class OverviewPage extends ConsumerWidget {
     final palette = context.flare;
     return FlareScaffold(
       title: 'Overview',
+      subtitle: 'Your homelab at a glance',
       actions: <Widget>[
         FlareIconButton(
           icon: PhosphorIconsRegular.bell,
@@ -98,11 +99,22 @@ final class OverviewPage extends ConsumerWidget {
                   ),
                 )
               else
-                SliverList.builder(
-                  itemCount: data.recentActivity.take(4).length,
-                  itemBuilder: (context, index) => FlareActivityTile(
-                    event: data.recentActivity[index],
-                    last: index == data.recentActivity.take(4).length - 1,
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: FlareGroupedSurface(
+                      padding: const EdgeInsets.fromLTRB(14, 16, 14, 0),
+                      child: Column(
+                        children: List<Widget>.generate(
+                          data.recentActivity.take(4).length,
+                          (index) => FlareActivityTile(
+                            event: data.recentActivity[index],
+                            last:
+                                index == data.recentActivity.take(4).length - 1,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -127,34 +139,56 @@ final class _HostHeader extends StatelessWidget {
       DataFreshness.stale => ('Stale', FlareStatusTone.warning),
       DataFreshness.offline => ('Offline', FlareStatusTone.danger),
     };
+    final statusColor = switch (tone) {
+      FlareStatusTone.success => palette.success,
+      FlareStatusTone.warning => palette.warning,
+      FlareStatusTone.danger => palette.danger,
+      _ => palette.info,
+    };
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 8, 0, 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  data.host.hostName,
-                  style: FlareType.title.copyWith(
-                    fontSize: 20,
-                    color: palette.text,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Uptime ${formatDuration(data.host.uptime)}',
-                  style: FlareType.metadata.copyWith(
-                    color: palette.textSecondary,
-                  ),
-                ),
-              ],
+      padding: const EdgeInsets.fromLTRB(0, 6, 0, 24),
+      child: FlareCard(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: <Widget>[
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: PhosphorIcon(
+                PhosphorIconsFill.houseLine,
+                size: 23,
+                color: statusColor,
+              ),
             ),
-          ),
-          FlareStatusBadge(label: label, tone: tone),
-        ],
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    data.host.hostName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: FlareType.title.copyWith(color: palette.text),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Uptime ${formatDuration(data.host.uptime)}',
+                    style: FlareType.metadata.copyWith(
+                      color: palette.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            FlareStatusBadge(label: label, tone: tone),
+          ],
+        ),
       ),
     );
   }
@@ -171,58 +205,60 @@ final class _MetricsGrid extends StatelessWidget {
         '${formatBytes(data.host.memoryUsedBytes)} / ${formatBytes(data.host.memoryTotalBytes)}';
     final diskSecondary =
         '${formatBytes(data.host.diskUsedBytes)} / ${formatBytes(data.host.diskTotalBytes)}';
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = (constraints.maxWidth - 10) / 2;
-        return Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: <Widget>[
-            SizedBox(
-              width: width,
-              child: FlareMetricCard(
-                title: 'CPU',
-                value: formatPercent(data.host.cpuPercent),
-                secondary: data.host.loadAverage == null
-                    ? 'Load unavailable'
-                    : 'Load ${data.host.loadAverage!.toStringAsFixed(2)}',
-                chart: data.history
-                    .map((point) => point.cpuPercent)
-                    .toList(growable: false),
-              ),
+    return SizedBox(
+      height: 160,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          SizedBox(
+            width: 176,
+            child: FlareMetricCard(
+              title: 'CPU',
+              value: formatPercent(data.host.cpuPercent),
+              secondary: data.host.loadAverage == null
+                  ? 'Load unavailable'
+                  : 'Load ${data.host.loadAverage!.toStringAsFixed(2)}',
+              chart: data.history
+                  .map((point) => point.cpuPercent)
+                  .toList(growable: false),
             ),
-            SizedBox(
-              width: width,
-              child: FlareMetricCard(
-                title: 'Memory',
-                value: formatPercent(data.host.memoryPercent),
-                secondary: memorySecondary,
-                chart: data.history
-                    .map((point) => point.memoryPercent)
-                    .toList(growable: false),
-                accent: palette.info,
-              ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 176,
+            child: FlareMetricCard(
+              title: 'Memory',
+              value: formatPercent(data.host.memoryPercent),
+              secondary: memorySecondary,
+              chart: data.history
+                  .map((point) => point.memoryPercent)
+                  .toList(growable: false),
+              accent: palette.info,
             ),
-            SizedBox(
-              width: width,
-              child: FlareMetricCard(
-                title: 'Disk',
-                value: formatPercent(data.host.diskPercent),
-                secondary: diskSecondary,
-                usage: data.host.diskPercent,
-                accent: palette.warning,
-              ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 176,
+            child: FlareMetricCard(
+              title: 'Disk',
+              value: formatPercent(data.host.diskPercent),
+              secondary: diskSecondary,
+              usage: data.host.diskPercent,
+              accent: palette.warning,
             ),
-            SizedBox(
-              width: width,
-              child: _NetworkCard(
-                receive: data.host.networkReceiveBytesPerSecond,
-                transmit: data.host.networkTransmitBytesPerSecond,
-              ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 176,
+            child: _NetworkCard(
+              receive: data.host.networkReceiveBytesPerSecond,
+              transmit: data.host.networkTransmitBytesPerSecond,
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -310,13 +346,13 @@ final class _ContainerSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.flare;
     return Padding(
-      padding: const EdgeInsets.only(top: FlareSpace.lg),
+      padding: const EdgeInsets.only(top: 26),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const FlareSectionHeader(title: 'Containers'),
           const SizedBox(height: 9),
-          FlareCard(
+          FlareGroupedSurface(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
             child: Row(
               children: <Widget>[

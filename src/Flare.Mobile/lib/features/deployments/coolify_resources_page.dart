@@ -77,6 +77,7 @@ final class _CoolifyResourcesPageState
     return FlareScaffold(
       eyebrow: 'COOLIFY',
       title: 'Resources',
+      subtitle: 'Applications and services managed by Coolify',
       leading: const FlareBackButton(),
       body: Column(
         children: <Widget>[

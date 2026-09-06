@@ -46,6 +46,7 @@ final class _AlertsPageState extends ConsumerState<AlertsPage> {
     return FlareScaffold(
       eyebrow: 'OPERATIONS',
       title: 'Alerts',
+      subtitle: 'Active incidents and recovery history',
       leading: const FlareBackButton(),
       body: data.when(
         loading: () => const FlareLoading(label: 'Reading alert history'),
@@ -72,11 +73,17 @@ final class _AlertsPageState extends ConsumerState<AlertsPage> {
                       ),
                     ),
                   ),
-                  FilterChip(
-                    selected: _unreadOnly,
-                    label: const Text('Unread only'),
-                    onSelected: (selected) =>
-                        setState(() => _unreadOnly = selected),
+                  SizedBox(
+                    width: 150,
+                    child: FlareSegmentedControl<bool>(
+                      value: _unreadOnly,
+                      items: const <(bool, String)>[
+                        (false, 'All'),
+                        (true, 'Unread'),
+                      ],
+                      onChanged: (selected) =>
+                          setState(() => _unreadOnly = selected),
+                    ),
                   ),
                 ],
               ),

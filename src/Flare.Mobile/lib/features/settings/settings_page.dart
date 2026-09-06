@@ -217,102 +217,137 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
     final palette = context.flare;
     return FlareScaffold(
       title: 'Settings',
+      subtitle: 'Personalize and manage Flare',
       leading: const FlareBackButton(),
       body: ListView(
         padding: const EdgeInsets.only(top: 8, bottom: 30),
         children: <Widget>[
           const _SettingsHeader('ACCOUNT'),
-          _SettingsRow(
-            icon: PhosphorIconsRegular.userCircle,
-            title: _email,
-            subtitle: 'Administrator session',
-            trailing: FlareButton(
-              label: 'Log out',
-              compact: true,
-              tone: FlareButtonTone.danger,
-              loading: _signingOut,
-              onPressed: _signingOut ? null : _logout,
-            ),
-          ),
-          const FlareDivider(),
-          const _SettingsHeader('SERVER'),
-          _SettingsRow(
-            icon: PhosphorIconsRegular.hardDrives,
-            title: _serverUrl,
-            subtitle: _connectivity,
-            subtitleColor: _connectivity == 'Connected'
-                ? palette.success
-                : _connectivity == 'Unreachable'
-                ? palette.danger
-                : palette.warning,
-            trailing: FlareButton(
-              label: 'Reconnect',
-              compact: true,
-              loading: _checking,
-              onPressed: _checking ? null : _reconnect,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: FlareButton(
-              label: 'Change server',
-              icon: PhosphorIconsRegular.arrowsLeftRight,
-              expand: true,
-              onPressed: _changeServer,
-            ),
-          ),
-          const FlareDividerBlock(),
-          const _SettingsHeader('APPEARANCE'),
-          _SettingsRow(
-            icon: PhosphorIconsRegular.circleHalfTilt,
-            title: _themeLabel(settings.mode),
-            subtitle: 'System, Light, Dark or OLED',
-            trailing: PhosphorIcon(
-              PhosphorIconsRegular.caretRight,
-              size: 16,
-              color: palette.muted,
-            ),
-            onTap: () => _chooseTheme(settings),
-          ),
-          const FlareDivider(indent: 50),
-          _SettingsRow(
-            icon: PhosphorIconsRegular.palette,
-            title: settings.accent.label,
-            subtitle: 'Interface accent',
-            trailing: Container(
-              width: 18,
-              height: 18,
-              decoration: BoxDecoration(
-                color: settings.accent.color,
-                shape: BoxShape.circle,
-                border: Border.all(color: palette.borderStrong),
+          FlareGroupedSurface(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: _SettingsRow(
+              icon: PhosphorIconsRegular.userCircle,
+              title: _email,
+              subtitle: 'Administrator session',
+              trailing: FlareButton(
+                label: 'Log out',
+                compact: true,
+                tone: FlareButtonTone.danger,
+                loading: _signingOut,
+                onPressed: _signingOut ? null : _logout,
               ),
             ),
-            onTap: () => _chooseAccent(settings),
           ),
-          const FlareDividerBlock(),
-          const _SettingsHeader('NOTIFICATIONS'),
-          _SettingsRow(
-            icon: PhosphorIconsRegular.bellRinging,
-            title: 'Alert delivery',
-            subtitle: 'Severity, recoveries and infrastructure sources',
-            trailing: PhosphorIcon(
-              PhosphorIconsRegular.caretRight,
-              size: 16,
-              color: palette.muted,
+          const _SettingsHeader('SERVER'),
+          FlareGroupedSurface(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Column(
+              children: <Widget>[
+                _SettingsRow(
+                  icon: PhosphorIconsRegular.hardDrives,
+                  title: _serverUrl,
+                  subtitle: _connectivity,
+                  subtitleColor: _connectivity == 'Connected'
+                      ? palette.success
+                      : _connectivity == 'Unreachable'
+                      ? palette.danger
+                      : palette.warning,
+                  trailing: FlareButton(
+                    label: 'Reconnect',
+                    compact: true,
+                    loading: _checking,
+                    onPressed: _checking ? null : _reconnect,
+                  ),
+                ),
+                const FlareDivider(indent: 50),
+                _SettingsRow(
+                  icon: PhosphorIconsRegular.arrowsLeftRight,
+                  title: 'Change server',
+                  subtitle: 'Connect Flare to another API',
+                  trailing: PhosphorIcon(
+                    PhosphorIconsRegular.caretRight,
+                    size: 16,
+                    color: palette.muted,
+                  ),
+                  onTap: _changeServer,
+                ),
+              ],
             ),
-            onTap: () => context.push('/settings/notifications'),
           ),
-          const FlareDividerBlock(),
+          const _SettingsHeader('APPEARANCE'),
+          FlareGroupedSurface(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Column(
+              children: <Widget>[
+                _SettingsRow(
+                  icon: PhosphorIconsRegular.circleHalfTilt,
+                  title: 'Appearance',
+                  subtitle: 'System, Light, Dark or OLED',
+                  trailing: _TrailingValue(value: _themeLabel(settings.mode)),
+                  onTap: () => _chooseTheme(settings),
+                ),
+                const FlareDivider(indent: 50),
+                _SettingsRow(
+                  icon: PhosphorIconsRegular.palette,
+                  title: 'Accent',
+                  subtitle: settings.accent.label,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: settings.accent.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      PhosphorIcon(
+                        PhosphorIconsRegular.caretRight,
+                        size: 15,
+                        color: palette.muted,
+                      ),
+                    ],
+                  ),
+                  onTap: () => _chooseAccent(settings),
+                ),
+              ],
+            ),
+          ),
+          const _SettingsHeader('NOTIFICATIONS'),
+          FlareGroupedSurface(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: _SettingsRow(
+              icon: PhosphorIconsRegular.bellRinging,
+              title: 'Alert delivery',
+              subtitle: 'Severity, recoveries and infrastructure sources',
+              trailing: PhosphorIcon(
+                PhosphorIconsRegular.caretRight,
+                size: 16,
+                color: palette.muted,
+              ),
+              onTap: () => context.push('/settings/notifications'),
+            ),
+          ),
           const _SettingsHeader('ABOUT'),
-          _ValueRow(label: 'Mobile version', value: _mobileVersion),
-          _ValueRow(
-            label: 'API version',
-            value: _serverInfo?.apiVersion ?? '—',
-          ),
-          _ValueRow(
-            label: 'Server version',
-            value: _serverInfo?.serverVersion ?? '—',
+          FlareGroupedSurface(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+            child: Column(
+              children: <Widget>[
+                _ValueRow(label: 'Mobile version', value: _mobileVersion),
+                const FlareDivider(),
+                _ValueRow(
+                  label: 'API version',
+                  value: _serverInfo?.apiVersion ?? '—',
+                ),
+                const FlareDivider(),
+                _ValueRow(
+                  label: 'Server version',
+                  value: _serverInfo?.serverVersion ?? '—',
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -332,10 +367,14 @@ final class _SettingsHeader extends StatelessWidget {
   final String label;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 14, bottom: 9),
+    padding: const EdgeInsets.only(top: 22, left: 5, bottom: 9),
     child: Text(
       label,
-      style: FlareType.label.copyWith(color: context.flare.accent),
+      style: FlareType.label.copyWith(
+        color: context.flare.textSecondary,
+        fontSize: 10,
+        letterSpacing: 1.1,
+      ),
     ),
   );
 }
@@ -360,19 +399,18 @@ final class _SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.flare;
     final content = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 13),
       child: Row(
         children: <Widget>[
           Container(
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(color: palette.border),
+              color: palette.accent.withValues(alpha: 0.11),
+              borderRadius: BorderRadius.circular(11),
             ),
             alignment: Alignment.center,
-            child: PhosphorIcon(icon, size: 18, color: palette.textSecondary),
+            child: PhosphorIcon(icon, size: 18, color: palette.accent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -420,7 +458,7 @@ final class _ValueRow extends StatelessWidget {
   final String value;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 7),
+    padding: const EdgeInsets.symmetric(vertical: 12),
     child: Row(
       children: <Widget>[
         Expanded(
@@ -435,6 +473,28 @@ final class _ValueRow extends StatelessWidget {
         ),
       ],
     ),
+  );
+}
+
+final class _TrailingValue extends StatelessWidget {
+  const _TrailingValue({required this.value});
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: <Widget>[
+      Text(
+        value,
+        style: FlareType.metadata.copyWith(color: context.flare.textSecondary),
+      ),
+      const SizedBox(width: 6),
+      PhosphorIcon(
+        PhosphorIconsRegular.caretRight,
+        size: 15,
+        color: context.flare.muted,
+      ),
+    ],
   );
 }
 

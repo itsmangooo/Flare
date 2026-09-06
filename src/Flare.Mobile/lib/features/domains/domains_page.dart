@@ -19,6 +19,7 @@ final class DomainsPage extends ConsumerWidget {
     return FlareScaffold(
       eyebrow: 'INFRASTRUCTURE',
       title: 'Domains',
+      subtitle: 'Cloudflare zones, records and reachability',
       leading: const FlareBackButton(),
       body: data.when(
         loading: () => const FlareLoading(label: 'Reading Cloudflare'),

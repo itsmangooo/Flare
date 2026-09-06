@@ -42,6 +42,7 @@ final class _ActivityPageState extends ConsumerState<ActivityPage> {
     final palette = context.flare;
     return FlareScaffold(
       title: 'Activity',
+      subtitle: 'Infrastructure and security events',
       actions: <Widget>[
         FlareIconButton(
           icon: PhosphorIconsRegular.userCircle,
@@ -62,23 +63,15 @@ final class _ActivityPageState extends ConsumerState<ActivityPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Padding(
-                padding: const EdgeInsets.only(top: 6, bottom: 12),
-                child: Wrap(
-                  spacing: 7,
-                  children: _ActivityFilter.values
-                      .map((filter) {
-                        final label = switch (filter) {
-                          _ActivityFilter.all => 'All',
-                          _ActivityFilter.infrastructure => 'Infrastructure',
-                          _ActivityFilter.security => 'Security',
-                        };
-                        return _FilterChip(
-                          label: label,
-                          selected: _filter == filter,
-                          onTap: () => setState(() => _filter = filter),
-                        );
-                      })
-                      .toList(growable: false),
+                padding: const EdgeInsets.only(top: 4, bottom: 14),
+                child: FlareSegmentedControl<_ActivityFilter>(
+                  value: _filter,
+                  items: const <(_ActivityFilter, String)>[
+                    (_ActivityFilter.all, 'All'),
+                    (_ActivityFilter.infrastructure, 'Infrastructure'),
+                    (_ActivityFilter.security, 'Security'),
+                  ],
+                  onChanged: (value) => setState(() => _filter = value),
                 ),
               ),
               Expanded(
@@ -93,64 +86,29 @@ final class _ActivityPageState extends ConsumerState<ActivityPage> {
                         backgroundColor: palette.surfaceHigh,
                         onRefresh: () async =>
                             ref.refresh(activityProvider.future),
-                        child: ListView.builder(
+                        child: ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.only(top: 8, bottom: 24),
-                          itemCount: visible.length,
-                          itemBuilder: (context, index) => FlareActivityTile(
-                            event: visible[index],
-                            last: index == visible.length - 1,
-                          ),
+                          padding: const EdgeInsets.only(bottom: 24),
+                          children: <Widget>[
+                            FlareGroupedSurface(
+                              padding: const EdgeInsets.fromLTRB(14, 16, 14, 0),
+                              child: Column(
+                                children: List<Widget>.generate(
+                                  visible.length,
+                                  (index) => FlareActivityTile(
+                                    event: visible[index],
+                                    last: index == visible.length - 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
               ),
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-final class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.flare;
-    return Semantics(
-      button: true,
-      selected: selected,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(FlareRadii.small),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 170),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? palette.accentSoft : palette.surface,
-            borderRadius: BorderRadius.circular(FlareRadii.small),
-            border: Border.all(
-              color: selected
-                  ? palette.accent.withValues(alpha: 0.33)
-                  : palette.border,
-            ),
-          ),
-          child: Text(
-            label,
-            style: FlareType.metadata.copyWith(
-              color: selected ? palette.accent : palette.textSecondary,
-            ),
-          ),
-        ),
       ),
     );
   }

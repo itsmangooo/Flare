@@ -20,6 +20,7 @@ final class DeploymentsPage extends ConsumerWidget {
     final palette = context.flare;
     return FlareScaffold(
       title: 'Deployments',
+      subtitle: 'Chronological Coolify release history',
       actions: <Widget>[
         FlareIconButton(
           icon: PhosphorIconsRegular.stack,
@@ -48,13 +49,13 @@ final class DeploymentsPage extends ConsumerWidget {
                 color: palette.accent,
                 backgroundColor: palette.surfaceHigh,
                 onRefresh: () async => ref.refresh(deploymentsProvider.future),
-                child: ListView.separated(
+                child: ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(top: 6, bottom: 24),
+                  padding: const EdgeInsets.only(top: 8, bottom: 24),
                   itemCount: items.length,
-                  separatorBuilder: (_, _) => const FlareDivider(indent: 17),
                   itemBuilder: (context, index) => _DeploymentTile(
                     deployment: items[index],
+                    last: index == items.length - 1,
                     onTap: () => context.push(
                       '/deployments/${Uri.encodeComponent(items[index].uuid)}',
                     ),
@@ -94,115 +95,158 @@ final class DeploymentsPage extends ConsumerWidget {
 }
 
 final class _DeploymentTile extends StatelessWidget {
-  const _DeploymentTile({required this.deployment, required this.onTap});
+  const _DeploymentTile({
+    required this.deployment,
+    required this.onTap,
+    required this.last,
+  });
+
   final DeploymentModel deployment;
   final VoidCallback onTap;
+  final bool last;
+
   @override
   Widget build(BuildContext context) {
     final palette = context.flare;
-    final (tone, color, status) = deploymentStatus(deployment.status, palette);
-    return InkWell(
-      borderRadius: BorderRadius.circular(FlareRadii.small),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 3),
+    final (_, color, status) = deploymentStatus(deployment.status, palette);
+    return IntrinsicHeight(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(FlareRadii.normal),
+        onTap: onTap,
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.11),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: PhosphorIcon(
-                  PhosphorIconsRegular.rocketLaunch,
-                  size: 17,
-                  color: color,
-                ),
+            SizedBox(
+              width: 42,
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: PhosphorIcon(
+                      PhosphorIconsRegular.rocketLaunch,
+                      size: 17,
+                      color: color,
+                    ),
+                  ),
+                  if (!last)
+                    Expanded(
+                      child: Container(
+                        width: 1,
+                        color: palette.text.withValues(alpha: 0.07),
+                      ),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(width: 11),
+            const SizedBox(width: 10),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          deployment.resourceName,
-                          style: FlareType.body.copyWith(
-                            fontSize: 15,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: last ? 8 : 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            deployment.resourceName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: FlareType.body.copyWith(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          status,
+                          style: FlareType.metadata.copyWith(
+                            color: color,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                      FlareStatusBadge(label: status, tone: tone, dot: false),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: <Widget>[
-                      if (deployment.branch != null)
-                        Text(deployment.branch!, style: FlareType.metadata),
-                      if (deployment.commit != null) ...<Widget>[
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 6),
-                          child: Text('·', style: FlareType.metadata),
-                        ),
-                        Text(
-                          deployment.commit!.substring(
-                            0,
-                            deployment.commit!.length < 8
-                                ? deployment.commit!.length
-                                : 8,
-                          ),
-                          style: FlareType.mono.copyWith(fontSize: 11),
+                        const SizedBox(width: 5),
+                        PhosphorIcon(
+                          PhosphorIconsRegular.caretRight,
+                          size: 14,
+                          color: palette.muted,
                         ),
                       ],
-                    ],
-                  ),
-                  if (deployment.commitMessage != null) ...<Widget>[
-                    const SizedBox(height: 5),
-                    Text(
-                      deployment.commitMessage!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: FlareType.metadata.copyWith(color: palette.muted),
                     ),
-                  ],
-                  const SizedBox(height: 8),
-                  Row(
-                    children: <Widget>[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: <Widget>[
+                        if (deployment.branch != null)
+                          Text(
+                            deployment.branch!,
+                            style: FlareType.metadata.copyWith(
+                              color: palette.textSecondary,
+                            ),
+                          ),
+                        if (deployment.commit != null) ...<Widget>[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Text(
+                              '·',
+                              style: FlareType.metadata.copyWith(
+                                color: palette.muted,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            deployment.commit!.substring(
+                              0,
+                              deployment.commit!.length < 8
+                                  ? deployment.commit!.length
+                                  : 8,
+                            ),
+                            style: FlareType.mono.copyWith(
+                              fontSize: 11,
+                              color: palette.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (deployment.commitMessage != null) ...<Widget>[
+                      const SizedBox(height: 4),
                       Text(
-                        formatRelative(deployment.startedAt),
+                        deployment.commitMessage!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: FlareType.metadata.copyWith(
                           color: palette.muted,
                         ),
                       ),
-                      if (deployment.duration != null) ...<Widget>[
-                        const SizedBox(width: 13),
+                    ],
+                    const SizedBox(height: 7),
+                    Row(
+                      children: <Widget>[
                         Text(
-                          formatDuration(deployment.duration),
+                          formatRelative(deployment.startedAt),
                           style: FlareType.metadata.copyWith(
                             color: palette.muted,
                           ),
                         ),
+                        if (deployment.duration != null) ...<Widget>[
+                          const SizedBox(width: 13),
+                          Text(
+                            formatDuration(deployment.duration),
+                            style: FlareType.metadata.copyWith(
+                              color: palette.muted,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(top: 10, left: 5),
-              child: PhosphorIcon(
-                PhosphorIconsRegular.caretRight,
-                size: 16,
-                color: palette.muted,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
