@@ -29,11 +29,11 @@ type fakeDatabase struct {
 }
 
 type fakeAlertSink struct {
-	notifications []alerts.Notification
+	signals []alerts.Signal
 }
 
-func (sink *fakeAlertSink) Notify(_ context.Context, notification alerts.Notification) error {
-	sink.notifications = append(sink.notifications, notification)
+func (sink *fakeAlertSink) Record(_ context.Context, signal alerts.Signal) error {
+	sink.signals = append(sink.signals, signal)
 	return nil
 }
 
@@ -95,12 +95,13 @@ func TestDockerEventsCreateAlertsRecoveriesAndRestartLoop(t *testing.T) {
 	if events[0].result != 1 || events[len(events)-1].result != 0 {
 		t.Fatalf("results = %#v", events)
 	}
-	if len(sink.notifications) != len(events) {
-		t.Fatalf("notifications = %#v", sink.notifications)
+	if len(sink.signals) != len(events) {
+		t.Fatalf("signals = %#v", sink.signals)
 	}
-	if sink.notifications[0].Title != "Container stopped unexpectedly" || sink.notifications[0].Priority != 5 ||
-		sink.notifications[len(sink.notifications)-1].Title != "Container recovered" || sink.notifications[len(sink.notifications)-1].Priority != 2 {
-		t.Fatalf("notifications = %#v", sink.notifications)
+	if sink.signals[0].Title != "Container stopped unexpectedly" || sink.signals[0].Severity != "critical" ||
+		sink.signals[len(sink.signals)-1].Title != "Container recovered" || !sink.signals[len(sink.signals)-1].Recovery ||
+		sink.signals[len(sink.signals)-1].Fingerprint != "container.health:"+id {
+		t.Fatalf("signals = %#v", sink.signals)
 	}
 }
 

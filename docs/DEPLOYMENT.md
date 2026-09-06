@@ -61,7 +61,7 @@ Only `FLARE_BOOTSTRAP_TOKEN` should be cleared after the first administrator has
 Never place secrets in the repository. `.env.example` contains placeholders only.
 The static image does not include Kerberos libraries; configure `SSL Mode` in `ConnectionStrings__Postgres` when database transport encryption is required.
 
-The Go backend treats ntfy as optional. When configured, it publishes Docker outage, unexpected-stop, out-of-memory, unhealthy, restart-loop, and recovery notifications through ntfy's JSON API. Use a private, hard-to-guess topic and preferably protect it with a dedicated write-scoped access token. Alert delivery is retried and never includes Docker labels, raw daemon errors, tokens, or internal network addresses.
+The Go backend treats ntfy as optional. When configured, it publishes Docker outage, unexpected-stop, out-of-memory, unhealthy, restart-loop, and recovery notifications through ntfy's JSON API. Repeated active conditions share a fingerprint and update persisted history immediately, while external notifications use a 15-minute cooldown; recovery notifications are sent once when a matching active condition closes. Delivery is retried and never includes Docker labels, raw daemon errors, tokens, or internal network addresses. Use a private, hard-to-guess topic and preferably protect it with a dedicated write-scoped access token.
 
 ## Database migrations
 

@@ -75,8 +75,9 @@ func main() {
 		os.Exit(1)
 	}
 	alertDispatcher := alerts.NewDispatcher(ntfyPublisher, logger)
+	alertEngine := alerts.NewEngine(db, alertDispatcher, logger)
 	go alertDispatcher.Run(ctx)
-	go monitoring.NewDockerMonitor(docker, db, logger, alertDispatcher).Run(ctx)
+	go monitoring.NewDockerMonitor(docker, db, logger, alertEngine).Run(ctx)
 	cloudflareClient, err := cloudflare.NewClient(cfg.CloudflareToken, cfg.CloudflareAccountID, logger)
 	if err != nil {
 		logger.Error("Cloudflare client configuration failed", "error", err)

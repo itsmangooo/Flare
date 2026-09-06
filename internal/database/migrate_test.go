@@ -23,6 +23,9 @@ func TestMigrateAppliesPendingMigrationsTransactionally(t *testing.T) {
 	database.ExpectQuery(`SELECT EXISTS.*FlareSchemaMigrations`).WithArgs(int64(2)).WillReturnRows(pgxmock.NewRows([]string{"exists"}).AddRow(false))
 	database.ExpectExec(`CREATE TABLE IF NOT EXISTS "Alerts"`).WillReturnResult(pgxmock.NewResult("CREATE TABLE", 0))
 	database.ExpectExec(`INSERT INTO "FlareSchemaMigrations"`).WithArgs(int64(2), "0002_alert_history.sql").WillReturnResult(pgxmock.NewResult("INSERT", 1))
+	database.ExpectQuery(`SELECT EXISTS.*FlareSchemaMigrations`).WithArgs(int64(3)).WillReturnRows(pgxmock.NewRows([]string{"exists"}).AddRow(false))
+	database.ExpectExec(`ALTER TABLE "Alerts"`).WillReturnResult(pgxmock.NewResult("ALTER TABLE", 0))
+	database.ExpectExec(`INSERT INTO "FlareSchemaMigrations"`).WithArgs(int64(3), "0003_alert_delivery_state.sql").WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	database.ExpectCommit()
 
 	if err = Migrate(context.Background(), database); err != nil {
@@ -44,6 +47,7 @@ func TestMigrateSkipsAppliedMigrations(t *testing.T) {
 	database.ExpectExec(`CREATE TABLE IF NOT EXISTS "FlareSchemaMigrations"`).WillReturnResult(pgxmock.NewResult("CREATE TABLE", 0))
 	database.ExpectQuery(`SELECT EXISTS.*FlareSchemaMigrations`).WithArgs(int64(1)).WillReturnRows(pgxmock.NewRows([]string{"exists"}).AddRow(true))
 	database.ExpectQuery(`SELECT EXISTS.*FlareSchemaMigrations`).WithArgs(int64(2)).WillReturnRows(pgxmock.NewRows([]string{"exists"}).AddRow(true))
+	database.ExpectQuery(`SELECT EXISTS.*FlareSchemaMigrations`).WithArgs(int64(3)).WillReturnRows(pgxmock.NewRows([]string{"exists"}).AddRow(true))
 	database.ExpectCommit()
 
 	if err = Migrate(context.Background(), database); err != nil {
