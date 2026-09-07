@@ -192,7 +192,10 @@ final class _ZonePanelState extends ConsumerState<_ZonePanel> {
             onTap: () => setState(() => _expanded = !_expanded),
             borderRadius: BorderRadius.circular(FlareRadii.small),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 3),
+              padding: const EdgeInsets.symmetric(
+                vertical: FlareSpace.sm,
+                horizontal: FlareSpace.xxs,
+              ),
               child: Row(
                 children: <Widget>[
                   PhosphorIcon(
@@ -209,7 +212,6 @@ final class _ZonePanelState extends ConsumerState<_ZonePanel> {
                           widget.zone.name,
                           style: FlareType.body.copyWith(
                             color: palette.text,
-                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -391,7 +393,10 @@ final class _TunnelPanelState extends ConsumerState<_TunnelPanel> {
             onTap: () => setState(() => _expanded = !_expanded),
             borderRadius: BorderRadius.circular(FlareRadii.small),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 3),
+              padding: const EdgeInsets.symmetric(
+                vertical: FlareSpace.sm,
+                horizontal: FlareSpace.xxs,
+              ),
               child: Row(
                 children: <Widget>[
                   PhosphorIcon(
@@ -408,7 +413,6 @@ final class _TunnelPanelState extends ConsumerState<_TunnelPanel> {
                           widget.tunnel.name,
                           style: FlareType.body.copyWith(
                             color: palette.text,
-                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

@@ -28,11 +28,16 @@ abstract final class FlareColors {
 
 extension FlareAccentPresentation on FlareAccent {
   String get label => switch (this) {
-    FlareAccent.blue => 'Flare Blue',
-    FlareAccent.cyan => 'Cyan',
+    FlareAccent.blue => 'Ocean Blue',
+    FlareAccent.cyan => 'Electric Cyan',
     FlareAccent.violet => 'Violet',
-    FlareAccent.emerald => 'Emerald',
+    FlareAccent.emerald => 'Flare Emerald',
     FlareAccent.amber => 'Amber',
+    FlareAccent.indigo => 'Indigo',
+    FlareAccent.rose => 'Rose',
+    FlareAccent.coral => 'Coral',
+    FlareAccent.slate => 'Slate',
+    FlareAccent.mint => 'Mint',
   };
 
   Color get color => switch (this) {
@@ -41,7 +46,87 @@ extension FlareAccentPresentation on FlareAccent {
     FlareAccent.violet => const Color(0xFF8B6FF2),
     FlareAccent.emerald => const Color(0xFF26A878),
     FlareAccent.amber => const Color(0xFFD49732),
+    FlareAccent.indigo => const Color(0xFF6967E8),
+    FlareAccent.rose => const Color(0xFFE0668C),
+    FlareAccent.coral => const Color(0xFFE47865),
+    FlareAccent.slate => const Color(0xFF748CA3),
+    FlareAccent.mint => const Color(0xFF4AC7A3),
   };
+}
+
+extension FlareAtmospherePresentation on FlareAtmosphere {
+  String get label => switch (this) {
+    FlareAtmosphere.none => 'None',
+    FlareAtmosphere.softGradient => 'Soft Gradient',
+    FlareAtmosphere.aurora => 'Aurora',
+    FlareAtmosphere.midnight => 'Midnight',
+    FlareAtmosphere.graphite => 'Graphite',
+  };
+}
+
+extension FlareThemePresetPresentation on FlareThemePreset {
+  String get label => switch (this) {
+    FlareThemePreset.flareClassic => 'Flare Classic',
+    FlareThemePreset.midnightBlue => 'Midnight Blue',
+    FlareThemePreset.graphite => 'Graphite',
+    FlareThemePreset.aurora => 'Aurora',
+    FlareThemePreset.nord => 'Nord',
+    FlareThemePreset.ember => 'Ember',
+    FlareThemePreset.cloud => 'Cloud',
+    FlareThemePreset.lavender => 'Lavender',
+    FlareThemePreset.discordInspired => 'Discord-inspired',
+  };
+
+  FlareThemeSettings applyTo(FlareThemeSettings current) {
+    final (mode, accent, atmosphere) = switch (this) {
+      FlareThemePreset.flareClassic => (
+        FlareThemeMode.dark,
+        FlareAccent.emerald,
+        FlareAtmosphere.none,
+      ),
+      FlareThemePreset.midnightBlue => (
+        FlareThemeMode.dark,
+        FlareAccent.blue,
+        FlareAtmosphere.midnight,
+      ),
+      FlareThemePreset.graphite => (
+        FlareThemeMode.dark,
+        FlareAccent.slate,
+        FlareAtmosphere.graphite,
+      ),
+      FlareThemePreset.aurora => (
+        FlareThemeMode.dark,
+        FlareAccent.cyan,
+        FlareAtmosphere.aurora,
+      ),
+      FlareThemePreset.nord => (
+        FlareThemeMode.dark,
+        FlareAccent.cyan,
+        FlareAtmosphere.midnight,
+      ),
+      FlareThemePreset.ember => (
+        FlareThemeMode.dark,
+        FlareAccent.coral,
+        FlareAtmosphere.softGradient,
+      ),
+      FlareThemePreset.cloud => (
+        FlareThemeMode.light,
+        FlareAccent.blue,
+        FlareAtmosphere.none,
+      ),
+      FlareThemePreset.lavender => (
+        FlareThemeMode.dark,
+        FlareAccent.violet,
+        FlareAtmosphere.softGradient,
+      ),
+      FlareThemePreset.discordInspired => (
+        FlareThemeMode.dark,
+        FlareAccent.indigo,
+        FlareAtmosphere.graphite,
+      ),
+    };
+    return current.copyWith(mode: mode, accent: accent, atmosphere: atmosphere);
+  }
 }
 
 @immutable
@@ -66,34 +151,46 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
     required this.dangerSoft,
     required this.info,
     required this.infoSoft,
+    required this.ambientStart,
+    required this.ambientEnd,
+    required this.glassTint,
   });
 
-  factory FlarePalette.dark(FlareAccent accent, {bool oled = false}) =>
-      FlarePalette(
-        background: oled ? Colors.black : FlareColors.background,
-        backgroundSecondary: oled
-            ? const Color(0xFF050505)
-            : FlareColors.backgroundSecondary,
-        surface: oled ? const Color(0xFF0A0A0A) : FlareColors.surface,
-        surfaceHigh: oled ? const Color(0xFF121212) : FlareColors.surfaceHigh,
-        border: FlareColors.border,
-        borderStrong: FlareColors.borderStrong,
-        text: FlareColors.text,
-        textSecondary: FlareColors.textSecondary,
-        muted: FlareColors.muted,
-        accent: accent.color,
-        accentSoft: accent.color.withAlpha(38),
-        success: FlareColors.success,
-        successSoft: FlareColors.successSoft,
-        warning: FlareColors.warning,
-        warningSoft: FlareColors.warningSoft,
-        danger: FlareColors.danger,
-        dangerSoft: FlareColors.dangerSoft,
-        info: FlareColors.info,
-        infoSoft: FlareColors.infoSoft,
-      );
+  factory FlarePalette.dark(
+    FlareAccent accent, {
+    bool oled = false,
+    FlareAtmosphere atmosphere = FlareAtmosphere.none,
+  }) => FlarePalette(
+    background: oled ? Colors.black : FlareColors.background,
+    backgroundSecondary: oled
+        ? const Color(0xFF050505)
+        : FlareColors.backgroundSecondary,
+    surface: oled ? const Color(0xFF0A0A0A) : FlareColors.surface,
+    surfaceHigh: oled ? const Color(0xFF121212) : FlareColors.surfaceHigh,
+    border: FlareColors.border,
+    borderStrong: FlareColors.borderStrong,
+    text: FlareColors.text,
+    textSecondary: FlareColors.textSecondary,
+    muted: FlareColors.muted,
+    accent: accent.color,
+    accentSoft: accent.color.withAlpha(38),
+    success: FlareColors.success,
+    successSoft: FlareColors.successSoft,
+    warning: FlareColors.warning,
+    warningSoft: FlareColors.warningSoft,
+    danger: FlareColors.danger,
+    dangerSoft: FlareColors.dangerSoft,
+    info: FlareColors.info,
+    infoSoft: FlareColors.infoSoft,
+    ambientStart: _ambientStart(atmosphere, accent.color, false),
+    ambientEnd: _ambientEnd(atmosphere, accent.color, false),
+    glassTint: _glassTint(atmosphere, accent.color),
+  );
 
-  factory FlarePalette.light(FlareAccent accent) => FlarePalette(
+  factory FlarePalette.light(
+    FlareAccent accent, {
+    FlareAtmosphere atmosphere = FlareAtmosphere.none,
+  }) => FlarePalette(
     background: const Color(0xFFF7F8FA),
     backgroundSecondary: const Color(0xFFF2F4F7),
     surface: Colors.white,
@@ -113,6 +210,9 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
     dangerSoft: const Color(0x18C43D49),
     info: const Color(0xFF286FA8),
     infoSoft: const Color(0x18286FA8),
+    ambientStart: _ambientStart(atmosphere, accent.color, true),
+    ambientEnd: _ambientEnd(atmosphere, accent.color, true),
+    glassTint: _glassTint(atmosphere, accent.color),
   );
 
   final Color background;
@@ -134,6 +234,9 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
   final Color dangerSoft;
   final Color info;
   final Color infoSoft;
+  final Color ambientStart;
+  final Color ambientEnd;
+  final Color glassTint;
 
   static FlarePalette of(BuildContext context) =>
       Theme.of(context).extension<FlarePalette>()!;
@@ -159,6 +262,9 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
     Color? dangerSoft,
     Color? info,
     Color? infoSoft,
+    Color? ambientStart,
+    Color? ambientEnd,
+    Color? glassTint,
   }) => FlarePalette(
     background: background ?? this.background,
     backgroundSecondary: backgroundSecondary ?? this.backgroundSecondary,
@@ -179,6 +285,9 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
     dangerSoft: dangerSoft ?? this.dangerSoft,
     info: info ?? this.info,
     infoSoft: infoSoft ?? this.infoSoft,
+    ambientStart: ambientStart ?? this.ambientStart,
+    ambientEnd: ambientEnd ?? this.ambientEnd,
+    glassTint: glassTint ?? this.glassTint,
   );
 
   @override
@@ -208,22 +317,71 @@ final class FlarePalette extends ThemeExtension<FlarePalette> {
       dangerSoft: Color.lerp(dangerSoft, other.dangerSoft, t)!,
       info: Color.lerp(info, other.info, t)!,
       infoSoft: Color.lerp(infoSoft, other.infoSoft, t)!,
+      ambientStart: Color.lerp(ambientStart, other.ambientStart, t)!,
+      ambientEnd: Color.lerp(ambientEnd, other.ambientEnd, t)!,
+      glassTint: Color.lerp(glassTint, other.glassTint, t)!,
     );
   }
 }
 
+Color _ambientStart(FlareAtmosphere atmosphere, Color accent, bool light) =>
+    switch (atmosphere) {
+      FlareAtmosphere.none => Colors.transparent,
+      FlareAtmosphere.softGradient => accent.withValues(
+        alpha: light ? 0.07 : 0.1,
+      ),
+      FlareAtmosphere.aurora => const Color(0x2421C990),
+      FlareAtmosphere.midnight => const Color(0x263B5FD4),
+      FlareAtmosphere.graphite => const Color(0x20788592),
+    };
+
+Color _ambientEnd(FlareAtmosphere atmosphere, Color accent, bool light) =>
+    switch (atmosphere) {
+      FlareAtmosphere.none => Colors.transparent,
+      FlareAtmosphere.softGradient => accent.withValues(
+        alpha: light ? 0.025 : 0.035,
+      ),
+      FlareAtmosphere.aurora => const Color(0x1F5A4AE3),
+      FlareAtmosphere.midnight => const Color(0x120A2B63),
+      FlareAtmosphere.graphite => const Color(0x0F88909A),
+    };
+
+Color _glassTint(FlareAtmosphere atmosphere, Color accent) =>
+    switch (atmosphere) {
+      FlareAtmosphere.none || FlareAtmosphere.graphite => Colors.transparent,
+      FlareAtmosphere.softGradient => accent.withValues(alpha: 0.025),
+      FlareAtmosphere.aurora => const Color(0x0D38D9A2),
+      FlareAtmosphere.midnight => const Color(0x0F5378E5),
+    };
+
 extension FlareThemeContext on BuildContext {
   FlarePalette get flare => FlarePalette.of(this);
+}
+
+final class FlareScrollBehavior extends MaterialScrollBehavior {
+  const FlareScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) => child;
 }
 
 abstract final class FlareSpace {
   static const xxs = 4.0;
   static const xs = 8.0;
   static const sm = 12.0;
-  static const md = 18.0;
-  static const lg = 24.0;
-  static const xl = 36.0;
-  static const xxl = 48.0;
+  static const md = 16.0;
+  static const lg = 20.0;
+  static const xl = 24.0;
+  static const xxl = 32.0;
+  static const huge = 40.0;
 }
 
 abstract final class FlareRadii {
@@ -253,6 +411,13 @@ abstract final class FlareType {
     letterSpacing: -0.8,
     fontFeatures: [FontFeature.tabularFigures()],
   );
+  static const metricCompact = TextStyle(
+    fontSize: 22,
+    height: 1.05,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.55,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
   static const body = TextStyle(
     fontSize: 14.5,
     height: 1.48,
@@ -261,6 +426,16 @@ abstract final class FlareType {
   static const metadata = TextStyle(
     fontSize: 12,
     height: 1.35,
+    fontWeight: FontWeight.w500,
+  );
+  static const caption = TextStyle(
+    fontSize: 10.5,
+    height: 1.3,
+    fontWeight: FontWeight.w500,
+  );
+  static const navigation = TextStyle(
+    fontSize: 10,
+    height: 1.2,
     fontWeight: FontWeight.w500,
   );
   static const label = TextStyle(
@@ -279,11 +454,12 @@ abstract final class FlareType {
 ThemeData buildFlareTheme({
   Brightness brightness = Brightness.dark,
   FlareAccent accent = FlareAccent.blue,
+  FlareAtmosphere atmosphere = FlareAtmosphere.none,
   bool oled = false,
 }) {
   final palette = brightness == Brightness.light
-      ? FlarePalette.light(accent)
-      : FlarePalette.dark(accent, oled: oled);
+      ? FlarePalette.light(accent, atmosphere: atmosphere)
+      : FlarePalette.dark(accent, oled: oled, atmosphere: atmosphere);
   return ThemeData(
     brightness: brightness,
     fontFamily: 'Poppins',
@@ -371,6 +547,7 @@ final class FlarePageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
+    if (MediaQuery.disableAnimationsOf(context)) return child;
     final curved = CurvedAnimation(
       parent: animation,
       curve: Curves.easeOutCubic,

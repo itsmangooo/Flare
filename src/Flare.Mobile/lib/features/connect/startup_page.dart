@@ -36,13 +36,12 @@ final class StartupPage extends ConsumerWidget {
                 .animate()
                 .fadeIn(duration: 240.ms)
                 .scaleXY(begin: 0.94, end: 1, curve: Curves.easeOutCubic),
-            const SizedBox(height: 15),
+            const SizedBox(height: FlareSpace.md),
             Text(
               'FLARE',
               style: FlareType.label.copyWith(
                 color: palette.text,
                 letterSpacing: 4,
-                fontSize: 13,
               ),
             ),
             if (state.hasError) ...<Widget>[

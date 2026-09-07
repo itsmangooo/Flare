@@ -5,30 +5,80 @@ import '../../core/api/api_client.dart';
 import '../../core/theme/flare_theme.dart';
 import 'flare_controls.dart';
 
-final class FlareLoading extends StatelessWidget {
+final class FlareLoading extends StatefulWidget {
   const FlareLoading({this.label = 'Loading', super.key});
   final String label;
+
+  @override
+  State<FlareLoading> createState() => _FlareLoadingState();
+}
+
+final class _FlareLoadingState extends State<FlareLoading>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = context.flare;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: palette.accent,
-            ),
+      child: Semantics(
+        liveRegion: true,
+        label: widget.label,
+        child: ExcludeSemantics(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) {
+                  final alpha = reduceMotion
+                      ? 0.5
+                      : 0.28 + _controller.value * 0.32;
+                  return Column(
+                    children: <Widget>[
+                      for (final width in <double>[176, 136, 96]) ...<Widget>[
+                        Container(
+                          width: width,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: palette.accent.withValues(alpha: alpha),
+                            borderRadius: BorderRadius.circular(
+                              FlareRadii.small,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: FlareSpace.xs),
+                      ],
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: FlareSpace.xxs),
+              Text(
+                widget.label,
+                style: FlareType.metadata.copyWith(
+                  color: palette.textSecondary,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: FlareType.metadata.copyWith(color: palette.textSecondary),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -39,33 +89,42 @@ final class FlareEmptyState extends StatelessWidget {
     required this.title,
     required this.message,
     this.icon = PhosphorIconsRegular.tray,
+    this.actionLabel,
+    this.onAction,
     super.key,
   });
   final String title;
   final String message;
   final PhosphorIconData icon;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
   @override
   Widget build(BuildContext context) {
     final palette = context.flare;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(FlareSpace.xl),
+        padding: const EdgeInsets.all(FlareSpace.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            PhosphorIcon(icon, size: 30, color: palette.muted),
-            const SizedBox(height: 13),
+            PhosphorIcon(icon, size: 32, color: palette.muted),
+            const SizedBox(height: FlareSpace.sm),
             Text(
               title,
               style: FlareType.title.copyWith(color: palette.text),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: FlareSpace.xs),
             Text(
               message,
               style: FlareType.body.copyWith(color: palette.textSecondary),
               textAlign: TextAlign.center,
             ),
+            if (actionLabel != null && onAction != null) ...<Widget>[
+              const SizedBox(height: FlareSpace.lg),
+              FlareButton(label: actionLabel!, onPressed: onAction),
+            ],
           ],
         ),
       ),
@@ -73,7 +132,7 @@ final class FlareEmptyState extends StatelessWidget {
   }
 }
 
-final class FlareErrorState extends StatelessWidget {
+final class FlareErrorState extends StatefulWidget {
   const FlareErrorState({
     required this.error,
     required this.onRetry,
@@ -81,15 +140,23 @@ final class FlareErrorState extends StatelessWidget {
   });
   final Object error;
   final VoidCallback onRetry;
+
+  @override
+  State<FlareErrorState> createState() => _FlareErrorStateState();
+}
+
+final class _FlareErrorStateState extends State<FlareErrorState> {
+  bool _showDetails = false;
+
   @override
   Widget build(BuildContext context) {
     final palette = context.flare;
-    final message = error is FlareApiException
-        ? (error as FlareApiException).message
+    final message = widget.error is FlareApiException
+        ? (widget.error as FlareApiException).message
         : 'Flare could not load this data.';
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(FlareSpace.xl),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(FlareSpace.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -98,22 +165,79 @@ final class FlareErrorState extends StatelessWidget {
               size: 32,
               color: palette.danger,
             ),
-            const SizedBox(height: 13),
+            const SizedBox(height: FlareSpace.sm),
             Text(
               'Data unavailable',
               style: FlareType.title.copyWith(color: palette.text),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: FlareSpace.xs),
             Text(
               message,
               style: FlareType.body.copyWith(color: palette.textSecondary),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: FlareSpace.md),
             FlareButton(
               label: 'Try again',
               icon: PhosphorIconsRegular.arrowClockwise,
-              onPressed: onRetry,
+              onPressed: widget.onRetry,
+            ),
+            const SizedBox(height: FlareSpace.xs),
+            Semantics(
+              button: true,
+              expanded: _showDetails,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(FlareRadii.normal),
+                onTap: () => setState(() => _showDetails = !_showDetails),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 44),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: FlareSpace.sm,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Text(
+                          _showDetails ? 'Hide details' : 'Technical details',
+                          style: FlareType.metadata.copyWith(
+                            color: palette.muted,
+                          ),
+                        ),
+                        const SizedBox(width: FlareSpace.xs),
+                        PhosphorIcon(
+                          _showDetails
+                              ? PhosphorIconsRegular.caretUp
+                              : PhosphorIconsRegular.caretDown,
+                          size: 14,
+                          color: palette.muted,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              child: _showDetails
+                  ? Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: FlareSpace.xs),
+                      padding: const EdgeInsets.all(FlareSpace.sm),
+                      decoration: BoxDecoration(
+                        color: palette.surface,
+                        borderRadius: BorderRadius.circular(FlareRadii.normal),
+                        border: Border.all(color: palette.borderStrong),
+                      ),
+                      child: SelectableText(
+                        widget.error.toString(),
+                        style: FlareType.mono.copyWith(
+                          color: palette.textSecondary,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
           ],
         ),

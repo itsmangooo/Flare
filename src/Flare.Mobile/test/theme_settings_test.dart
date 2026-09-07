@@ -22,6 +22,8 @@ void main() {
 
     expect(settings.mode, FlareThemeMode.dark);
     expect(settings.accent, FlareAccent.blue);
+    expect(settings.atmosphere, FlareAtmosphere.none);
+    expect(settings.hapticsEnabled, isTrue);
   });
 
   test('theme mode and accent persist across provider containers', () async {
@@ -33,6 +35,10 @@ void main() {
     await first
         .read(themeSettingsProvider.notifier)
         .setAccent(FlareAccent.violet);
+    await first
+        .read(themeSettingsProvider.notifier)
+        .setAtmosphere(FlareAtmosphere.aurora);
+    await first.read(themeSettingsProvider.notifier).setHapticsEnabled(false);
     first.dispose();
 
     final second = ProviderContainer();
@@ -41,6 +47,8 @@ void main() {
 
     expect(restored.mode, FlareThemeMode.oled);
     expect(restored.accent, FlareAccent.violet);
+    expect(restored.atmosphere, FlareAtmosphere.aurora);
+    expect(restored.hapticsEnabled, isFalse);
   });
 
   test('palettes keep semantic colors separate from selectable accents', () {
@@ -60,6 +68,16 @@ void main() {
     expect(oled.accent, FlareAccent.amber.color);
     expect(FlareColors.success, isNot(light.accent));
     expect(FlareColors.danger, isNot(oled.accent));
+  });
+
+  test('curated presets compose base, accent, and atmosphere', () {
+    const current = FlareThemeSettings(hapticsEnabled: false);
+    final preset = FlareThemePreset.aurora.applyTo(current);
+
+    expect(preset.mode, FlareThemeMode.dark);
+    expect(preset.accent, FlareAccent.cyan);
+    expect(preset.atmosphere, FlareAtmosphere.aurora);
+    expect(preset.hapticsEnabled, isFalse);
   });
 
   test('theme uses the bundled Poppins family', () {
@@ -84,7 +102,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(FlareGlassSurface), findsOneWidget);
+    expect(find.byType(AppGlassSurface), findsOneWidget);
     expect(find.byType(BackdropFilter), findsOneWidget);
     final decorations = tester
         .widgetList<DecoratedBox>(
@@ -102,6 +120,28 @@ void main() {
 
     await tester.tap(find.text('Activity'));
     expect(selected, 3);
+  });
+
+  testWidgets('glass surface has a solid reduced-effects fallback', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildFlareTheme(),
+        home: const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            body: AppGlassSurface(
+              borderRadius: BorderRadius.all(Radius.circular(20)),
+              child: SizedBox(width: 100, height: 100),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(BackdropFilter), findsNothing);
+    expect(find.byType(DecoratedBox), findsWidgets);
   });
 
   testWidgets('custom surfaces consume the active light palette', (
@@ -218,11 +258,29 @@ void main() {
       FlareThemeMode.light,
     );
 
-    await tester.ensureVisible(find.text('Flare Blue'));
-    await tester.tap(find.text('Flare Blue'));
+    await tester.ensureVisible(find.text('Accent'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Accent'));
     await tester.pumpAndSettle();
     expect(find.text('Violet'), findsOneWidget);
     await tester.tap(find.text('Violet'));
+    await tester.pumpAndSettle();
+    expect(
+      container.read(themeSettingsProvider).value!.accent,
+      FlareAccent.violet,
+    );
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, 600));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Theme preset'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flare Classic'));
+    await tester.pumpAndSettle();
+    expect(
+      container.read(themeSettingsProvider).value!.accent,
+      FlareAccent.emerald,
+    );
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
     expect(
       container.read(themeSettingsProvider).value!.accent,

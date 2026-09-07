@@ -134,7 +134,6 @@ final class _ContainerDetailPageState
     );
     if (!confirmed || !mounted || _action != null) return;
     setState(() => _action = action);
-    await safeHaptic();
     try {
       await ref
           .read(apiClientProvider)
@@ -146,6 +145,8 @@ final class _ContainerDetailPageState
       if (!mounted) return;
       setState(() => _detail = ContainerDetailModel.fromJson(json));
       ref.invalidate(containersProvider);
+      await safeHaptic();
+      if (!mounted) return;
       FlareToast.show(
         context,
         '$label request accepted.',
@@ -388,12 +389,9 @@ final class _CompactMetric extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           value,
-          style: FlareType.metric.copyWith(
-            fontSize: 23,
-            color: context.flare.text,
-          ),
+          style: FlareType.metricCompact.copyWith(color: context.flare.text),
         ),
-        const SizedBox(height: 13),
+        const SizedBox(height: FlareSpace.sm),
         FlareUsageBar(value: usage, color: color),
       ],
     ),
@@ -565,9 +563,8 @@ final class _LogOption extends StatelessWidget {
             ],
             Text(
               label,
-              style: FlareType.metadata.copyWith(
+              style: FlareType.label.copyWith(
                 color: selected ? palette.accent : palette.textSecondary,
-                fontSize: 11,
               ),
             ),
           ],
@@ -584,7 +581,7 @@ final class _LogConsole extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     constraints: const BoxConstraints(minHeight: 180, maxHeight: 390),
     width: double.infinity,
-    padding: const EdgeInsets.all(13),
+    padding: const EdgeInsets.all(FlareSpace.sm),
     decoration: BoxDecoration(
       color: const Color(0xFF05070A),
       borderRadius: BorderRadius.circular(FlareRadii.small),

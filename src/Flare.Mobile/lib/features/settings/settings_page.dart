@@ -210,6 +210,48 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  Future<void> _chooseAtmosphere(FlareThemeSettings settings) async {
+    final selected = await FlareBottomSheet.show<FlareAtmosphere>(
+      context,
+      barrierLabel: 'Dismiss atmosphere selection',
+      child: _ChoiceSheet<FlareAtmosphere>(
+        title: 'Atmosphere',
+        selected: settings.atmosphere,
+        items: FlareAtmosphere.values
+            .map(
+              (atmosphere) => _Choice<FlareAtmosphere>(
+                atmosphere,
+                atmosphere.label,
+                'Subtle background and glass ambience',
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    try {
+      await ref.read(themeSettingsProvider.notifier).setAtmosphere(selected);
+    } on Object {
+      if (mounted) {
+        FlareToast.show(
+          context,
+          'Atmosphere preference could not be saved.',
+          tone: FlareToastTone.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _choosePreset(FlareThemeSettings settings) async {
+    final applied = await FlareBottomSheet.show<bool>(
+      context,
+      barrierLabel: 'Dismiss theme presets',
+      child: _ThemePresetSheet(original: settings),
+    );
+    if (applied == true || !mounted) return;
+    ref.read(themeSettingsProvider.notifier).preview(settings);
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings =
@@ -220,11 +262,14 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
       subtitle: 'Personalize and manage Flare',
       leading: const FlareBackButton(),
       body: ListView(
-        padding: const EdgeInsets.only(top: 8, bottom: 30),
+        padding: const EdgeInsets.only(
+          top: FlareSpace.xs,
+          bottom: FlareSpace.xxl,
+        ),
         children: <Widget>[
           const _SettingsHeader('ACCOUNT'),
           FlareGroupedSurface(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
             child: _SettingsRow(
               icon: PhosphorIconsRegular.userCircle,
               title: _email,
@@ -240,9 +285,21 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
           const _SettingsHeader('SERVER'),
           FlareGroupedSurface(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
             child: Column(
               children: <Widget>[
+                _SettingsRow(
+                  icon: PhosphorIconsRegular.sparkle,
+                  title: 'Theme preset',
+                  subtitle: 'Preview a curated Flare look',
+                  trailing: PhosphorIcon(
+                    PhosphorIconsRegular.caretRight,
+                    size: 16,
+                    color: palette.muted,
+                  ),
+                  onTap: () => _choosePreset(settings),
+                ),
+                const FlareDivider(indent: 50),
                 _SettingsRow(
                   icon: PhosphorIconsRegular.hardDrives,
                   title: _serverUrl,
@@ -276,7 +333,7 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
           const _SettingsHeader('APPEARANCE'),
           FlareGroupedSurface(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
             child: Column(
               children: <Widget>[
                 _SettingsRow(
@@ -302,7 +359,7 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
                           shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(width: 7),
+                      const SizedBox(width: FlareSpace.xs),
                       PhosphorIcon(
                         PhosphorIconsRegular.caretRight,
                         size: 15,
@@ -312,12 +369,39 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
                   ),
                   onTap: () => _chooseAccent(settings),
                 ),
+                const FlareDivider(indent: 50),
+                _SettingsRow(
+                  icon: PhosphorIconsRegular.gradient,
+                  title: 'Atmosphere',
+                  subtitle: settings.atmosphere.label,
+                  trailing: _TrailingValue(value: settings.atmosphere.label),
+                  onTap: () => _chooseAtmosphere(settings),
+                ),
               ],
+            ),
+          ),
+          const _SettingsHeader('INTERACTIONS'),
+          FlareGroupedSurface(
+            padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
+            child: _SettingsRow(
+              icon: PhosphorIconsRegular.vibrate,
+              title: 'Haptics',
+              subtitle: 'Subtle feedback for controls and actions',
+              trailing: FlareSwitch(
+                value: settings.hapticsEnabled,
+                semanticLabel: 'Haptics',
+                onChanged: (enabled) async {
+                  await ref
+                      .read(themeSettingsProvider.notifier)
+                      .setHapticsEnabled(enabled);
+                  if (enabled) await safeSelectionHaptic();
+                },
+              ),
             ),
           ),
           const _SettingsHeader('NOTIFICATIONS'),
           FlareGroupedSurface(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
             child: _SettingsRow(
               icon: PhosphorIconsRegular.bellRinging,
               title: 'Alert delivery',
@@ -332,7 +416,10 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
           const _SettingsHeader('ABOUT'),
           FlareGroupedSurface(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: FlareSpace.md,
+              vertical: FlareSpace.xxs,
+            ),
             child: Column(
               children: <Widget>[
                 _ValueRow(label: 'Mobile version', value: _mobileVersion),
@@ -367,12 +454,15 @@ final class _SettingsHeader extends StatelessWidget {
   final String label;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 22, left: 5, bottom: 9),
+    padding: const EdgeInsets.only(
+      top: FlareSpace.lg,
+      left: FlareSpace.xxs,
+      bottom: FlareSpace.xs,
+    ),
     child: Text(
       label,
-      style: FlareType.label.copyWith(
+      style: FlareType.caption.copyWith(
         color: context.flare.textSecondary,
-        fontSize: 10,
         letterSpacing: 1.1,
       ),
     ),
@@ -399,7 +489,7 @@ final class _SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.flare;
     final content = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 13),
+      padding: const EdgeInsets.symmetric(vertical: FlareSpace.sm),
       child: Row(
         children: <Widget>[
           Container(
@@ -427,18 +517,35 @@ final class _SettingsRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: FlareType.metadata.copyWith(
-                    color: subtitleColor ?? palette.muted,
-                  ),
+                Row(
+                  children: <Widget>[
+                    if (subtitleColor != null) ...<Widget>[
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: subtitleColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: FlareSpace.xs),
+                    ],
+                    Expanded(
+                      child: Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: FlareType.metadata.copyWith(
+                          color: subtitleColor ?? palette.muted,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: FlareSpace.sm),
           trailing,
         ],
       ),
@@ -488,7 +595,7 @@ final class _TrailingValue extends StatelessWidget {
         value,
         style: FlareType.metadata.copyWith(color: context.flare.textSecondary),
       ),
-      const SizedBox(width: 6),
+      const SizedBox(width: FlareSpace.xs),
       PhosphorIcon(
         PhosphorIconsRegular.caretRight,
         size: 15,
@@ -524,60 +631,272 @@ final class _ChoiceSheet<T> extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(title, style: FlareType.title.copyWith(color: palette.text)),
-        const SizedBox(height: 12),
-        for (var index = 0; index < items.length; index++) ...<Widget>[
-          InkWell(
-            onTap: () => Navigator.pop(context, items[index].value),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: <Widget>[
-                  if (items[index].color case final color?) ...<Widget>[
-                    Container(
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: palette.borderStrong),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          items[index].label,
-                          style: FlareType.body.copyWith(
-                            color: palette.text,
-                            fontWeight: FontWeight.w600,
+        const SizedBox(height: FlareSpace.sm),
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.62,
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: items.length,
+            separatorBuilder: (context, index) => const FlareDivider(),
+            itemBuilder: (context, index) => InkWell(
+              onTap: () => Navigator.pop(context, items[index].value),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 56),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: FlareSpace.sm),
+                  child: Row(
+                    children: <Widget>[
+                      if (items[index].color case final color?) ...<Widget>[
+                        Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: palette.borderStrong),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          items[index].description,
-                          style: FlareType.metadata.copyWith(
-                            color: palette.muted,
-                          ),
-                        ),
+                        const SizedBox(width: FlareSpace.sm),
                       ],
-                    ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              items[index].label,
+                              style: FlareType.body.copyWith(
+                                color: palette.text,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              items[index].description,
+                              style: FlareType.metadata.copyWith(
+                                color: palette.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (items[index].value == selected)
+                        PhosphorIcon(
+                          PhosphorIconsRegular.check,
+                          size: 18,
+                          color: palette.accent,
+                        ),
+                    ],
                   ),
-                  if (items[index].value == selected)
-                    PhosphorIcon(
-                      PhosphorIconsBold.check,
-                      size: 18,
-                      color: palette.accent,
-                    ),
-                ],
+                ),
               ),
             ),
           ),
-          if (index != items.length - 1) const FlareDivider(),
-        ],
+        ),
       ],
+    );
+  }
+}
+
+final class _ThemePresetSheet extends ConsumerStatefulWidget {
+  const _ThemePresetSheet({required this.original});
+  final FlareThemeSettings original;
+
+  @override
+  ConsumerState<_ThemePresetSheet> createState() => _ThemePresetSheetState();
+}
+
+final class _ThemePresetSheetState extends ConsumerState<_ThemePresetSheet> {
+  FlareThemePreset? _selected;
+  bool _saving = false;
+
+  void _preview(FlareThemePreset preset) {
+    setState(() => _selected = preset);
+    ref
+        .read(themeSettingsProvider.notifier)
+        .preview(preset.applyTo(widget.original));
+  }
+
+  Future<void> _apply() async {
+    final selected = _selected;
+    if (selected == null || _saving) return;
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(themeSettingsProvider.notifier)
+          .save(selected.applyTo(widget.original));
+      if (mounted) Navigator.pop(context, true);
+    } on Object {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.flare;
+    final height = MediaQuery.sizeOf(context).height * 0.58;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          'Theme presets',
+          style: FlareType.title.copyWith(color: palette.text),
+        ),
+        const SizedBox(height: FlareSpace.xxs),
+        Text(
+          'Tap to preview live. Apply only when it feels right.',
+          style: FlareType.metadata.copyWith(color: palette.muted),
+        ),
+        const SizedBox(height: FlareSpace.md),
+        SizedBox(
+          height: height.clamp(320, 520),
+          child: GridView.builder(
+            itemCount: FlareThemePreset.values.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: FlareSpace.sm,
+              mainAxisSpacing: FlareSpace.sm,
+              childAspectRatio: 1.42,
+            ),
+            itemBuilder: (context, index) {
+              final preset = FlareThemePreset.values[index];
+              final preview = preset.applyTo(widget.original);
+              return _PresetPreviewCard(
+                preset: preset,
+                settings: preview,
+                selected: preset == _selected,
+                onTap: () => _preview(preset),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: FlareSpace.md),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: FlareButton(
+                label: 'Cancel',
+                expand: true,
+                onPressed: () => Navigator.pop(context, false),
+              ),
+            ),
+            const SizedBox(width: FlareSpace.sm),
+            Expanded(
+              child: FlareButton(
+                label: 'Apply',
+                expand: true,
+                loading: _saving,
+                tone: FlareButtonTone.primary,
+                onPressed: _selected == null ? null : _apply,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+final class _PresetPreviewCard extends StatelessWidget {
+  const _PresetPreviewCard({
+    required this.preset,
+    required this.settings,
+    required this.selected,
+    required this.onTap,
+  });
+  final FlareThemePreset preset;
+  final FlareThemeSettings settings;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final baseDark = settings.mode != FlareThemeMode.light;
+    final background = baseDark
+        ? const Color(0xFF0B0E13)
+        : const Color(0xFFF4F6F9);
+    final surface = baseDark ? const Color(0xFF171C23) : Colors.white;
+    final foreground = baseDark ? Colors.white : const Color(0xFF1A1D22);
+    final accent = settings.accent.color;
+    final ambient = switch (settings.atmosphere) {
+      FlareAtmosphere.none => Colors.transparent,
+      FlareAtmosphere.softGradient => accent.withValues(alpha: 0.18),
+      FlareAtmosphere.aurora => const Color(0x5530C99A),
+      FlareAtmosphere.midnight => const Color(0x554866D4),
+      FlareAtmosphere.graphite => const Color(0x40798A98),
+    };
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: preset.label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(FlareRadii.large),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(FlareSpace.sm),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[
+                Color.alphaBlend(ambient, background),
+                background,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(FlareRadii.large),
+            border: Border.all(
+              width: selected ? 1.5 : 1,
+              color: selected ? accent : foreground.withValues(alpha: 0.1),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Container(
+                    width: 24,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (selected)
+                    PhosphorIcon(
+                      PhosphorIconsRegular.check,
+                      size: 14,
+                      color: accent,
+                    ),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                height: 22,
+                decoration: BoxDecoration(
+                  color: surface,
+                  borderRadius: BorderRadius.circular(FlareRadii.small),
+                  border: Border.all(color: foreground.withValues(alpha: 0.06)),
+                ),
+              ),
+              const SizedBox(height: FlareSpace.xs),
+              Text(
+                preset.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: FlareType.metadata.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -585,6 +904,8 @@ final class _ChoiceSheet<T> extends StatelessWidget {
 final class FlareDividerBlock extends StatelessWidget {
   const FlareDividerBlock({super.key});
   @override
-  Widget build(BuildContext context) =>
-      const Padding(padding: EdgeInsets.only(top: 18), child: FlareDivider());
+  Widget build(BuildContext context) => const Padding(
+    padding: EdgeInsets.only(top: FlareSpace.md),
+    child: FlareDivider(),
+  );
 }

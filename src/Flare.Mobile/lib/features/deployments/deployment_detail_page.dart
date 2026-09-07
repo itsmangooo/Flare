@@ -68,7 +68,6 @@ final class _DeploymentDetailPageState
     );
     if (!confirmed || !mounted || _redeploying) return;
     setState(() => _redeploying = true);
-    await safeHaptic();
     try {
       await ref
           .read(apiClientProvider)
@@ -77,6 +76,8 @@ final class _DeploymentDetailPageState
           );
       if (!mounted) return;
       ref.invalidate(deploymentsProvider);
+      await safeHaptic();
+      if (!mounted) return;
       FlareToast.show(
         context,
         'Redeployment queued.',
@@ -198,7 +199,7 @@ final class _DeploymentDetailPageState
                     minHeight: 170,
                     maxHeight: 440,
                   ),
-                  padding: const EdgeInsets.all(13),
+                  padding: const EdgeInsets.all(FlareSpace.sm),
                   decoration: BoxDecoration(
                     color: const Color(0xFF05070A),
                     borderRadius: BorderRadius.circular(FlareRadii.small),
@@ -230,7 +231,7 @@ final class _TimelineRow extends StatelessWidget {
   final Color color;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 13),
+    padding: const EdgeInsets.symmetric(vertical: FlareSpace.sm),
     child: Row(
       children: <Widget>[
         Container(
@@ -265,7 +266,7 @@ final class _DetailRow extends StatelessWidget {
   final bool mono;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 13),
+    padding: const EdgeInsets.symmetric(vertical: FlareSpace.sm),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[

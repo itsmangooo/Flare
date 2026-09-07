@@ -43,11 +43,12 @@ final class _CoolifyResourcesPageState
     );
     if (!confirmed || !mounted || _operation != null) return;
     setState(() => _operation = '$path:$label');
-    await safeHaptic();
     try {
       await ref.read(apiClientProvider).postJson(path);
       if (!mounted) return;
       ref.invalidate(coolifyProvider);
+      await safeHaptic();
+      if (!mounted) return;
       FlareToast.show(
         context,
         '$label request accepted.',
@@ -85,7 +86,7 @@ final class _CoolifyResourcesPageState
             selected: _tab,
             onSelected: (tab) => setState(() => _tab = tab),
           ),
-          const SizedBox(height: 13),
+          const SizedBox(height: FlareSpace.sm),
           Expanded(
             child: data.when(
               loading: () =>
@@ -424,7 +425,7 @@ final class _ServerExpansionState extends ConsumerState<_ServerExpansion> {
             ],
           ),
           if (expanded) ...<Widget>[
-            const SizedBox(height: 13),
+            const SizedBox(height: FlareSpace.sm),
             const FlareDivider(),
             const SizedBox(height: 10),
             FutureBuilder<List<CoolifyResourceModel>>(
@@ -514,10 +515,7 @@ final class _ResourceRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   name,
-                  style: FlareType.body.copyWith(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: FlareType.body.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               FlareStatusBadge(

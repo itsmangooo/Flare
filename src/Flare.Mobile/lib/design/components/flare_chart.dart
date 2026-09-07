@@ -27,7 +27,7 @@ final class FlareMetricCard extends StatelessWidget {
     final palette = context.flare;
     final chartColor = accent ?? palette.accent;
     return FlareCard(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(FlareSpace.md),
       child: SizedBox(
         height: 126,
         child: Column(
@@ -37,17 +37,14 @@ final class FlareMetricCard extends StatelessWidget {
               title.toUpperCase(),
               style: FlareType.label.copyWith(color: palette.muted),
             ),
-            const SizedBox(height: 9),
+            const SizedBox(height: FlareSpace.xs),
             Text(value, style: FlareType.metric.copyWith(color: palette.text)),
-            const SizedBox(height: 5),
+            const SizedBox(height: FlareSpace.xxs),
             Text(
               secondary,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: FlareType.metadata.copyWith(
-                fontSize: 10.5,
-                color: palette.muted,
-              ),
+              style: FlareType.caption.copyWith(color: palette.muted),
             ),
             const Spacer(),
             if (chart != null)

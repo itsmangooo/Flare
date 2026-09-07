@@ -6,51 +6,123 @@ import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../core/theme/flare_theme.dart';
 
-final class FlareGlassSurface extends StatelessWidget {
-  const FlareGlassSurface({
+enum AppGlassRendering { auto, blur, solid }
+
+class AppGlassSurface extends StatelessWidget {
+  const AppGlassSurface({
     required this.child,
     required this.borderRadius,
     this.blurSigma = 10,
+    this.opacity = 0.72,
     this.backgroundColor,
     this.borderColor,
+    this.tint,
+    this.grainOpacity = 0,
+    this.rendering = AppGlassRendering.auto,
     super.key,
   });
 
   final Widget child;
   final BorderRadius borderRadius;
   final double blurSigma;
+  final double opacity;
   final Color? backgroundColor;
   final Color? borderColor;
+  final Color? tint;
+  final double grainOpacity;
+  final AppGlassRendering rendering;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.flare;
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final reduceEffects = MediaQuery.disableAnimationsOf(context);
+    final useBlur =
+        rendering == AppGlassRendering.blur ||
+        (rendering == AppGlassRendering.auto && !reduceEffects);
+    final base = backgroundColor ?? palette.surfaceHigh;
+    final surfaceColor = Color.alphaBlend(
+      tint ?? palette.glassTint,
+      base.withValues(alpha: useBlur ? opacity : 0.96),
+    );
+    final decoration = BoxDecoration(
+      color: surfaceColor,
+      borderRadius: borderRadius,
+      border: Border.all(
+        width: 1,
+        color:
+            borderColor ??
+            (dark
+                ? Colors.white.withValues(alpha: 0.085)
+                : Colors.black.withValues(alpha: 0.065)),
+      ),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: <Color>[
+          Colors.white.withValues(alpha: dark ? 0.048 : 0.16),
+          Colors.transparent,
+        ],
+        stops: const <double>[0, 0.58],
+      ),
+    );
+    final content = DecoratedBox(
+      decoration: decoration,
+      child: CustomPaint(
+        foregroundPainter: grainOpacity > 0
+            ? _GlassGrainPainter(
+                color: palette.text.withValues(alpha: grainOpacity),
+              )
+            : null,
+        child: child,
+      ),
+    );
     return RepaintBoundary(
       child: ClipRRect(
         borderRadius: borderRadius,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color:
-                  backgroundColor ??
-                  palette.surfaceHigh.withValues(alpha: dark ? 0.72 : 0.78),
-              borderRadius: borderRadius,
-              border: Border.all(
-                color:
-                    borderColor ??
-                    (dark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : Colors.black.withValues(alpha: 0.07)),
-              ),
-            ),
-            child: child,
-          ),
-        ),
+        child: useBlur
+            ? BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+                child: content,
+              )
+            : content,
       ),
     );
   }
+}
+
+final class FlareGlassSurface extends AppGlassSurface {
+  const FlareGlassSurface({
+    required super.child,
+    required super.borderRadius,
+    super.blurSigma,
+    super.opacity,
+    super.backgroundColor,
+    super.borderColor,
+    super.tint,
+    super.grainOpacity,
+    super.rendering,
+    super.key,
+  });
+}
+
+final class _GlassGrainPainter extends CustomPainter {
+  const _GlassGrainPainter({required this.color});
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+    for (var index = 0; index < 72; index++) {
+      final x = ((index * 47) % 101) / 101 * size.width;
+      final y = ((index * 67) % 103) / 103 * size.height;
+      canvas.drawCircle(Offset(x, y), 0.45, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlassGrainPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 final class FlareCard extends StatelessWidget {
@@ -159,7 +231,7 @@ final class _FlareButtonState extends State<FlareButton> {
             opacity: enabled ? 1 : 0.42,
             duration: const Duration(milliseconds: 150),
             child: Container(
-              constraints: BoxConstraints(minHeight: widget.compact ? 36 : 46),
+              constraints: const BoxConstraints(minHeight: 44),
               padding: EdgeInsets.symmetric(
                 horizontal: widget.compact ? 12 : 17,
                 vertical: widget.compact ? 8 : 12,
@@ -199,11 +271,12 @@ final class _FlareButtonState extends State<FlareButton> {
                       widget.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: FlareType.body.copyWith(
-                        color: foreground,
-                        fontWeight: FontWeight.w600,
-                        fontSize: widget.compact ? 12 : 14,
-                      ),
+                      style:
+                          (widget.compact ? FlareType.metadata : FlareType.body)
+                              .copyWith(
+                                color: foreground,
+                                fontWeight: FontWeight.w600,
+                              ),
                     ),
                   ),
                 ],
@@ -267,8 +340,8 @@ final class _FlareIconButtonState extends State<FlareIconButton> {
                 ? palette.accent.withValues(alpha: 0.24)
                 : palette.text.withValues(alpha: 0.07),
             child: SizedBox(
-              width: 42,
-              height: 42,
+              width: 44,
+              height: 44,
               child: Center(
                 child: PhosphorIcon(
                   widget.icon,
@@ -354,7 +427,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.only(left: 2, bottom: 7),
+          padding: const EdgeInsets.only(bottom: FlareSpace.xs),
           child: Text(
             widget.label.toUpperCase(),
             style: FlareType.label.copyWith(
@@ -365,7 +438,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 170),
           constraints: const BoxConstraints(minHeight: 54),
-          padding: const EdgeInsets.symmetric(horizontal: 15),
+          padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
           decoration: BoxDecoration(
             color: palette.surface.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(15),
@@ -382,7 +455,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
                   size: 19,
                   color: _focus.hasFocus ? palette.accent : palette.muted,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: FlareSpace.sm),
               ],
               Expanded(
                 child: TextField(
@@ -394,10 +467,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
                   textInputAction: widget.textInputAction,
                   onSubmitted: widget.onSubmitted,
                   autofillHints: widget.autofillHints,
-                  style: FlareType.body.copyWith(
-                    fontSize: 15,
-                    color: palette.text,
-                  ),
+                  style: FlareType.body.copyWith(color: palette.text),
                   cursorColor: palette.accent,
                   decoration: InputDecoration.collapsed(
                     hintText: widget.hint,
@@ -432,7 +502,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
           child: error == null
               ? const SizedBox.shrink()
               : Padding(
-                  padding: const EdgeInsets.only(top: 6, left: 2),
+                  padding: const EdgeInsets.only(top: FlareSpace.xs),
                   child: Text(
                     error,
                     style: FlareType.metadata.copyWith(color: palette.danger),
@@ -444,7 +514,7 @@ final class _FlareTextFieldState extends State<FlareTextField> {
   }
 }
 
-final class FlareSearchField extends StatelessWidget {
+final class FlareSearchField extends StatefulWidget {
   const FlareSearchField({
     required this.controller,
     required this.onChanged,
@@ -454,48 +524,94 @@ final class FlareSearchField extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final String hint;
+
+  @override
+  State<FlareSearchField> createState() => _FlareSearchFieldState();
+}
+
+final class _FlareSearchFieldState extends State<FlareSearchField> {
+  final FocusNode _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocusChanged);
+    widget.controller.addListener(_onTextChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant FlareSearchField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onTextChanged);
+      widget.controller.addListener(_onTextChanged);
+    }
+  }
+
+  void _onFocusChanged() => setState(() {});
+  void _onTextChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    _focus.dispose();
+    widget.controller.removeListener(_onTextChanged);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = context.flare;
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
       decoration: BoxDecoration(
-        color: palette.surfaceHigh.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: palette.text.withValues(alpha: 0.045)),
+        color: palette.surfaceHigh.withValues(
+          alpha: _focus.hasFocus ? 0.94 : 0.82,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: _focus.hasFocus
+              ? palette.accent.withValues(alpha: 0.58)
+              : palette.text.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         children: <Widget>[
           PhosphorIcon(
             PhosphorIconsRegular.magnifyingGlass,
             size: 18,
-            color: palette.muted,
+            color: _focus.hasFocus ? palette.accent : palette.muted,
           ),
-          const SizedBox(width: 9),
+          const SizedBox(width: FlareSpace.xs),
           Expanded(
             child: TextField(
-              controller: controller,
-              onChanged: onChanged,
+              controller: widget.controller,
+              focusNode: _focus,
+              onChanged: widget.onChanged,
               style: FlareType.body.copyWith(color: palette.text),
               decoration: InputDecoration.collapsed(
-                hintText: hint,
+                hintText: widget.hint,
                 hintStyle: FlareType.body.copyWith(color: palette.muted),
               ),
             ),
           ),
-          if (controller.text.isNotEmpty)
-            InkWell(
-              onTap: () {
-                controller.clear();
-                onChanged('');
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: PhosphorIcon(
-                  PhosphorIconsRegular.x,
-                  size: 16,
-                  color: palette.muted,
+          if (widget.controller.text.isNotEmpty)
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () {
+                  widget.controller.clear();
+                  widget.onChanged('');
+                },
+                child: Center(
+                  child: PhosphorIcon(
+                    PhosphorIconsRegular.x,
+                    size: 16,
+                    color: palette.muted,
+                  ),
                 ),
               ),
             ),
@@ -531,7 +647,10 @@ final class FlareStatusBadge extends StatelessWidget {
       ),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5.5),
+      padding: const EdgeInsets.symmetric(
+        horizontal: FlareSpace.xs,
+        vertical: FlareSpace.xxs,
+      ),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(99),
@@ -545,12 +664,11 @@ final class FlareStatusBadge extends StatelessWidget {
               height: 6,
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: FlareSpace.xs),
           ],
           Text(
             label,
-            style: FlareType.label.copyWith(
-              fontSize: 10,
+            style: FlareType.caption.copyWith(
               color: color,
               letterSpacing: 0.15,
             ),
@@ -653,68 +771,69 @@ final class FlareSegmentedControl<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.flare;
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: palette.surfaceHigh.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: palette.text.withValues(alpha: 0.04)),
-      ),
-      child: Row(
-        children: items
-            .map((item) {
-              final selected = item.$1 == value;
-              return Expanded(
-                child: Semantics(
-                  button: true,
-                  selected: selected,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      if (!selected) {
-                        safeSelectionHaptic();
-                        onChanged(item.$1);
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 190),
-                      curve: Curves.easeOutCubic,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? palette.surfaceHigh.withValues(alpha: 0.94)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(10),
-                        border: selected
-                            ? Border.all(
-                                color: palette.text.withValues(alpha: 0.065),
-                              )
-                            : null,
-                      ),
-                      child: AnimatedDefaultTextStyle(
+    return AppGlassSurface(
+      borderRadius: BorderRadius.circular(FlareRadii.normal),
+      blurSigma: 7,
+      opacity: 0.64,
+      child: Padding(
+        padding: const EdgeInsets.all(FlareSpace.xxs),
+        child: Row(
+          children: items
+              .map((item) {
+                final selected = item.$1 == value;
+                return Expanded(
+                  child: Semantics(
+                    button: true,
+                    selected: selected,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (!selected) {
+                          safeSelectionHaptic();
+                          onChanged(item.$1);
+                        }
+                      },
+                      child: AnimatedContainer(
+                        constraints: const BoxConstraints(minHeight: 44),
                         duration: const Duration(milliseconds: 190),
-                        style: FlareType.metadata.copyWith(
-                          color: selected ? palette.text : palette.muted,
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                        curve: Curves.easeOutCubic,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
                         ),
-                        child: Text(
-                          item.$2,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? palette.surfaceHigh.withValues(alpha: 0.94)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          border: selected
+                              ? Border.all(
+                                  color: palette.text.withValues(alpha: 0.065),
+                                )
+                              : null,
+                        ),
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 190),
+                          style: FlareType.metadata.copyWith(
+                            color: selected ? palette.text : palette.muted,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                          ),
+                          child: Text(
+                            item.$2,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              );
-            })
-            .toList(growable: false),
+                );
+              })
+              .toList(growable: false),
+        ),
       ),
     );
   }
@@ -740,46 +859,54 @@ final class FlareSwitch extends StatelessWidget {
       toggled: value,
       enabled: enabled,
       label: semanticLabel,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: enabled
-            ? () {
-                safeSelectionHaptic();
-                onChanged!(!value);
-              }
-            : null,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 180),
-          opacity: enabled ? 1 : 0.45,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 210),
-            curve: Curves.easeOutCubic,
-            width: 48,
-            height: 28,
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              color: value
-                  ? palette.accent
-                  : palette.muted.withValues(alpha: 0.28),
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: AnimatedAlign(
-              duration: const Duration(milliseconds: 210),
-              curve: Curves.easeOutCubic,
-              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-              child: Container(
-                width: 22,
-                height: 22,
+      child: SizedBox(
+        width: 48,
+        height: 44,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: enabled
+              ? () {
+                  safeSelectionHaptic();
+                  onChanged!(!value);
+                }
+              : null,
+          child: Center(
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              opacity: enabled ? 1 : 0.45,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 210),
+                curve: Curves.easeOutCubic,
+                width: 48,
+                height: 28,
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: <BoxShadow>[
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 3,
-                      offset: const Offset(0, 1),
+                  color: value
+                      ? palette.accent
+                      : palette.muted.withValues(alpha: 0.28),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 210),
+                  curve: Curves.easeOutCubic,
+                  alignment: value
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: <BoxShadow>[
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -790,7 +917,12 @@ final class FlareSwitch extends StatelessWidget {
   }
 }
 
+abstract final class FlareHaptics {
+  static bool enabled = true;
+}
+
 Future<void> safeHaptic() async {
+  if (!FlareHaptics.enabled) return;
   try {
     await HapticFeedback.mediumImpact();
   } on Object {
@@ -799,6 +931,7 @@ Future<void> safeHaptic() async {
 }
 
 Future<void> safeSelectionHaptic() async {
+  if (!FlareHaptics.enabled) return;
   try {
     await HapticFeedback.selectionClick();
   } on Object {

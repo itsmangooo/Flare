@@ -38,8 +38,11 @@ final class FlareScaffold extends StatelessWidget {
             begin: Alignment.topCenter,
             end: const Alignment(0, -0.15),
             colors: <Color>[
-              palette.backgroundSecondary.withValues(alpha: 0.68),
-              palette.background,
+              Color.alphaBlend(
+                palette.ambientStart,
+                palette.backgroundSecondary,
+              ),
+              Color.alphaBlend(palette.ambientEnd, palette.background),
             ],
           ),
         ),
@@ -104,13 +107,13 @@ final class FlareTopBar extends StatelessWidget {
                     letterSpacing: 2.1,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: FlareSpace.xxs),
                 Text(
                   title,
                   style: FlareType.display.copyWith(color: palette.text),
                 ),
                 if (subtitle != null) ...<Widget>[
-                  const SizedBox(height: 5),
+                  const SizedBox(height: FlareSpace.xxs),
                   Text(
                     subtitle!,
                     maxLines: 1,
@@ -150,22 +153,22 @@ final class FlareBottomNav extends StatelessWidget {
         (
           label: 'Overview',
           icon: PhosphorIconsRegular.gauge,
-          selectedIcon: PhosphorIconsFill.gauge,
+          selectedIcon: PhosphorIconsRegular.gauge,
         ),
         (
           label: 'Containers',
           icon: PhosphorIconsRegular.cube,
-          selectedIcon: PhosphorIconsFill.cube,
+          selectedIcon: PhosphorIconsRegular.cube,
         ),
         (
           label: 'Deployments',
           icon: PhosphorIconsRegular.rocketLaunch,
-          selectedIcon: PhosphorIconsFill.rocketLaunch,
+          selectedIcon: PhosphorIconsRegular.rocketLaunch,
         ),
         (
           label: 'Activity',
           icon: PhosphorIconsRegular.pulse,
-          selectedIcon: PhosphorIconsFill.pulse,
+          selectedIcon: PhosphorIconsRegular.pulse,
         ),
       ];
 
@@ -174,88 +177,115 @@ final class FlareBottomNav extends StatelessWidget {
     final palette = context.flare;
     final dockRadius = BorderRadius.circular(FlareRadii.dock);
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+      minimum: const EdgeInsets.fromLTRB(
+        FlareSpace.md,
+        0,
+        FlareSpace.md,
+        FlareSpace.sm,
+      ),
       child: SizedBox(
         height: 66,
-        child: FlareGlassSurface(
+        child: AppGlassSurface(
           borderRadius: dockRadius,
           blurSigma: 12,
-          backgroundColor: palette.surfaceHigh.withValues(alpha: 0.7),
+          opacity: 0.7,
+          grainOpacity: 0.012,
+          backgroundColor: palette.surfaceHigh,
           borderColor: palette.text.withValues(alpha: 0.07),
           child: Padding(
-            padding: const EdgeInsets.all(5),
+            padding: const EdgeInsets.all(FlareSpace.xxs),
             child: LayoutBuilder(
               builder: (context, constraints) {
+                final itemWidth = constraints.maxWidth / _items.length;
+                final duration = MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220);
                 return Material(
                   color: Colors.transparent,
-                  child: Row(
-                    children: List<Widget>.generate(_items.length, (itemIndex) {
-                      final item = _items[itemIndex];
-                      final selected = index == itemIndex;
-                      return Expanded(
-                        child: Semantics(
-                          button: true,
-                          selected: selected,
-                          label: item.label,
-                          child: InkWell(
-                            customBorder: const StadiumBorder(),
-                            onTap: () {
-                              if (!selected) safeSelectionHaptic();
-                              onSelected(itemIndex);
-                            },
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                AnimatedContainer(
-                                  duration: const Duration(milliseconds: 190),
-                                  curve: Curves.easeOutCubic,
-                                  width: 34,
-                                  height: 31,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: selected
-                                        ? palette.accent.withValues(alpha: 0.13)
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(11),
-                                  ),
-                                  child: AnimatedScale(
-                                    scale: selected ? 1.06 : 1,
-                                    duration: const Duration(milliseconds: 190),
-                                    curve: Curves.easeOutCubic,
-                                    child: PhosphorIcon(
-                                      selected ? item.selectedIcon : item.icon,
-                                      size: selected ? 20.5 : 19,
-                                      color: selected
-                                          ? palette.accent
-                                          : palette.textSecondary.withValues(
-                                              alpha: 0.68,
-                                            ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 1),
-                                AnimatedDefaultTextStyle(
-                                  duration: const Duration(milliseconds: 190),
-                                  curve: Curves.easeOutCubic,
-                                  style: FlareType.metadata.copyWith(
-                                    fontSize: 9.2,
-                                    color: selected
-                                        ? palette.text
-                                        : palette.textSecondary.withValues(
-                                            alpha: 0.68,
-                                          ),
-                                    fontWeight: selected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                  ),
-                                  child: Text(item.label, maxLines: 1),
-                                ),
-                              ],
+                  child: Stack(
+                    children: <Widget>[
+                      AnimatedPositioned(
+                        duration: duration,
+                        curve: Curves.easeOutCubic,
+                        left: itemWidth * index + (itemWidth - 34) / 2,
+                        top: 4,
+                        width: 34,
+                        height: 31,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: palette.accent.withValues(alpha: 0.13),
+                            borderRadius: BorderRadius.circular(11),
+                            border: Border.all(
+                              color: palette.accent.withValues(alpha: 0.1),
                             ),
                           ),
                         ),
-                      );
-                    }),
+                      ),
+                      Row(
+                        children: List<Widget>.generate(_items.length, (
+                          itemIndex,
+                        ) {
+                          final item = _items[itemIndex];
+                          final selected = index == itemIndex;
+                          return Expanded(
+                            child: Semantics(
+                              button: true,
+                              selected: selected,
+                              label: item.label,
+                              child: InkWell(
+                                customBorder: const StadiumBorder(),
+                                onTap: () {
+                                  if (!selected) safeSelectionHaptic();
+                                  onSelected(itemIndex);
+                                },
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: <Widget>[
+                                    SizedBox(
+                                      width: 34,
+                                      height: 31,
+                                      child: AnimatedScale(
+                                        scale: selected ? 1.06 : 1,
+                                        duration: duration,
+                                        curve: Curves.easeOutCubic,
+                                        child: Center(
+                                          child: PhosphorIcon(
+                                            selected
+                                                ? item.selectedIcon
+                                                : item.icon,
+                                            size: selected ? 20.5 : 19,
+                                            color: selected
+                                                ? palette.accent
+                                                : palette.textSecondary
+                                                      .withValues(alpha: 0.62),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 1),
+                                    AnimatedDefaultTextStyle(
+                                      duration: duration,
+                                      curve: Curves.easeOutCubic,
+                                      style: FlareType.navigation.copyWith(
+                                        color: selected
+                                            ? palette.text
+                                            : palette.textSecondary.withValues(
+                                                alpha: 0.62,
+                                              ),
+                                        fontWeight: selected
+                                            ? FontWeight.w600
+                                            : FontWeight.w500,
+                                      ),
+                                      child: Text(item.label, maxLines: 1),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -279,14 +309,14 @@ final class FlareBackButton extends StatelessWidget {
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onPressed ?? () => Navigator.of(context).maybePop(),
-        child: FlareGlassSurface(
+        child: AppGlassSurface(
           borderRadius: BorderRadius.circular(20),
           blurSigma: 7,
           backgroundColor: palette.surface.withValues(alpha: 0.68),
           borderColor: palette.text.withValues(alpha: 0.07),
           child: SizedBox(
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             child: Center(
               child: PhosphorIcon(
                 PhosphorIconsRegular.arrowLeft,

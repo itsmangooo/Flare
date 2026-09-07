@@ -159,7 +159,6 @@ final class _DeploymentTile extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: FlareType.body.copyWith(
-                              fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -207,7 +206,6 @@ final class _DeploymentTile extends StatelessWidget {
                                   : 8,
                             ),
                             style: FlareType.mono.copyWith(
-                              fontSize: 11,
                               color: palette.textSecondary,
                             ),
                           ),
@@ -235,7 +233,7 @@ final class _DeploymentTile extends StatelessWidget {
                           ),
                         ),
                         if (deployment.duration != null) ...<Widget>[
-                          const SizedBox(width: 13),
+                          const SizedBox(width: FlareSpace.sm),
                           Text(
                             formatDuration(deployment.duration),
                             style: FlareType.metadata.copyWith(

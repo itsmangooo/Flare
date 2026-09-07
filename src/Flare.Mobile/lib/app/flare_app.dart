@@ -7,6 +7,7 @@ import '../core/providers.dart';
 import '../core/routing/app_router.dart';
 import '../core/theme/flare_theme.dart';
 import '../core/theme/theme_settings.dart';
+import '../design/components/flare_controls.dart';
 
 final class FlareApp extends ConsumerStatefulWidget {
   const FlareApp({super.key});
@@ -59,15 +60,19 @@ final class _FlareAppState extends ConsumerState<FlareApp> {
       FlareThemeMode.light => ThemeMode.light,
       FlareThemeMode.dark || FlareThemeMode.oled => ThemeMode.dark,
     };
+    FlareHaptics.enabled = settings.hapticsEnabled;
     return MaterialApp.router(
       title: 'Flare',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const FlareScrollBehavior(),
       theme: buildFlareTheme(
         brightness: Brightness.light,
         accent: settings.accent,
+        atmosphere: settings.atmosphere,
       ),
       darkTheme: buildFlareTheme(
         accent: settings.accent,
+        atmosphere: settings.atmosphere,
         oled: settings.mode == FlareThemeMode.oled,
       ),
       themeMode: mode,

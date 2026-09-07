@@ -160,7 +160,7 @@ final class _HostHeader extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: PhosphorIcon(
-                PhosphorIconsFill.houseLine,
+                PhosphorIconsRegular.houseLine,
                 size: 23,
                 color: statusColor,
               ),
@@ -353,7 +353,10 @@ final class _ContainerSummary extends StatelessWidget {
           const FlareSectionHeader(title: 'Containers'),
           const SizedBox(height: 9),
           FlareGroupedSurface(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+            padding: const EdgeInsets.symmetric(
+              horizontal: FlareSpace.md,
+              vertical: FlareSpace.sm,
+            ),
             child: Row(
               children: <Widget>[
                 _SummaryValue(
@@ -398,7 +401,7 @@ final class _SummaryValue extends StatelessWidget {
       children: <Widget>[
         Text(
           value?.toString() ?? '—',
-          style: FlareType.metric.copyWith(fontSize: 22, color: color),
+          style: FlareType.metricCompact.copyWith(color: color),
         ),
         const SizedBox(height: 3),
         Text(

@@ -19,11 +19,14 @@ abstract final class FlareToast {
     final palette = context.flare;
     final (icon, color) = switch (tone) {
       FlareToastTone.success => (
-        PhosphorIconsFill.checkCircle,
+        PhosphorIconsRegular.checkCircle,
         palette.success,
       ),
-      FlareToastTone.error => (PhosphorIconsFill.warningCircle, palette.danger),
-      FlareToastTone.info => (PhosphorIconsFill.info, palette.info),
+      FlareToastTone.error => (
+        PhosphorIconsRegular.warningCircle,
+        palette.danger,
+      ),
+      FlareToastTone.info => (PhosphorIconsRegular.info, palette.info),
     };
     late final OverlayEntry entry;
     entry = OverlayEntry(
@@ -73,18 +76,18 @@ final class _ToastSurface extends StatelessWidget {
           backgroundColor: palette.surfaceHigh.withValues(alpha: 0.86),
           borderColor: color.withValues(alpha: 0.18),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+            padding: const EdgeInsets.symmetric(
+              horizontal: FlareSpace.md,
+              vertical: FlareSpace.sm,
+            ),
             child: Row(
               children: <Widget>[
                 PhosphorIcon(icon, size: 19, color: color),
-                const SizedBox(width: 11),
+                const SizedBox(width: FlareSpace.sm),
                 Expanded(
                   child: Text(
                     message,
-                    style: FlareType.body.copyWith(
-                      fontSize: 13,
-                      color: palette.text,
-                    ),
+                    style: FlareType.body.copyWith(color: palette.text),
                   ),
                 ),
               ],
@@ -145,13 +148,19 @@ final class FlareBottomSheet {
               color: Colors.transparent,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
-                child: FlareGlassSurface(
-                  borderRadius: BorderRadius.circular(28),
+                child: AppGlassSurface(
+                  borderRadius: BorderRadius.circular(34),
                   blurSigma: 15,
-                  backgroundColor: palette.surfaceHigh.withValues(alpha: 0.84),
+                  opacity: 0.84,
+                  backgroundColor: palette.surfaceHigh,
                   borderColor: palette.text.withValues(alpha: 0.075),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(
+                      FlareSpace.lg,
+                      FlareSpace.sm,
+                      FlareSpace.lg,
+                      FlareSpace.lg,
+                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
@@ -163,7 +172,7 @@ final class FlareBottomSheet {
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: FlareSpace.md),
                         child,
                       ],
                     ),
@@ -216,11 +225,8 @@ final class _ConfirmSheetBody extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(
-          title,
-          style: FlareType.title.copyWith(fontSize: 21, color: palette.text),
-        ),
-        const SizedBox(height: 7),
+        Text(title, style: FlareType.title.copyWith(color: palette.text)),
+        const SizedBox(height: FlareSpace.xs),
         Text(
           subject,
           style: FlareType.body.copyWith(
@@ -231,12 +237,9 @@ final class _ConfirmSheetBody extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           message,
-          style: FlareType.body.copyWith(
-            color: palette.textSecondary,
-            fontSize: 13,
-          ),
+          style: FlareType.body.copyWith(color: palette.textSecondary),
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: FlareSpace.lg),
         Row(
           children: <Widget>[
             Expanded(
@@ -246,7 +249,7 @@ final class _ConfirmSheetBody extends StatelessWidget {
                 onPressed: () => Navigator.pop(context, false),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: FlareSpace.sm),
             Expanded(
               child: FlareButton(
                 label: confirmLabel,
@@ -254,7 +257,10 @@ final class _ConfirmSheetBody extends StatelessWidget {
                 tone: destructive
                     ? FlareButtonTone.danger
                     : FlareButtonTone.primary,
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () {
+                  if (destructive) safeHaptic();
+                  Navigator.pop(context, true);
+                },
               ),
             ),
           ],

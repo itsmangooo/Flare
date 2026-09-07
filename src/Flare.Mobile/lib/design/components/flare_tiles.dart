@@ -49,7 +49,7 @@ final class FlareContainerTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(FlareRadii.normal),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: FlareSpace.md),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
@@ -99,7 +99,6 @@ final class FlareContainerTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: FlareType.body.copyWith(
                         fontWeight: FontWeight.w600,
-                        fontSize: 15,
                         color: palette.text,
                       ),
                     ),
@@ -110,20 +109,19 @@ final class FlareContainerTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: FlareType.metadata.copyWith(color: palette.muted),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: FlareSpace.xxs),
                     Text(
                       'CPU ${formatPercent(container.cpuPercent, decimals: 1)}  ·  RAM ${formatBytes(container.memoryBytes)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: FlareType.metadata.copyWith(
-                        fontSize: 10.5,
+                      style: FlareType.caption.copyWith(
                         color: palette.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: FlareSpace.sm),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: <Widget>[
@@ -192,10 +190,10 @@ final class FlareActivityTile extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: FlareSpace.sm),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 18),
+              padding: const EdgeInsets.only(bottom: FlareSpace.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[

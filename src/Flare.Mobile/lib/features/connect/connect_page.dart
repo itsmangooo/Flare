@@ -87,10 +87,7 @@ final class _ConnectPageState extends ConsumerState<ConnectPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'Connect to Flare',
-                          style: FlareType.display.copyWith(fontSize: 32),
-                        ),
+                        Text('Connect to Flare', style: FlareType.display),
                         const SizedBox(height: 9),
                         Text(
                           'Enter the public HTTPS address of your self-hosted Flare API.',

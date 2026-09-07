@@ -115,10 +115,13 @@ final class _PreferencesEditorState extends ConsumerState<_PreferencesEditor> {
   Widget build(BuildContext context) {
     final palette = context.flare;
     return ListView(
-      padding: const EdgeInsets.only(top: 8, bottom: 30),
+      padding: const EdgeInsets.only(
+        top: FlareSpace.xs,
+        bottom: FlareSpace.xxl,
+      ),
       children: <Widget>[
         FlareGroupedSurface(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
           child: _PreferenceSwitch(
             icon: PhosphorIconsRegular.bellRinging,
             title: 'External delivery',
@@ -127,12 +130,12 @@ final class _PreferencesEditorState extends ConsumerState<_PreferencesEditor> {
             onChanged: (value) => setState(() => _enabled = value),
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: FlareSpace.md),
         Text(
           'MINIMUM SEVERITY',
           style: FlareType.label.copyWith(color: palette.accent),
         ),
-        const SizedBox(height: 9),
+        const SizedBox(height: FlareSpace.xs),
         FlareSegmentedControl<AlertSeverity>(
           value: _minimumSeverity,
           items: const <(AlertSeverity, String)>[
@@ -142,14 +145,14 @@ final class _PreferencesEditorState extends ConsumerState<_PreferencesEditor> {
           ],
           onChanged: (value) => setState(() => _minimumSeverity = value),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: FlareSpace.md),
         Text(
           'BEHAVIOR',
           style: FlareType.label.copyWith(color: palette.accent),
         ),
-        const SizedBox(height: 9),
+        const SizedBox(height: FlareSpace.xs),
         FlareGroupedSurface(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
           child: _PreferenceSwitch(
             icon: PhosphorIconsRegular.checkCircle,
             title: 'Recovery notifications',
@@ -158,11 +161,11 @@ final class _PreferencesEditorState extends ConsumerState<_PreferencesEditor> {
             onChanged: (value) => setState(() => _recoveryEnabled = value),
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: FlareSpace.md),
         Text('SOURCES', style: FlareType.label.copyWith(color: palette.accent)),
-        const SizedBox(height: 9),
+        const SizedBox(height: FlareSpace.xs),
         FlareGroupedSurface(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
           child: Column(
             children: <Widget>[
               _PreferenceSwitch(
@@ -239,7 +242,7 @@ final class _PreferenceSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.flare;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: FlareSpace.sm),
       child: Row(
         children: <Widget>[
           PhosphorIcon(icon, size: 19, color: palette.textSecondary),

@@ -104,10 +104,7 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
                           ],
                         ),
                         const SizedBox(height: 34),
-                        Text(
-                          'Welcome back',
-                          style: FlareType.display.copyWith(fontSize: 32),
-                        ),
+                        Text('Welcome back', style: FlareType.display),
                         const SizedBox(height: 7),
                         Row(
                           children: <Widget>[
@@ -141,7 +138,7 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
                           ],
                           leading: PhosphorIconsRegular.envelope,
                         ),
-                        const SizedBox(height: 17),
+                        const SizedBox(height: FlareSpace.md),
                         FlareTextField(
                           controller: _password,
                           label: 'Password',
