@@ -28,39 +28,23 @@ final class FlareScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.flare;
     return Scaffold(
       backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: true,
-      body: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: const Alignment(0, -0.15),
-            colors: <Color>[
-              Color.alphaBlend(
-                palette.ambientStart,
-                palette.backgroundSecondary,
-              ),
-              Color.alphaBlend(palette.ambientEnd, palette.background),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: <Widget>[
-              FlareTopBar(
-                eyebrow: eyebrow,
-                title: title,
-                subtitle: subtitle,
-                actions: actions,
-                leading: leading,
-              ),
-              Expanded(
-                child: Padding(padding: bodyPadding, child: body),
-              ),
-            ],
-          ),
+      body: SafeArea(
+        child: Column(
+          children: <Widget>[
+            FlareTopBar(
+              eyebrow: eyebrow,
+              title: title,
+              subtitle: subtitle,
+              actions: actions,
+              leading: leading,
+            ),
+            Expanded(
+              child: Padding(padding: bodyPadding, child: body),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: bottomNavigation,
@@ -177,12 +161,8 @@ final class FlareBottomNav extends StatelessWidget {
     final palette = context.flare;
     final dockRadius = BorderRadius.circular(FlareRadii.dock);
     return SafeArea(
-      minimum: const EdgeInsets.fromLTRB(
-        FlareSpace.md,
-        0,
-        FlareSpace.md,
-        FlareSpace.sm,
-      ),
+      maintainBottomViewPadding: true,
+      minimum: const EdgeInsets.fromLTRB(FlareSpace.md, 0, FlareSpace.md, 14),
       child: SizedBox(
         height: 66,
         child: AppGlassSurface(
@@ -191,6 +171,7 @@ final class FlareBottomNav extends StatelessWidget {
           opacity: AppGlassTokens.dockOpacity,
           grainOpacity: AppGlassTokens.grainOpacity,
           backgroundColor: palette.surfaceHigh,
+          borderColor: palette.text.withValues(alpha: 0.06),
           child: Padding(
             padding: const EdgeInsets.all(FlareSpace.xxs),
             child: LayoutBuilder(

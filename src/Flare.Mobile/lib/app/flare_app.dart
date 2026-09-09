@@ -7,6 +7,7 @@ import '../core/providers.dart';
 import '../core/routing/app_router.dart';
 import '../core/theme/flare_theme.dart';
 import '../core/theme/theme_settings.dart';
+import '../design/components/flare_background.dart';
 import '../design/components/flare_controls.dart';
 
 final class FlareApp extends ConsumerStatefulWidget {
@@ -77,6 +78,10 @@ final class _FlareAppState extends ConsumerState<FlareApp> {
       ),
       themeMode: mode,
       routerConfig: flareRouter,
+      builder: (context, child) => FlareAppBackground(
+        imagePath: settings.customBackgroundPath,
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }

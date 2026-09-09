@@ -389,7 +389,7 @@ abstract final class FlareRadii {
   static const small = 16.0;
   static const normal = 20.0;
   static const large = 26.0;
-  static const dock = 34.0;
+  static const dock = 36.0;
   static const input = 22.0;
   static const sheet = 34.0;
 }

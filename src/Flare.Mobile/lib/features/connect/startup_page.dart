@@ -27,7 +27,7 @@ final class StartupPage extends ConsumerWidget {
     final state = ref.watch(startupDestinationProvider);
     final palette = context.flare;
     return ColoredBox(
-      color: palette.background,
+      color: Colors.transparent,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

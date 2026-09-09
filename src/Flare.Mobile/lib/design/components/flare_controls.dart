@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../core/theme/flare_theme.dart';
+import 'flare_background.dart';
 
 enum AppGlassRendering { auto, blur, solid }
 
@@ -158,7 +159,9 @@ BoxDecoration appSurfaceDecoration(
 }) {
   final palette = context.flare;
   final dark = Theme.of(context).brightness == Brightness.dark;
-  final atmospheric = palette.glassTint != Colors.transparent;
+  final atmospheric =
+      palette.glassTint != Colors.transparent ||
+      FlareBackgroundScope.hasCustomBackgroundOf(context);
   final base = elevated ? palette.surfaceHigh : palette.surface;
   final opacity = atmospheric ? (dark ? 0.7 : 0.78) : (dark ? 0.9 : 0.96);
   final resolvedTint = tint ?? (atmospheric ? palette.glassTint : null);
@@ -832,7 +835,9 @@ final class FlareSegmentedControl<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.flare;
-    final atmospheric = palette.glassTint != Colors.transparent;
+    final atmospheric =
+        palette.glassTint != Colors.transparent ||
+        FlareBackgroundScope.hasCustomBackgroundOf(context);
     return AppGlassSurface(
       borderRadius: BorderRadius.circular(FlareRadii.normal),
       blurSigma: AppGlassTokens.compactBlur,

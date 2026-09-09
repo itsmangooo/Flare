@@ -35,13 +35,17 @@ final class FlareThemeSettings {
     this.mode = FlareThemeMode.dark,
     this.accent = FlareAccent.blue,
     this.atmosphere = FlareAtmosphere.none,
+    this.customBackgroundPath,
     this.hapticsEnabled = true,
   });
 
   final FlareThemeMode mode;
   final FlareAccent accent;
   final FlareAtmosphere atmosphere;
+  final String? customBackgroundPath;
   final bool hapticsEnabled;
+
+  bool get hasCustomBackground => customBackgroundPath?.isNotEmpty ?? false;
 
   FlareThemeSettings copyWith({
     FlareThemeMode? mode,
@@ -52,7 +56,16 @@ final class FlareThemeSettings {
     mode: mode ?? this.mode,
     accent: accent ?? this.accent,
     atmosphere: atmosphere ?? this.atmosphere,
+    customBackgroundPath: customBackgroundPath,
     hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
+  );
+
+  FlareThemeSettings withCustomBackground(String? path) => FlareThemeSettings(
+    mode: mode,
+    accent: accent,
+    atmosphere: atmosphere,
+    customBackgroundPath: path,
+    hapticsEnabled: hapticsEnabled,
   );
 }
 
@@ -65,6 +78,7 @@ final class ThemeSettingsController extends AsyncNotifier<FlareThemeSettings> {
   static const _modeKey = 'appearance.theme_mode';
   static const _accentKey = 'appearance.accent';
   static const _atmosphereKey = 'appearance.atmosphere';
+  static const _customBackgroundKey = 'appearance.custom_background';
   static const _hapticsKey = 'interactions.haptics';
 
   @override
@@ -86,6 +100,7 @@ final class ThemeSettingsController extends AsyncNotifier<FlareThemeSettings> {
         preferences.getString(_atmosphereKey),
         FlareAtmosphere.none,
       ),
+      customBackgroundPath: preferences.getString(_customBackgroundKey),
       hapticsEnabled: preferences.getBool(_hapticsKey) ?? true,
     );
   }
@@ -102,6 +117,10 @@ final class ThemeSettingsController extends AsyncNotifier<FlareThemeSettings> {
     await save((state.value ?? await future).copyWith(atmosphere: atmosphere));
   }
 
+  Future<void> setCustomBackground(String? path) async {
+    await save((state.value ?? await future).withCustomBackground(path));
+  }
+
   Future<void> setHapticsEnabled(bool enabled) async {
     await save((state.value ?? await future).copyWith(hapticsEnabled: enabled));
   }
@@ -110,12 +129,21 @@ final class ThemeSettingsController extends AsyncNotifier<FlareThemeSettings> {
 
   Future<void> save(FlareThemeSettings settings) async {
     final preferences = await SharedPreferences.getInstance();
-    await Future.wait(<Future<bool>>[
+    final writes = <Future<bool>>[
       preferences.setString(_modeKey, settings.mode.name),
       preferences.setString(_accentKey, settings.accent.name),
       preferences.setString(_atmosphereKey, settings.atmosphere.name),
       preferences.setBool(_hapticsKey, settings.hapticsEnabled),
-    ]);
+    ];
+    writes.add(
+      settings.customBackgroundPath == null
+          ? preferences.remove(_customBackgroundKey)
+          : preferences.setString(
+              _customBackgroundKey,
+              settings.customBackgroundPath!,
+            ),
+    );
+    await Future.wait(writes);
     state = AsyncData(settings);
   }
 }

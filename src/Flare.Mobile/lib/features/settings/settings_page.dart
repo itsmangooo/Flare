@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phosphor_icons/phosphor_icons.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/api/models.dart';
 import '../../core/providers.dart';
+import '../../core/theme/custom_background_storage.dart';
 import '../../core/theme/flare_theme.dart';
 import '../../core/theme/theme_settings.dart';
 import '../../design/components/flare_controls.dart';
@@ -28,11 +32,105 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
   ServerInfoModel? _serverInfo;
   bool _checking = false;
   bool _signingOut = false;
+  bool _backgroundBusy = false;
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
     _load();
+    unawaited(_recoverLostBackground());
+  }
+
+  Future<void> _recoverLostBackground() async {
+    try {
+      final response = await _imagePicker.retrieveLostData();
+      final image = response.file;
+      if (response.isEmpty || image == null) return;
+      await _persistBackground(image, showConfirmation: false);
+    } on Object {
+      // Lost picker data is best-effort and should never block Settings.
+    }
+  }
+
+  Future<void> _chooseBackground() async {
+    if (_backgroundBusy) return;
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2560,
+        maxHeight: 2560,
+        imageQuality: 90,
+        requestFullMetadata: false,
+      );
+      if (image == null) return;
+      await _persistBackground(image);
+    } on Object {
+      if (mounted) {
+        FlareToast.show(
+          context,
+          'The background image could not be selected.',
+          tone: FlareToastTone.error,
+        );
+      }
+    }
+  }
+
+  Future<void> _persistBackground(
+    XFile image, {
+    bool showConfirmation = true,
+  }) async {
+    if (mounted) setState(() => _backgroundBusy = true);
+    final controller = ref.read(themeSettingsProvider.notifier);
+    try {
+      final path = await CustomBackgroundStorage.persist(image);
+      await controller.setCustomBackground(path);
+      if (mounted && showConfirmation) {
+        FlareToast.show(
+          context,
+          'Custom background applied.',
+          tone: FlareToastTone.success,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _backgroundBusy = false);
+    }
+  }
+
+  Future<void> _removeBackground() async {
+    if (_backgroundBusy) return;
+    final confirmed = await FlareConfirmSheet.show(
+      context,
+      title: 'Remove background?',
+      subject: 'Custom image',
+      message: 'Flare will return to the selected atmosphere background.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+    setState(() => _backgroundBusy = true);
+    final controller = ref.read(themeSettingsProvider.notifier);
+    try {
+      await controller.setCustomBackground(null);
+      try {
+        await CustomBackgroundStorage.clear();
+      } on Object {
+        // The preference is authoritative; an orphaned local image is harmless.
+      }
+      if (mounted) {
+        FlareToast.show(context, 'Custom background removed.');
+      }
+    } on Object {
+      if (mounted) {
+        FlareToast.show(
+          context,
+          'The custom background could not be removed.',
+          tone: FlareToastTone.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _backgroundBusy = false);
+    }
   }
 
   Future<void> _load() async {
@@ -377,6 +475,43 @@ final class _SettingsPageState extends ConsumerState<SettingsPage> {
                   trailing: _TrailingValue(value: settings.atmosphere.label),
                   onTap: () => _chooseAtmosphere(settings),
                 ),
+                const FlareDivider(indent: 50),
+                _SettingsRow(
+                  icon: PhosphorIconsRegular.image,
+                  title: 'Custom background',
+                  subtitle: settings.hasCustomBackground
+                      ? 'Active · tap to choose another image'
+                      : 'Choose an image from your device',
+                  trailing: _backgroundBusy
+                      ? SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: palette.accent,
+                          ),
+                        )
+                      : _TrailingValue(
+                          value: settings.hasCustomBackground
+                              ? 'Change'
+                              : 'Choose',
+                        ),
+                  onTap: _backgroundBusy ? null : _chooseBackground,
+                ),
+                if (settings.hasCustomBackground) ...<Widget>[
+                  const FlareDivider(indent: 50),
+                  _SettingsRow(
+                    icon: PhosphorIconsRegular.trashSimple,
+                    title: 'Remove background',
+                    subtitle: 'Return to the selected atmosphere',
+                    trailing: PhosphorIcon(
+                      PhosphorIconsRegular.xCircle,
+                      size: 18,
+                      color: palette.danger,
+                    ),
+                    onTap: _backgroundBusy ? null : _removeBackground,
+                  ),
+                ],
               ],
             ),
           ),

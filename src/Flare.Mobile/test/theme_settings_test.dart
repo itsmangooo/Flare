@@ -1,5 +1,6 @@
 import 'package:flare_mobile/core/theme/flare_theme.dart';
 import 'package:flare_mobile/core/theme/theme_settings.dart';
+import 'package:flare_mobile/design/components/flare_background.dart';
 import 'package:flare_mobile/design/components/flare_controls.dart';
 import 'package:flare_mobile/design/components/flare_scaffold.dart';
 import 'package:flare_mobile/features/settings/settings_page.dart';
@@ -38,6 +39,9 @@ void main() {
     await first
         .read(themeSettingsProvider.notifier)
         .setAtmosphere(FlareAtmosphere.aurora);
+    await first
+        .read(themeSettingsProvider.notifier)
+        .setCustomBackground('/app/appearance/custom-background.jpg');
     await first.read(themeSettingsProvider.notifier).setHapticsEnabled(false);
     first.dispose();
 
@@ -48,7 +52,19 @@ void main() {
     expect(restored.mode, FlareThemeMode.oled);
     expect(restored.accent, FlareAccent.violet);
     expect(restored.atmosphere, FlareAtmosphere.aurora);
+    expect(
+      restored.customBackgroundPath,
+      '/app/appearance/custom-background.jpg',
+    );
     expect(restored.hapticsEnabled, isFalse);
+
+    await second.read(themeSettingsProvider.notifier).setCustomBackground(null);
+    expect(
+      (await SharedPreferences.getInstance()).containsKey(
+        'appearance.custom_background',
+      ),
+      isFalse,
+    );
   });
 
   test('palettes keep semantic colors separate from selectable accents', () {
@@ -93,16 +109,18 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: buildFlareTheme(),
-        home: Scaffold(
-          backgroundColor: Colors.transparent,
-          extendBody: true,
-          body: const FlareScaffold(
-            title: 'Overview',
-            body: SizedBox.expand(key: Key('page-content')),
-          ),
-          bottomNavigationBar: FlareBottomNav(
-            index: 1,
-            onSelected: (value) => selected = value,
+        home: FlareAppBackground(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            extendBody: true,
+            body: const FlareScaffold(
+              title: 'Overview',
+              body: SizedBox.expand(key: Key('page-content')),
+            ),
+            bottomNavigationBar: FlareBottomNav(
+              index: 1,
+              onSelected: (value) => selected = value,
+            ),
           ),
         ),
       ),
@@ -175,17 +193,19 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: theme,
-        home: const FlareScaffold(
-          title: 'Theme test',
-          body: FlareCard(child: Text('Surface')),
+        home: const FlareAppBackground(
+          child: FlareScaffold(
+            title: 'Theme test',
+            body: FlareCard(child: Text('Surface')),
+          ),
         ),
       ),
     );
 
-    final scaffoldSurface = tester.widget<DecoratedBox>(
+    final backgroundSurface = tester.widget<DecoratedBox>(
       find
           .descendant(
-            of: find.byType(Scaffold),
+            of: find.byType(FlareAppBackground),
             matching: find.byType(DecoratedBox),
           )
           .first,
@@ -194,10 +214,10 @@ void main() {
       find.byType(AnimatedContainer).first,
     );
 
-    final scaffoldDecoration = scaffoldSurface.decoration as BoxDecoration;
-    expect(scaffoldDecoration.gradient, isA<LinearGradient>());
+    final backgroundDecoration = backgroundSurface.decoration as BoxDecoration;
+    expect(backgroundDecoration.gradient, isA<LinearGradient>());
     expect(
-      (scaffoldDecoration.gradient! as LinearGradient).colors.last,
+      (backgroundDecoration.gradient! as LinearGradient).colors.last,
       palette.background,
     );
     expect(
@@ -230,6 +250,33 @@ void main() {
     final decoration = surface.decoration! as BoxDecoration;
     expect(decoration.gradient, isA<LinearGradient>());
     expect(decoration.color, isNot(theme.colorScheme.surface));
+  });
+
+  testWidgets('custom background enables atmospheric shared surfaces', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildFlareTheme(),
+        home: FlareBackgroundScope(
+          hasCustomBackground: true,
+          child: Builder(
+            builder: (context) => Container(
+              key: const Key('custom-surface'),
+              decoration: appSurfaceDecoration(context),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final surface = tester.widget<Container>(
+      find.byKey(const Key('custom-surface')),
+    );
+    expect(
+      (surface.decoration! as BoxDecoration).gradient,
+      isA<LinearGradient>(),
+    );
   });
 
   testWidgets('custom segmented control and switch update selection', (
@@ -332,5 +379,11 @@ void main() {
       container.read(themeSettingsProvider).value!.accent,
       FlareAccent.violet,
     );
+    await tester.scrollUntilVisible(
+      find.text('Custom background'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Custom background'), findsOneWidget);
   });
 }

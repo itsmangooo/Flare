@@ -72,7 +72,7 @@ final class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final palette = context.flare;
     return Scaffold(
-      backgroundColor: palette.background,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
