@@ -94,6 +94,12 @@ void main() {
       MaterialApp(
         theme: buildFlareTheme(),
         home: Scaffold(
+          backgroundColor: Colors.transparent,
+          extendBody: true,
+          body: const FlareScaffold(
+            title: 'Overview',
+            body: SizedBox.expand(key: Key('page-content')),
+          ),
           bottomNavigationBar: FlareBottomNav(
             index: 1,
             onSelected: (value) => selected = value,
@@ -104,6 +110,20 @@ void main() {
 
     expect(find.byType(AppGlassSurface), findsOneWidget);
     expect(find.byType(BackdropFilter), findsOneWidget);
+    final navigationScaffold = tester.widget<Scaffold>(
+      find
+          .ancestor(
+            of: find.byType(FlareBottomNav),
+            matching: find.byType(Scaffold),
+          )
+          .first,
+    );
+    expect(navigationScaffold.backgroundColor, Colors.transparent);
+    expect(navigationScaffold.extendBody, isTrue);
+    expect(
+      tester.getBottomLeft(find.byKey(const Key('page-content'))).dy,
+      lessThanOrEqualTo(tester.getTopLeft(find.byType(FlareBottomNav)).dy),
+    );
     final decorations = tester
         .widgetList<DecoratedBox>(
           find.descendant(
@@ -182,8 +202,34 @@ void main() {
     );
     expect(
       (card.decoration as BoxDecoration).color,
-      palette.surface.withValues(alpha: 0.86),
+      palette.surface.withValues(alpha: 0.96),
     );
+    expect((card.decoration as BoxDecoration).gradient, isNull);
+  });
+
+  testWidgets('atmosphere flows into the shared surface material', (
+    tester,
+  ) async {
+    final theme = buildFlareTheme(
+      accent: FlareAccent.cyan,
+      atmosphere: FlareAtmosphere.aurora,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: Builder(
+          builder: (context) => Container(
+            key: const Key('surface'),
+            decoration: appSurfaceDecoration(context),
+          ),
+        ),
+      ),
+    );
+
+    final surface = tester.widget<Container>(find.byKey(const Key('surface')));
+    final decoration = surface.decoration! as BoxDecoration;
+    expect(decoration.gradient, isA<LinearGradient>());
+    expect(decoration.color, isNot(theme.colorScheme.surface));
   });
 
   testWidgets('custom segmented control and switch update selection', (

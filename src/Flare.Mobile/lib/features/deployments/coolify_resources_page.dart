@@ -126,47 +126,13 @@ final class _Tabs extends StatelessWidget {
   final _ResourceTab selected;
   final ValueChanged<_ResourceTab> onSelected;
   @override
-  Widget build(BuildContext context) {
-    final palette = context.flare;
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(FlareRadii.normal),
-        border: Border.all(color: palette.border),
-      ),
-      child: Row(
-        children: _ResourceTab.values
-            .map(
-              (tab) => Expanded(
-                child: InkWell(
-                  onTap: () => onSelected(tab),
-                  borderRadius: BorderRadius.circular(8),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 170),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: selected == tab
-                          ? palette.accentSoft
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      tab.name[0].toUpperCase() + tab.name.substring(1),
-                      textAlign: TextAlign.center,
-                      style: FlareType.metadata.copyWith(
-                        color: selected == tab ? palette.accent : palette.muted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            )
-            .toList(growable: false),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => FlareSegmentedControl<_ResourceTab>(
+    value: selected,
+    items: _ResourceTab.values
+        .map((tab) => (tab, tab.name[0].toUpperCase() + tab.name.substring(1)))
+        .toList(growable: false),
+    onChanged: onSelected,
+  );
 }
 
 typedef _RunResource =

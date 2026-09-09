@@ -225,10 +225,9 @@ final class _FlareErrorStateState extends State<FlareErrorState> {
                       width: double.infinity,
                       margin: const EdgeInsets.only(top: FlareSpace.xs),
                       padding: const EdgeInsets.all(FlareSpace.sm),
-                      decoration: BoxDecoration(
-                        color: palette.surface,
-                        borderRadius: BorderRadius.circular(FlareRadii.normal),
-                        border: Border.all(color: palette.borderStrong),
+                      decoration: appSurfaceDecoration(
+                        context,
+                        radius: FlareRadii.normal,
                       ),
                       child: SelectableText(
                         widget.error.toString(),

@@ -16,7 +16,6 @@ import '../../features/domains/domains_page.dart';
 import '../../features/overview/overview_page.dart';
 import '../../features/settings/notification_preferences_page.dart';
 import '../../features/settings/settings_page.dart';
-import '../theme/flare_theme.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -110,9 +109,9 @@ final class _FlareNavigationShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: context.flare.background,
+    backgroundColor: Colors.transparent,
     extendBody: true,
-    body: Padding(padding: const EdgeInsets.only(bottom: 68), child: shell),
+    body: shell,
     bottomNavigationBar: FlareBottomNav(
       index: shell.currentIndex,
       onSelected: (index) =>

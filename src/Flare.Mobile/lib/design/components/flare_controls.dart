@@ -8,12 +8,28 @@ import '../../core/theme/flare_theme.dart';
 
 enum AppGlassRendering { auto, blur, solid }
 
+abstract final class AppGlassTokens {
+  static const blur = 10.0;
+  static const compactBlur = 7.0;
+  static const dockBlur = 12.0;
+  static const sheetBlur = 15.0;
+  static const surfaceOpacity = 0.72;
+  static const dockOpacity = 0.68;
+  static const segmentOpacity = 0.64;
+  static const sheetOpacity = 0.84;
+  static const grainOpacity = 0.012;
+  static const borderDarkOpacity = 0.085;
+  static const borderLightOpacity = 0.065;
+  static const highlightDarkOpacity = 0.048;
+  static const highlightLightOpacity = 0.16;
+}
+
 class AppGlassSurface extends StatelessWidget {
   const AppGlassSurface({
     required this.child,
     required this.borderRadius,
-    this.blurSigma = 10,
-    this.opacity = 0.72,
+    this.blurSigma = AppGlassTokens.blur,
+    this.opacity = AppGlassTokens.surfaceOpacity,
     this.backgroundColor,
     this.borderColor,
     this.tint,
@@ -53,14 +69,22 @@ class AppGlassSurface extends StatelessWidget {
         color:
             borderColor ??
             (dark
-                ? Colors.white.withValues(alpha: 0.085)
-                : Colors.black.withValues(alpha: 0.065)),
+                ? Colors.white.withValues(
+                    alpha: AppGlassTokens.borderDarkOpacity,
+                  )
+                : Colors.black.withValues(
+                    alpha: AppGlassTokens.borderLightOpacity,
+                  )),
       ),
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: <Color>[
-          Colors.white.withValues(alpha: dark ? 0.048 : 0.16),
+          Colors.white.withValues(
+            alpha: dark
+                ? AppGlassTokens.highlightDarkOpacity
+                : AppGlassTokens.highlightLightOpacity,
+          ),
           Colors.transparent,
         ],
         stops: const <double>[0, 0.58],
@@ -125,28 +149,65 @@ final class _GlassGrainPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-final class FlareCard extends StatelessWidget {
-  const FlareCard({
+BoxDecoration appSurfaceDecoration(
+  BuildContext context, {
+  double radius = FlareRadii.large,
+  bool elevated = false,
+  Color? borderColor,
+  Color? tint,
+}) {
+  final palette = context.flare;
+  final dark = Theme.of(context).brightness == Brightness.dark;
+  final atmospheric = palette.glassTint != Colors.transparent;
+  final base = elevated ? palette.surfaceHigh : palette.surface;
+  final opacity = atmospheric ? (dark ? 0.7 : 0.78) : (dark ? 0.9 : 0.96);
+  final resolvedTint = tint ?? (atmospheric ? palette.glassTint : null);
+  return BoxDecoration(
+    color: Color.alphaBlend(
+      resolvedTint ?? Colors.transparent,
+      base.withValues(alpha: opacity),
+    ),
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(
+      width: 1,
+      color:
+          borderColor ??
+          palette.text.withValues(alpha: atmospheric ? 0.075 : 0.045),
+    ),
+    gradient: atmospheric
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: <Color>[
+              Colors.white.withValues(alpha: dark ? 0.035 : 0.12),
+              Colors.transparent,
+            ],
+            stops: const <double>[0, 0.66],
+          )
+        : null,
+  );
+}
+
+class AppGlassCard extends StatelessWidget {
+  const AppGlassCard({
     required this.child,
     this.padding = const EdgeInsets.all(FlareSpace.md),
     this.onTap,
+    this.margin = EdgeInsets.zero,
     super.key,
   });
   final Widget child;
   final EdgeInsets padding;
   final VoidCallback? onTap;
+  final EdgeInsets margin;
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.flare;
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 180),
+      margin: margin,
       padding: padding,
-      decoration: BoxDecoration(
-        color: palette.surface.withValues(alpha: 0.86),
-        borderRadius: BorderRadius.circular(FlareRadii.large),
-        border: Border.all(color: palette.text.withValues(alpha: 0.045)),
-      ),
+      decoration: appSurfaceDecoration(context),
       child: child,
     );
     return onTap == null
@@ -160,6 +221,16 @@ final class FlareCard extends StatelessWidget {
             ),
           );
   }
+}
+
+final class FlareCard extends AppGlassCard {
+  const FlareCard({
+    required super.child,
+    super.padding,
+    super.onTap,
+    super.margin,
+    super.key,
+  });
 }
 
 enum FlareButtonTone { primary, neutral, danger }
@@ -238,7 +309,7 @@ final class _FlareButtonState extends State<FlareButton> {
               ),
               decoration: BoxDecoration(
                 color: background,
-                borderRadius: BorderRadius.circular(widget.compact ? 12 : 15),
+                borderRadius: BorderRadius.circular(FlareRadii.small),
                 border: border == Colors.transparent
                     ? null
                     : Border.all(color: border),
@@ -332,7 +403,7 @@ final class _FlareIconButtonState extends State<FlareIconButton> {
           duration: const Duration(milliseconds: 120),
           child: FlareGlassSurface(
             borderRadius: BorderRadius.circular(FlareRadii.normal),
-            blurSigma: 7,
+            blurSigma: AppGlassTokens.compactBlur,
             backgroundColor: widget.accent
                 ? palette.accent.withValues(alpha: 0.11)
                 : palette.surface.withValues(alpha: 0.68),
@@ -439,13 +510,10 @@ final class _FlareTextFieldState extends State<FlareTextField> {
           duration: const Duration(milliseconds: 170),
           constraints: const BoxConstraints(minHeight: 54),
           padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
-          decoration: BoxDecoration(
-            color: palette.surface.withValues(alpha: 0.9),
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: borderColor,
-              width: _focus.hasFocus ? 1.2 : 1,
-            ),
+          decoration: appSurfaceDecoration(
+            context,
+            radius: FlareRadii.input,
+            borderColor: borderColor,
           ),
           child: Row(
             children: <Widget>[
@@ -565,16 +633,13 @@ final class _FlareSearchFieldState extends State<FlareSearchField> {
       duration: const Duration(milliseconds: 180),
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: FlareSpace.md),
-      decoration: BoxDecoration(
-        color: palette.surfaceHigh.withValues(
-          alpha: _focus.hasFocus ? 0.94 : 0.82,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: _focus.hasFocus
-              ? palette.accent.withValues(alpha: 0.58)
-              : palette.text.withValues(alpha: 0.05),
-        ),
+      decoration: appSurfaceDecoration(
+        context,
+        radius: FlareRadii.input,
+        elevated: true,
+        borderColor: _focus.hasFocus
+            ? palette.accent.withValues(alpha: 0.58)
+            : palette.text.withValues(alpha: 0.05),
       ),
       child: Row(
         children: <Widget>[
@@ -746,11 +811,7 @@ final class FlareGroupedSurface extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: margin,
     padding: padding,
-    decoration: BoxDecoration(
-      color: context.flare.surface.withValues(alpha: 0.86),
-      borderRadius: BorderRadius.circular(FlareRadii.large),
-      border: Border.all(color: context.flare.text.withValues(alpha: 0.045)),
-    ),
+    decoration: appSurfaceDecoration(context),
     clipBehavior: Clip.antiAlias,
     child: child,
   );
@@ -771,10 +832,12 @@ final class FlareSegmentedControl<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.flare;
+    final atmospheric = palette.glassTint != Colors.transparent;
     return AppGlassSurface(
       borderRadius: BorderRadius.circular(FlareRadii.normal),
-      blurSigma: 7,
-      opacity: 0.64,
+      blurSigma: AppGlassTokens.compactBlur,
+      opacity: atmospheric ? AppGlassTokens.segmentOpacity : 0.92,
+      rendering: atmospheric ? AppGlassRendering.auto : AppGlassRendering.solid,
       child: Padding(
         padding: const EdgeInsets.all(FlareSpace.xxs),
         child: Row(
@@ -804,9 +867,14 @@ final class FlareSegmentedControl<T> extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: selected
-                              ? palette.surfaceHigh.withValues(alpha: 0.94)
+                              ? Color.alphaBlend(
+                                  palette.accent.withValues(alpha: 0.08),
+                                  palette.surfaceHigh.withValues(
+                                    alpha: atmospheric ? 0.66 : 0.94,
+                                  ),
+                                )
                               : Colors.transparent,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(FlareRadii.small),
                           border: selected
                               ? Border.all(
                                   color: palette.text.withValues(alpha: 0.065),

@@ -187,11 +187,10 @@ final class FlareBottomNav extends StatelessWidget {
         height: 66,
         child: AppGlassSurface(
           borderRadius: dockRadius,
-          blurSigma: 12,
-          opacity: 0.7,
-          grainOpacity: 0.012,
+          blurSigma: AppGlassTokens.dockBlur,
+          opacity: AppGlassTokens.dockOpacity,
+          grainOpacity: AppGlassTokens.grainOpacity,
           backgroundColor: palette.surfaceHigh,
-          borderColor: palette.text.withValues(alpha: 0.07),
           child: Padding(
             padding: const EdgeInsets.all(FlareSpace.xxs),
             child: LayoutBuilder(
@@ -214,7 +213,9 @@ final class FlareBottomNav extends StatelessWidget {
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: palette.accent.withValues(alpha: 0.13),
-                            borderRadius: BorderRadius.circular(11),
+                            borderRadius: BorderRadius.circular(
+                              FlareRadii.small,
+                            ),
                             border: Border.all(
                               color: palette.accent.withValues(alpha: 0.1),
                             ),
@@ -310,8 +311,8 @@ final class FlareBackButton extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: onPressed ?? () => Navigator.of(context).maybePop(),
         child: AppGlassSurface(
-          borderRadius: BorderRadius.circular(20),
-          blurSigma: 7,
+          borderRadius: BorderRadius.circular(FlareRadii.small),
+          blurSigma: AppGlassTokens.compactBlur,
           backgroundColor: palette.surface.withValues(alpha: 0.68),
           borderColor: palette.text.withValues(alpha: 0.07),
           child: SizedBox(

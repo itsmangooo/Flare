@@ -71,8 +71,8 @@ final class _ToastSurface extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: FlareGlassSurface(
-          borderRadius: BorderRadius.circular(16),
-          blurSigma: 10,
+          borderRadius: BorderRadius.circular(FlareRadii.small),
+          blurSigma: AppGlassTokens.blur,
           backgroundColor: palette.surfaceHigh.withValues(alpha: 0.86),
           borderColor: color.withValues(alpha: 0.18),
           child: Padding(
@@ -149,9 +149,9 @@ final class FlareBottomSheet {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: AppGlassSurface(
-                  borderRadius: BorderRadius.circular(34),
-                  blurSigma: 15,
-                  opacity: 0.84,
+                  borderRadius: BorderRadius.circular(FlareRadii.sheet),
+                  blurSigma: AppGlassTokens.sheetBlur,
+                  opacity: AppGlassTokens.sheetOpacity,
                   backgroundColor: palette.surfaceHigh,
                   borderColor: palette.text.withValues(alpha: 0.075),
                   child: Padding(

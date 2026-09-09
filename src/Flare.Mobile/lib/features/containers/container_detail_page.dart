@@ -538,12 +538,12 @@ final class _LogOption extends StatelessWidget {
     final palette = context.flare;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(FlareRadii.small),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? palette.accentSoft : palette.surface,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(FlareRadii.small),
           border: Border.all(
             color: selected
                 ? palette.accent.withValues(alpha: 0.33)
@@ -582,10 +582,10 @@ final class _LogConsole extends StatelessWidget {
     constraints: const BoxConstraints(minHeight: 180, maxHeight: 390),
     width: double.infinity,
     padding: const EdgeInsets.all(FlareSpace.sm),
-    decoration: BoxDecoration(
-      color: const Color(0xFF05070A),
-      borderRadius: BorderRadius.circular(FlareRadii.small),
-      border: Border.all(color: context.flare.borderStrong),
+    decoration: appSurfaceDecoration(
+      context,
+      radius: FlareRadii.small,
+      elevated: true,
     ),
     child: SingleChildScrollView(
       child: SelectableText(

@@ -58,7 +58,7 @@ final class FlareContainerTile extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: dotColor.withValues(alpha: 0.11),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(FlareRadii.small),
                 ),
                 alignment: Alignment.center,
                 child: Stack(

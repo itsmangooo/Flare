@@ -348,10 +348,11 @@ Color _ambientEnd(FlareAtmosphere atmosphere, Color accent, bool light) =>
 
 Color _glassTint(FlareAtmosphere atmosphere, Color accent) =>
     switch (atmosphere) {
-      FlareAtmosphere.none || FlareAtmosphere.graphite => Colors.transparent,
+      FlareAtmosphere.none => Colors.transparent,
       FlareAtmosphere.softGradient => accent.withValues(alpha: 0.025),
       FlareAtmosphere.aurora => const Color(0x0D38D9A2),
       FlareAtmosphere.midnight => const Color(0x0F5378E5),
+      FlareAtmosphere.graphite => const Color(0x0D89939E),
     };
 
 extension FlareThemeContext on BuildContext {
@@ -385,10 +386,12 @@ abstract final class FlareSpace {
 }
 
 abstract final class FlareRadii {
-  static const small = 10.0;
-  static const normal = 14.0;
-  static const large = 21.0;
-  static const dock = 30.0;
+  static const small = 16.0;
+  static const normal = 20.0;
+  static const large = 26.0;
+  static const dock = 34.0;
+  static const input = 22.0;
+  static const sheet = 34.0;
 }
 
 abstract final class FlareType {

@@ -497,7 +497,7 @@ final class _SettingsRow extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               color: palette.accent.withValues(alpha: 0.11),
-              borderRadius: BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(FlareRadii.small),
             ),
             alignment: Alignment.center,
             child: PhosphorIcon(icon, size: 18, color: palette.accent),

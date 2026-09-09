@@ -200,10 +200,10 @@ final class _DeploymentDetailPageState
                     maxHeight: 440,
                   ),
                   padding: const EdgeInsets.all(FlareSpace.sm),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF05070A),
-                    borderRadius: BorderRadius.circular(FlareRadii.small),
-                    border: Border.all(color: palette.borderStrong),
+                  decoration: appSurfaceDecoration(
+                    context,
+                    radius: FlareRadii.small,
+                    elevated: true,
                   ),
                   child: SingleChildScrollView(
                     child: SelectableText(
