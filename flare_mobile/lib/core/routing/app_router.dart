@@ -104,18 +104,36 @@ final GoRouter flareRouter = GoRouter(
 );
 
 final class _FlareNavigationShell extends StatelessWidget {
-  const _FlareNavigationShell({required this.shell});
+  const _FlareNavigationShell({
+    required this.shell,
+  });
+
   final StatefulNavigationShell shell;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.transparent,
-    extendBody: true,
-    body: shell,
-    bottomNavigationBar: FlareBottomNav(
-      index: shell.currentIndex,
-      onSelected: (index) =>
-          shell.goBranch(index, initialLocation: index == shell.currentIndex),
-    ),
-  );
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      extendBody: true,
+      body: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          shell,
+
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: FlareBottomNav(
+              index: shell.currentIndex,
+              onSelected: (index) => shell.goBranch(
+                index,
+                initialLocation: index == shell.currentIndex,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

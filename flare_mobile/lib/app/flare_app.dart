@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/providers.dart';
@@ -78,10 +79,26 @@ final class _FlareAppState extends ConsumerState<FlareApp> {
       ),
       themeMode: mode,
       routerConfig: flareRouter,
-      builder: (context, child) => FlareAppBackground(
-        imagePath: settings.customBackgroundPath,
-        child: child ?? const SizedBox.shrink(),
-      ),
+      builder: (context, child) {
+        final dark = Theme.of(context).brightness == Brightness.dark;
+        final iconBrightness = dark ? Brightness.light : Brightness.dark;
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: iconBrightness,
+            statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarDividerColor: Colors.transparent,
+            systemNavigationBarIconBrightness: iconBrightness,
+            systemNavigationBarContrastEnforced: false,
+            systemStatusBarContrastEnforced: false,
+          ),
+          child: FlareAppBackground(
+            imagePath: settings.customBackgroundPath,
+            child: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
     );
   }
 }

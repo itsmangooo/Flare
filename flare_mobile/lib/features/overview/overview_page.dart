@@ -205,60 +205,66 @@ final class _MetricsGrid extends StatelessWidget {
         '${formatBytes(data.host.memoryUsedBytes)} / ${formatBytes(data.host.memoryTotalBytes)}';
     final diskSecondary =
         '${formatBytes(data.host.diskUsedBytes)} / ${formatBytes(data.host.diskTotalBytes)}';
-    return SizedBox(
-      height: 160,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        clipBehavior: Clip.none,
-        children: <Widget>[
-          SizedBox(
-            width: 176,
-            child: FlareMetricCard(
-              title: 'CPU',
-              value: formatPercent(data.host.cpuPercent),
-              secondary: data.host.loadAverage == null
-                  ? 'Load unavailable'
-                  : 'Load ${data.host.loadAverage!.toStringAsFixed(2)}',
-              chart: data.history
-                  .map((point) => point.cpuPercent)
-                  .toList(growable: false),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 10) / 2;
+        return SizedBox(
+          width: double.infinity,
+          height: 160,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            clipBehavior: Clip.none,
+            children: <Widget>[
+              SizedBox(
+                width: cardWidth,
+                child: FlareMetricCard(
+                  title: 'CPU',
+                  value: formatPercent(data.host.cpuPercent),
+                  secondary: data.host.loadAverage == null
+                      ? 'Load unavailable'
+                      : 'Load ${data.host.loadAverage!.toStringAsFixed(2)}',
+                  chart: data.history
+                      .map((point) => point.cpuPercent)
+                      .toList(growable: false),
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: cardWidth,
+                child: FlareMetricCard(
+                  title: 'Memory',
+                  value: formatPercent(data.host.memoryPercent),
+                  secondary: memorySecondary,
+                  chart: data.history
+                      .map((point) => point.memoryPercent)
+                      .toList(growable: false),
+                  accent: palette.info,
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: cardWidth,
+                child: FlareMetricCard(
+                  title: 'Disk',
+                  value: formatPercent(data.host.diskPercent),
+                  secondary: diskSecondary,
+                  usage: data.host.diskPercent,
+                  accent: palette.warning,
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: cardWidth,
+                child: _NetworkCard(
+                  receive: data.host.networkReceiveBytesPerSecond,
+                  transmit: data.host.networkTransmitBytesPerSecond,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 176,
-            child: FlareMetricCard(
-              title: 'Memory',
-              value: formatPercent(data.host.memoryPercent),
-              secondary: memorySecondary,
-              chart: data.history
-                  .map((point) => point.memoryPercent)
-                  .toList(growable: false),
-              accent: palette.info,
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 176,
-            child: FlareMetricCard(
-              title: 'Disk',
-              value: formatPercent(data.host.diskPercent),
-              secondary: diskSecondary,
-              usage: data.host.diskPercent,
-              accent: palette.warning,
-            ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 176,
-            child: _NetworkCard(
-              receive: data.host.networkReceiveBytesPerSecond,
-              transmit: data.host.networkTransmitBytesPerSecond,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

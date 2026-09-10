@@ -102,7 +102,14 @@ void main() {
     expect(theme.textTheme.bodyMedium?.fontFamily, 'Poppins');
   });
 
-  testWidgets('bottom navigation is one clipped glass component', (
+  test('glass blur stays soft enough for live theme previews', () {
+    expect(AppGlassTokens.customBlur(AppGlassLevel.compact), 8);
+    expect(AppGlassTokens.customBlur(AppGlassLevel.surface), 12);
+    expect(AppGlassTokens.customBlur(AppGlassLevel.dock), 14);
+    expect(AppGlassTokens.customBlur(AppGlassLevel.sheet), 16);
+  });
+
+  testWidgets('bottom navigation floats without a second bar surface', (
     tester,
   ) async {
     var selected = -1;
@@ -113,13 +120,26 @@ void main() {
           child: Scaffold(
             backgroundColor: Colors.transparent,
             extendBody: true,
-            body: const FlareScaffold(
-              title: 'Overview',
-              body: SizedBox.expand(key: Key('page-content')),
-            ),
-            bottomNavigationBar: FlareBottomNav(
-              index: 1,
-              onSelected: (value) => selected = value,
+            body: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                const Padding(
+                  padding: EdgeInsets.only(bottom: FlareBottomNav.contentInset),
+                  child: FlareScaffold(
+                    title: 'Overview',
+                    body: SizedBox.expand(key: Key('page-content')),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: FlareBottomNav(
+                    index: 1,
+                    onSelected: (value) => selected = value,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -138,6 +158,14 @@ void main() {
     );
     expect(navigationScaffold.backgroundColor, Colors.transparent);
     expect(navigationScaffold.extendBody, isTrue);
+    expect(navigationScaffold.bottomNavigationBar, isNull);
+    expect(
+      find.ancestor(
+        of: find.byType(FlareBottomNav),
+        matching: find.byType(Positioned),
+      ),
+      findsOneWidget,
+    );
     expect(
       tester.getBottomLeft(find.byKey(const Key('page-content'))).dy,
       lessThanOrEqualTo(tester.getTopLeft(find.byType(FlareBottomNav)).dy),
@@ -158,6 +186,35 @@ void main() {
 
     await tester.tap(find.text('Activity'));
     expect(selected, 3);
+  });
+
+  testWidgets('phone pages use full width minus shared page margins', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildFlareTheme(),
+        home: const FlareAppBackground(
+          child: FlareScaffold(
+            title: 'Full width',
+            body: SizedBox.expand(key: Key('full-width-body')),
+          ),
+        ),
+      ),
+    );
+
+    final bodyRect = tester.getRect(find.byKey(const Key('full-width-body')));
+    final scaffold = tester.widget<FlareScaffold>(find.byType(FlareScaffold));
+    final pagePadding = scaffold.bodyPadding.left;
+    expect(scaffold.bodyPadding.right, pagePadding);
+    expect(pagePadding, inInclusiveRange(FlareSpace.sm, FlareSpace.lg));
+    expect(bodyRect.left, pagePadding);
+    expect(bodyRect.right, 390 - pagePadding);
+    expect(bodyRect.width, 390 - (pagePadding * 2));
   });
 
   testWidgets('glass surface has a solid reduced-effects fallback', (

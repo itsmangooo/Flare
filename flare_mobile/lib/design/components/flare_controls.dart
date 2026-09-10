@@ -12,10 +12,10 @@ enum AppGlassRendering { auto, blur, solid }
 enum AppGlassLevel { surface, compact, dock, sheet }
 
 abstract final class AppGlassTokens {
-  static const blur = 10.0;
-  static const compactBlur = 7.0;
-  static const dockBlur = 12.0;
-  static const sheetBlur = 15.0;
+  static const blur = 8.0;
+  static const compactBlur = 5.0;
+  static const dockBlur = 10.0;
+  static const sheetBlur = 12.0;
   static const surfaceOpacity = 0.72;
   static const dockOpacity = 0.68;
   static const segmentOpacity = 0.64;
@@ -27,9 +27,10 @@ abstract final class AppGlassTokens {
   static const highlightLightOpacity = 0.16;
 
   static double customBlur(AppGlassLevel level) => switch (level) {
-    AppGlassLevel.compact => 18,
-    AppGlassLevel.surface => 22,
-    AppGlassLevel.dock || AppGlassLevel.sheet => 24,
+    AppGlassLevel.compact => 8,
+    AppGlassLevel.surface => 12,
+    AppGlassLevel.dock => 14,
+    AppGlassLevel.sheet => 16,
   };
 
   static double customOpacity(AppGlassLevel level, Brightness brightness) {
