@@ -8,14 +8,13 @@ WORKDIR /source
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY cmd/ cmd/
-COPY internal/ internal/
+COPY server/ server/
 
 RUN CGO_ENABLED=0 go build \
     -trimpath \
     -ldflags="-s -w -X main.version=${FLARE_VERSION}" \
     -o /out/flare \
-    ./cmd/flare
+    ./server/backend/cmd/flare
 
 
 FROM gcr.io/distroless/static-debian12:nonroot AS runtime

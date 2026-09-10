@@ -16,9 +16,10 @@ Flare is a self-hosted Android homelab administration app. The native Flutter cl
 ## Repository layout
 
 ```text
-cmd/flare/              Go API executable
-internal/               Go API packages and integrations
-src/Flare.Mobile/       Flutter/Dart Android client
+server/backend/cmd/flare/  Go API executable
+server/backend/internal/   Go API packages and integrations
+server/web/                Embedded public status page
+flare_mobile/              Flutter/Dart Android client
 ```
 
 ## Local verification
@@ -28,8 +29,8 @@ Install Go 1.26, Flutter 3.47.2, Java 17, and the Android SDK, then run:
 ```powershell
 go test ./...
 go vet ./...
-go build -trimpath ./cmd/flare
-cd src/Flare.Mobile
+go build -trimpath ./server/backend/cmd/flare
+cd flare_mobile
 flutter pub get
 flutter analyze --fatal-infos
 flutter test

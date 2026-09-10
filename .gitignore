@@ -1,6 +1,7 @@
 artifacts/
 /flare
 /flare*.exe
+**/flare.exe
 
 # Local SDKs and tools
 .android-sdk/
@@ -31,8 +32,8 @@ artifacts/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
 **/build/
-src/Flare.Mobile/android/.gradle/
-src/Flare.Mobile/android/local.properties
+flare_mobile/android/.gradle/
+flare_mobile/android/local.properties
 
 # OS files
 .DS_Store

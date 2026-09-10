@@ -126,12 +126,12 @@ $env:FLARE_ANDROID_KEY_ALIAS = "flare-release"
 $env:FLARE_ANDROID_KEYSTORE_PASSWORD = "<from-secure-password-store>"
 $env:FLARE_ANDROID_KEY_PASSWORD = "<from-secure-password-store>"
 
-Set-Location src\Flare.Mobile
+Set-Location flare_mobile
 flutter pub get
 .\tool\build-release.ps1
 ```
 
-The signed artifact is written under `src/Flare.Mobile/build/app/outputs/flutter-apk/`. Flutter reads `versionName` and `versionCode` from the `version` field in `pubspec.yaml`; for example, `version: 1.2.0+6` produces semantic version `1.2.0` and Android version code `6`. The release helper also copies it to a versioned filename such as `Flare-v1.2.0-build6-android.apk`.
+The signed artifact is written under `flare_mobile/build/app/outputs/flutter-apk/`. Flutter reads `versionName` and `versionCode` from the `version` field in `pubspec.yaml`; for example, `version: 1.2.0+6` produces semantic version `1.2.0` and Android version code `6`. The release helper also copies it to a versioned filename such as `Flare-v1.2.0-build6-android.apk`.
 
 Before every release, increase the semantic portion before `+` and increase the integer build number after `+` to a value greater than every previously published build. Always use the same release keystore and alias. Debug builds and CI use debug signing and must not be distributed.
 

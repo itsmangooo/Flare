@@ -25,23 +25,23 @@ jobs:
       - name: Test Go backend migration
         run: go test ./...
       - name: Vet and build Go backend migration
-        run: go vet ./... && go build -trimpath ./cmd/flare
+        run: go vet ./... && go build -trimpath ./server/backend/cmd/flare
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: 3.47.2
           channel: stable
           cache: true
       - name: Restore Flutter packages
-        working-directory: src/Flare.Mobile
+        working-directory: flare_mobile
         run: flutter pub get
       - name: Analyze Flutter client
-        working-directory: src/Flare.Mobile
+        working-directory: flare_mobile
         run: flutter analyze --fatal-infos
       - name: Test Flutter client
-        working-directory: src/Flare.Mobile
+        working-directory: flare_mobile
         run: flutter test
       - name: Build Android app (Debug signing)
-        working-directory: src/Flare.Mobile
+        working-directory: flare_mobile
         run: flutter build apk --debug
 
   container:
